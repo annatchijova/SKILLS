@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 15 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 17 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -16,6 +16,8 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | **red-team-auditing** | Security audits, adversarial review, threat modeling, finding vulnerabilities or invariant violations, or auditing another agent's audit. |
 | **secure-by-construction** | Writing, extending, refactoring, or reviewing code — features, APIs, parsers, auth, schemas, tests. Especially when the user asks for speed. |
 | **software-archaeology** | Modifying legacy, inherited, or unfamiliar code — change without breakage, deletion without data loss, understanding before editing. |
+| **reverse-engineering** | Reconstructing how an undocumented, closed, or unfamiliar system works when you do NOT have its source — binaries, protocols, file formats, opaque APIs, firmware, memory dumps. Sibling of software-archaeology: use this one when you lack readable source. |
+| **daubert-defensible-writing** | Writing reports, findings, documentation, or any prose that asserts conclusions — separating fact from inference, admitting uncertainty without weakening the conclusion, never overclaiming under persuasion pressure. |
 
 ### Determinism and Integrity
 
@@ -84,7 +86,7 @@ Each skill lives in its own directory:
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 15 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 17 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -100,6 +102,8 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | **red-team-auditing** | Auditorías de seguridad, revisión adversarial, modelado de amenazas, búsqueda de vulnerabilidades o violaciones de invariantes, o auditar la auditoría de otro agente. |
 | **secure-by-construction** | Escribir, extender, refactorizar o revisar código — features, APIs, parsers, auth, esquemas, tests. Especialmente cuando el usuario pide velocidad. |
 | **software-archaeology** | Modificar código legado, heredado o desconocido — cambiar sin romper, borrar sin perder datos, entender antes de editar. |
+| **reverse-engineering** | Reconstruir cómo funciona un sistema no documentado, cerrado o desconocido cuando NO se tiene el código fuente — binarios, protocolos, formatos de archivo, APIs opacas, firmware, dumps de memoria. Hermana de software-archaeology: usar esta cuando no hay fuente legible. |
+| **daubert-defensible-writing** | Escribir reportes, hallazgos, documentación o cualquier prosa que afirma conclusiones — separando hecho de inferencia, admitiendo incertidumbre sin debilitar la conclusión, sin sobreclamar bajo presión de persuasión. |
 
 ### Determinismo e integridad
 
