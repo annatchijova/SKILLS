@@ -37,7 +37,9 @@ The failure this prevents is a confident, wrong report — "the changes are comm
 
 ## Commit messages: leave a legible trail
 
-Commits made by or with an agent should be tagged consistently so the human can find them later — a fixed prefix (a project convention like `POST HACKATHON`, a ticket id, a `chore(agent):` scope) makes the agent's contributions filterable in `git log`. The point is provenance: when something breaks, you can see at a glance which commits came from an automated session and review them as a group.
+Commits made by or with an agent should be tagged consistently so the human can find them later — a fixed prefix (a ticket id, a `chore(agent):` scope, or a project-specific tag) makes the agent's contributions filterable in `git log`. The point is provenance: when something breaks, you can see at a glance which commits came from an automated session and review them as a group.
+
+**Project-specific note:** the prefix `POST HACKATHON` applies **only to the `vigia-repo` repository** and must not be used in any other repo. When in doubt about the convention for a given repo, check its `CLAUDE.md` before committing.
 
 ## What this looks like in practice
 
