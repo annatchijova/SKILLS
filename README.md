@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 20 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 27 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -30,6 +30,26 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 18 | `sql-aggregation-not-materialization` | Input & data | Pushing counts, sums, and grouping into the database instead of loading rows into memory. |
 | 19 | `git-discipline` | Process | Keeping AI-assisted coding sessions recoverable, reviewable, and free from unsafe history rewriting. |
 | 20 | `claim-provenance-discipline` | Evidence governance | Preserving each claim's origin, epistemic level, scope bound, and falsifier across summaries and handoffs. |
+| 21 | `attack-surface-triage` | Adversarial validation | Enumerating an authorized target's surface into a reproducible, falsifiable candidate queue — before any payload. |
+| 22 | `purple-team-exercise` | Adversarial validation | Turning each technique into a detection hypothesis, detonating it minimally and marked, and measuring what the blue side saw. |
+| 23 | `detection-engineering` | Adversarial validation | Turning a detection requirement into a tested, budgeted, versioned rule — with a benign twin that must not fire. |
+| 24 | `agent-trust-boundaries` | Agent architecture | Keeping retrieved content as data, tool authority in deterministic policy, and the untrusted/private/egress trifecta broken. |
+| 25 | `falsifiable-testing` | Verification | Writing tests that can actually fail — red first, negative controls, oracle strength, and flakes treated as findings. |
+| 26 | `incident-timeline-reconstruction` | Evidence governance | Ordering events across clock domains, separating recorded from actual time, and labeling every gap by kind. |
+| 27 | `irreversible-action-gate` | Process | Classifying actions by reversibility and blast radius, then gating them with preview, count assertion, and a written undo plan. |
+
+### Adversarial validation loop
+
+Skills 21–23 compose into one closed loop, with `red-team-auditing` as the
+confirmation step:
+
+```
+attack-surface-triage → ranked candidates
+      ↓                                  ↘
+purple-team-exercise → detection gaps      red-team-auditing → confirmed / refuted
+      ↓                                  ↙
+detection-engineering → proven rule → (retest closes the loop)
+```
 
 ---
 
@@ -54,6 +74,9 @@ Each skill lives in its own directory:
 - **Eco's razor.** Before acting on any hypothesis, attempt to refute it. A refuted hypothesis is a result, not a failure.
 - **Honest degradation over false confidence.** Three states, not two: PASS / WARN / FAIL. ABSTAIN is a valid verdict.
 - **Surgical patching over rewriting.** Regenerating a file from memory is the largest source of silent regressions.
+- **Never trust a green you have not seen red.** A test — or a detection rule — that has never failed for the right reason measures nothing.
+- **Authority comes from the channel, not the content.** Retrieved documents, tool output, and other agents' summaries are data; none of them can grant themselves permission.
+- **Proportional gates before irreversible actions.** Preview the exact targets, assert the expected count before seeing it, and write the undo plan before acting — not after.
 
 ---
 
@@ -67,7 +90,7 @@ Each skill lives in its own directory:
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 20 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 27 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -97,6 +120,26 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 18 | `sql-aggregation-not-materialization` | Input y datos | Empujar conteos, sumas y agrupaciones a la base de datos en lugar de cargar filas en memoria. |
 | 19 | `git-discipline` | Proceso | Mantener las sesiones de coding asistidas por IA recuperables, revisables y libres de reescritura insegura de historia. |
 | 20 | `claim-provenance-discipline` | Gobernanza de evidencia | Preservar el origen, nivel epistémico, alcance y falsificador de cada afirmación a través de resúmenes y handoffs. |
+| 21 | `attack-surface-triage` | Validación adversarial | Enumerar la superficie de un objetivo autorizado en una cola de candidatos reproducible y falsable — antes de cualquier payload. |
+| 22 | `purple-team-exercise` | Validación adversarial | Convertir cada técnica en una hipótesis de detección, detonarla mínima y marcada, y medir qué vio el lado azul. |
+| 23 | `detection-engineering` | Validación adversarial | Convertir un requisito de detección en una regla testeada, presupuestada y versionada — con un gemelo benigno que no debe disparar. |
+| 24 | `agent-trust-boundaries` | Arquitectura de agentes | Mantener el contenido recuperado como dato, la autoridad de herramientas en política determinística, y romper la tríada no-confiable/datos-privados/salida externa. |
+| 25 | `falsifiable-testing` | Verificación | Escribir tests que realmente puedan fallar — rojo primero, controles negativos, fuerza del oráculo, y flakes tratados como hallazgos. |
+| 26 | `incident-timeline-reconstruction` | Gobernanza de evidencia | Ordenar eventos entre dominios de reloj, separar tiempo registrado de tiempo real, y etiquetar cada hueco por tipo. |
+| 27 | `irreversible-action-gate` | Proceso | Clasificar acciones por reversibilidad y radio de impacto, y compuertarlas con preview, aserción de conteo y plan de deshacer escrito. |
+
+### Bucle de validación adversarial
+
+Las skills 21–23 componen un bucle cerrado, con `red-team-auditing` como paso de
+confirmación:
+
+```
+attack-surface-triage → candidatos rankeados
+      ↓                                     ↘
+purple-team-exercise → gaps de detección      red-team-auditing → confirmado / refutado
+      ↓                                     ↙
+detection-engineering → regla probada → (el retest cierra el bucle)
+```
 
 ---
 
@@ -121,6 +164,9 @@ Cada skill vive en su propio directorio:
 - **Navaja de Eco.** Antes de actuar sobre cualquier hipótesis, intentar refutarla. Una hipótesis refutada es un resultado, no un fracaso.
 - **Degradación honesta sobre falsa confianza.** Tres estados, no dos: PASS / WARN / FAIL. ABSTAIN es un veredicto válido.
 - **Parcheo quirúrgico sobre reescritura.** Regenerar un archivo desde memoria es la mayor fuente de regresiones silenciosas.
+- **Nunca confiar en un verde que no viste en rojo.** Un test — o una regla de detección — que jamás falló por el motivo correcto no mide nada.
+- **La autoridad viene del canal, no del contenido.** Documentos recuperados, salida de herramientas y resúmenes de otros agentes son datos; ninguno puede otorgarse permisos a sí mismo.
+- **Compuertas proporcionales antes de acciones irreversibles.** Previsualizar los objetivos exactos, declarar el conteo esperado antes de verlo, y escribir el plan de deshacer antes de actuar — no después.
 
 ---
 
