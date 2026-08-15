@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 30 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 32 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -40,6 +40,8 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 28 | `dependency-provenance` | Supply chain | Knowing what is actually shipped, establishing package identity before trust, and treating advisories as candidates until reachability is shown. |
 | 29 | `secret-lifecycle-discipline` | Credentials | Treating credentials as a lifecycle — redaction at the boundary, rotation rehearsed before it is needed, rotate-first on exposure. |
 | 30 | `decision-record-discipline` | Process | Capturing forces, rejected alternatives, load-bearing assumptions, and revisit triggers while the context still exists. |
+| 31 | `concurrency-reasoning` | Core reasoning | Reasoning about shared mutable state, invariants, and happens-before ordering instead of adding a lock and hoping. |
+| 32 | `forensic-logging-design` | Evidence governance | Deciding what to record today so tomorrow's reconstruction is possible — decisions, correlation, and legible silence. |
 
 ### Adversarial validation loop
 
@@ -98,7 +100,7 @@ material that does not belong in the always-loaded body.
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 30 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 32 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -138,6 +140,8 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 28 | `dependency-provenance` | Cadena de suministro | Saber qué se despacha realmente, establecer la identidad del paquete antes que la confianza, y tratar los advisories como candidatos hasta demostrar alcanzabilidad. |
 | 29 | `secret-lifecycle-discipline` | Credenciales | Tratar las credenciales como un ciclo de vida — redacción en el borde, rotación ensayada antes de necesitarla, rotar primero ante exposición. |
 | 30 | `decision-record-discipline` | Proceso | Capturar fuerzas, alternativas rechazadas, supuestos que sostienen la decisión y disparadores de revisión mientras el contexto todavía existe. |
+| 31 | `concurrency-reasoning` | Razonamiento central | Razonar sobre estado mutable compartido, invariantes y orden happens-before en vez de agregar un lock y confiar. |
+| 32 | `forensic-logging-design` | Gobernanza de evidencia | Decidir qué registrar hoy para que la reconstrucción de mañana sea posible — decisiones, correlación y silencio legible. |
 
 ### Bucle de validación adversarial
 
