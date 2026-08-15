@@ -58,15 +58,20 @@ detection-engineering → proven rule → (retest closes the loop)
 
 ## Repository Structure
 
-Each skill lives in its own directory:
+Each skill lives in its own directory and is a single self-contained file:
 
 ```
 <skill-name>/
-  SKILL.md                        # Frontmatter + full methodology
-  <skill-name>.trigger.json       # Evaluation corpus: queries that should/should not trigger
-  scripts/                        # Helper scripts referenced by the skill (where applicable)
-  references/                     # Supporting reference documents (where applicable)
+  SKILL.md      # YAML frontmatter (name + description) followed by the full methodology
 ```
+
+The `description` field is the trigger surface — it must name the situations,
+phrasings, and artifacts that should activate the skill, and it must stay under
+1024 characters. The body is loaded only once the skill triggers.
+
+No skill currently ships `scripts/` or `references/` subdirectories; add them
+alongside `SKILL.md` if a future skill needs executable helpers or long reference
+material that does not belong in the always-loaded body.
 
 ---
 
@@ -151,15 +156,21 @@ detection-engineering → regla probada → (el retest cierra el bucle)
 
 ## Estructura del repositorio
 
-Cada skill vive en su propio directorio:
+Cada skill vive en su propio directorio y es un único archivo autocontenido:
 
 ```
 <nombre-skill>/
-  SKILL.md                        # Frontmatter + metodología completa
-  <nombre-skill>.trigger.json     # Corpus de evaluación: queries que deben/no deben triggerear
-  scripts/                        # Scripts de apoyo referenciados por la skill (donde aplica)
-  references/                     # Documentos de referencia (donde aplica)
+  SKILL.md      # Frontmatter YAML (name + description) seguido de la metodología completa
 ```
+
+El campo `description` es la superficie de activación — debe nombrar las
+situaciones, formulaciones y artefactos que deberían activar la skill, y debe
+mantenerse por debajo de 1024 caracteres. El cuerpo se carga recién cuando la
+skill se activa.
+
+Ninguna skill incluye hoy subdirectorios `scripts/` o `references/`; se agregan
+junto a `SKILL.md` si una skill futura necesita helpers ejecutables o material de
+referencia largo que no corresponde al cuerpo siempre cargado.
 
 ---
 
