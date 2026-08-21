@@ -100,6 +100,50 @@ material that does not belong in the always-loaded body.
 
 ---
 
+
+                    ┌─────────────────────────┐
+                    │     INQUIRY / REASONING │
+                    │                         │
+                    │ abductive-engineering   │
+                    │ diagnosing-bugs         │
+                    │ software-archaeology    │
+                    │ reverse-engineering     │
+                    │ invariant-hunting       │
+                    │ concurrency-reasoning   │
+                    │ beyond-the-sink         │
+                    │ forensic-persistence    │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │   ADVERSARIAL VALIDATION│
+                    │                         │
+                    │ attack-surface-triage   │
+                    │ red-team-auditing       │
+                    │ discriminating-proof    │
+                    │ purple-team-exercise    │
+                    │ detection-engineering   │
+                    │ falsifiable-testing     │
+                    └────────────┬────────────┘
+                                 │
+             ┌───────────────────┼───────────────────┐
+             ▼                   ▼                   ▼
+       INTEGRITY            TRUST / DATA          EVIDENCE
+       deterministic       validate-boundary      provenance
+       audit-chain         honest-degradation     timeline
+       atomic mutation     secret lifecycle       logging
+       schema evolution    dependency provenance  decision records
+             │                   │                   │
+             └───────────────────┼───────────────────┘
+                                 ▼
+                       CONSTRUCTION / CHANGE
+                                 │
+                  secure-by-construction
+                  surgical-patcher
+                  audit-before-patch
+                  git-discipline
+                  irreversible-action-gate
+
+                  
 ---
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
