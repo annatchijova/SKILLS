@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 32 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 36 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -42,6 +42,10 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 30 | `decision-record-discipline` | Process | Capturing forces, rejected alternatives, load-bearing assumptions, and revisit triggers while the context still exists. |
 | 31 | `concurrency-reasoning` | Core reasoning | Reasoning about shared mutable state, invariants, and happens-before ordering instead of adding a lock and hoping. |
 | 32 | `forensic-logging-design` | Evidence governance | Deciding what to record today so tomorrow's reconstruction is possible — decisions, correlation, and legible silence. |
+| 33 | `invariant-hunting` | Core reasoning | Hunting violations of a declared or implied security invariant across a transition — a property established at T0 that a later state change must preserve. |
+| 34 | `beyond-the-sink` | Core reasoning | An investigation stalls — looking past the sink-grep keyword list, the exhausted question family, or a single implementation when the obvious layer is dry. |
+| 35 | `discriminating-proof` | Verification | Turning a plausible hypothesis into an earned verdict with the cheapest experiment that can kill it — binary oracle, canary value, negative control. |
+| 36 | `forensic-persistence` | Core reasoning | A hunt, audit, or debug session returns zero findings, hypotheses keep getting refuted, or a target looks too hardened to continue. |
 
 ### Adversarial validation loop
 
@@ -100,7 +104,7 @@ material that does not belong in the always-loaded body.
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 32 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 36 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -142,6 +146,10 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 30 | `decision-record-discipline` | Proceso | Capturar fuerzas, alternativas rechazadas, supuestos que sostienen la decisión y disparadores de revisión mientras el contexto todavía existe. |
 | 31 | `concurrency-reasoning` | Razonamiento central | Razonar sobre estado mutable compartido, invariantes y orden happens-before en vez de agregar un lock y confiar. |
 | 32 | `forensic-logging-design` | Gobernanza de evidencia | Decidir qué registrar hoy para que la reconstrucción de mañana sea posible — decisiones, correlación y silencio legible. |
+| 33 | `invariant-hunting` | Razonamiento central | Cazar violaciones de una invariante de seguridad declarada o implícita a través de una transición — una propiedad establecida en T0 que un cambio de estado posterior debe preservar. |
+| 34 | `beyond-the-sink` | Razonamiento central | Una investigación se estanca — mirar más allá de la lista de keywords de sink-grep, la familia de preguntas agotada o una sola implementación cuando la capa obvia está seca. |
+| 35 | `discriminating-proof` | Verificación | Convertir una hipótesis plausible en un veredicto ganado con el experimento más barato que pueda matarla — oráculo binario, valor canario, control negativo. |
+| 36 | `forensic-persistence` | Razonamiento central | Una sesión de hunt, auditoría o debug devuelve cero hallazgos, las hipótesis se refutan una tras otra, o un objetivo parece demasiado endurecido para seguir. |
 
 ### Bucle de validación adversarial
 
