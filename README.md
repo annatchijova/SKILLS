@@ -11,7 +11,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | # | Skill | Category | Activates when |
 |---:|---|---|---|
 | 1 | `abductive-engineering` | Core reasoning | Debugging, root-cause analysis, incident response, or architectural decisions under uncertainty. |
-| 2 | `red-team-auditing` | Core reasoning | Security audits, adversarial review, threat modeling, or invariant analysis. |
+| 2 | `red-team-auditing` | Core reasoning | Security audits, adversarial review, threat modeling, invariant analysis, or auditing another agent's audit — or the instrument that produced it. |
 | 3 | `secure-by-construction` | Core reasoning | Writing, extending, refactoring, or reviewing code with security boundaries. |
 | 4 | `software-archaeology` | Core reasoning | Modifying legacy, inherited, or unfamiliar code without breaking behavior. |
 | 5 | `diagnosing-bugs` | Core reasoning | Investigating hard bugs and performance regressions through controlled probes and regression tests. |
@@ -153,6 +153,7 @@ material that does not belong in the always-loaded body.
 - **A finding is not finished when it is patched.** The instance dies with the fix; the class does not. Reporting, custody, and the decision not to publish all have their own discipline.
 - **A result that looks too good is a bug report.** In every other domain a defect makes something fail; leakage makes everything look better, so the alarm has to be inverted.
 - **A fix proves the past, not the present.** That someone fixed it means they fixed that, and nothing else — the patched file is the least-reviewed code in the repository and the likeliest place for the next bug.
+- **An unearned green is worse than a wrong finding.** A wrong finding gets argued with; false assurance terminates the search. Any gate a human trusts is part of the architecture and gets audited like one.
 
 ---
 
@@ -238,7 +239,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | # | Skill | Categoría | Se activa cuando |
 |---:|---|---|---|
 | 1 | `abductive-engineering` | Razonamiento central | Debugging, análisis de causa raíz, respuesta a incidentes, o decisiones arquitectónicas bajo incertidumbre. |
-| 2 | `red-team-auditing` | Razonamiento central | Auditorías de seguridad, revisión adversarial, modelado de amenazas, o análisis de invariantes. |
+| 2 | `red-team-auditing` | Razonamiento central | Auditorías de seguridad, revisión adversarial, modelado de amenazas, análisis de invariantes, o auditar la auditoría de otro agente — o el instrumento que la produjo. |
 | 3 | `secure-by-construction` | Razonamiento central | Escribir, extender, refactorizar o revisar código con límites de seguridad. |
 | 4 | `software-archaeology` | Razonamiento central | Modificar código legado, heredado o desconocido sin romper su comportamiento. |
 | 5 | `diagnosing-bugs` | Razonamiento central | Investigar bugs difíciles y regresiones de rendimiento mediante probes controlados y tests de regresión. |
@@ -381,6 +382,7 @@ referencia largo que no corresponde al cuerpo siempre cargado.
 - **Un hallazgo no termina cuando se parchea.** La instancia muere con el fix; la clase no. Reportar, custodiar, y la decisión de no publicar tienen cada una su propia disciplina.
 - **Un resultado demasiado bueno es un reporte de bug.** En cualquier otro dominio un defecto hace que algo falle; el leakage hace que todo se vea mejor, así que la alarma tiene que invertirse.
 - **Un fix prueba el pasado, no el presente.** Que alguien lo haya arreglado significa que arregló eso y nada más — el archivo parcheado es el código menos revisado del repo y el lugar más probable del próximo bug.
+- **Un verde no ganado es peor que un hallazgo equivocado.** Con un hallazgo equivocado se discute; la falsa garantía termina la búsqueda. Todo gate en el que un humano confía es parte de la arquitectura y se audita como tal.
 
 ---
 

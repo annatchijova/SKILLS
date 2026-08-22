@@ -1,6 +1,6 @@
 ---
 name: red-team-auditing
-description: Adversarial security auditing and red-teaming of your own systems with strict epistemic discipline. Use this skill whenever the user is red-teaming, doing a security audit, adversarial review, threat modeling, or "trying to break" their own code or system; whenever they ask you to find bugs, vulnerabilities, invariant violations, or architectural fractures; whenever they want to audit another agent's audit or check whether a finding is real; and whenever a report labels something "CONFIRMED / EXPLOITABLE / bypass" and the certainty needs to be earned rather than asserted. Trigger even if the user only says "find more", "attack this", "poke holes", "cuchi cuchi red team", or pastes an audit/finding table for review. Pairs with the abductive-engineering skill — this is its adversarial application.
+description: Adversarial security auditing and red-teaming of your own systems with strict epistemic discipline. Use this skill whenever the user is red-teaming, doing a security audit, adversarial review, threat modeling, or "trying to break" their own code or system; whenever they ask you to find bugs, vulnerabilities, invariant violations, or architectural fractures; whenever they want to audit another agent's audit, the configuration of a review bot, linter, scanner or LLM judge, or check whether a finding is real; and whenever a report labels something "CONFIRMED / EXPLOITABLE / bypass" and the certainty needs to be earned rather than asserted. Trigger even if the user only says "find more", "attack this", "poke holes", "cuchi cuchi red team", or pastes an audit/finding table for review. Pairs with the abductive-engineering skill — this is its adversarial application.
 ---
 
 # Red-Team Auditing
@@ -153,6 +153,22 @@ Ask, in order:
 5. **Is the language precise (Part 7)?** "Manipulated the sealed verdict" vs "sealed a wrong verdict."
 
 Frame every note as a hypothesis, not a verdict — "If the label is input-controlled here, this degrades; is that reachable in the real acquisition chain?" — which invites the D–I cycle instead of a defense.
+
+---
+
+## Part 10 — Auditing the Reviewer, Not Only the Review
+
+Part 9 audits what an agent *found*. This audits the instrument that finds — a review bot's prompt or rubric, a linter or scanner configuration, a CI gate, an LLM judge, a standing checklist. Do it before trusting any of its output, because the defect of a bad instrument is not a false finding. It is **false assurance**, which is worse: a wrong finding gets argued with, while an unearned green terminates the search. A gate a human trusts is part of the security architecture and gets audited like one.
+
+Five questions, and they are answered by reading the configuration, never by reading its output:
+
+1. **Can it produce a failing verdict at all?** Read the verdict vocabulary and look for the bottom rung. A scale whose every option is approving (`patch / good fix / best available fix`) cannot come out bad, so its green measures nothing — `falsifiable-testing`'s thesis applied to a gate rather than a test.
+2. **Does its silence mean "checked" or "never looked"?** A "no issues found" template that does not also state coverage converts an absence of findings into a guarantee. Demand three fields: what was examined, what was skipped, what could not be verified. Without them, a shallow pass and a thorough one produce identical output.
+3. **What is its epistemic ceiling, and does its vocabulary respect it?** An instrument that cannot execute code cannot confirm a runtime claim; if it still emits `CRITICAL`, its language outruns its capability, and Part 1's inflation is now automated and running on a schedule.
+4. **What does it structurally refuse to see?** Read the skip rules, early exits, and file filters as an attack surface. "Skip patterns already used consistently elsewhere" excludes systemic bugs by construction — the exact class worth the most (`beyond-the-sink`). "Skip bot-authored PRs" excludes every dependency bump.
+5. **Is its notion of a finding's identity stable?** Deduplication or state keyed on something volatile — a line number, a message string — fails silently the moment the code moves, which is precisely when the tool is needed.
+
+Then record the answers as a stated limitation of the evidence the instrument produced (`claim-provenance-discipline`). "Clean run from a scanner that cannot reach this path" is a fact about the scanner, and it must not travel as a fact about the code.
 
 ---
 
