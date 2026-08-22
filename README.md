@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 47 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 48 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -57,6 +57,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 45 | `training-run-provenance` | Machine learning | Determinism where it is achievable — the artifact, not the process: a sealed manifest, named nondeterminism, and a reproducibility claim at the rung the evidence supports. |
 | 46 | `model-evaluation-discipline` | Machine learning | An evaluation that can actually fail — mandatory baseline, interval instead of point estimate, worst slice instead of mean, and negative controls. |
 | 47 | `training-serving-parity` | Machine learning | The features a model was trained on are not the features it is served — two implementations of one computation, and the silent default that answers confidently on a vector never seen. |
+| 48 | `beyond-the-fix` | Core reasoning | Auditing the fixes themselves — a patch proves someone knew something was wrong there, never that it is now right; eight ways a fix falls short, and the pre-fix control that tells them apart. |
 
 ### Adversarial validation loop
 
@@ -72,6 +73,7 @@ containment skills carry a confirmed finding back out to the blue side:
    │  invariant-hunting · parser-differential-hunting    │
    │  authorization-surface-mapping · beyond-the-sink    │
    │  oracle-driven-fuzzing · resource-exhaustion-review │
+   │  beyond-the-fix (the fix history is the map)        │
    └──────────────────────────┼──────────────────────────┘
                               ▼
       discriminating-proof → red-team-auditing → confirmed / refuted
@@ -150,6 +152,7 @@ material that does not belong in the always-loaded body.
 - **You cannot grep for an absence.** Missing checks, unenumerated cells, and unstated limits are invisible in a diff — they are found by enumerating what the system claims to enforce and testing the gaps.
 - **A finding is not finished when it is patched.** The instance dies with the fix; the class does not. Reporting, custody, and the decision not to publish all have their own discipline.
 - **A result that looks too good is a bug report.** In every other domain a defect makes something fail; leakage makes everything look better, so the alarm has to be inverted.
+- **A fix proves the past, not the present.** That someone fixed it means they fixed that, and nothing else — the patched file is the least-reviewed code in the repository and the likeliest place for the next bug.
 
 ---
 
@@ -170,6 +173,7 @@ material that does not belong in the always-loaded body.
                     │ invariant-hunting       │
                     │ concurrency-reasoning   │
                     │ beyond-the-sink         │
+                    │ beyond-the-fix          │
                     │ forensic-persistence    │
                     └────────────┬────────────┘
                                  │
@@ -223,7 +227,7 @@ material that does not belong in the always-loaded body.
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 47 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 48 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -280,6 +284,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 45 | `training-run-provenance` | Machine learning | Determinismo donde sí es alcanzable — el artefacto, no el proceso: manifiesto sellado, no-determinismo nombrado, y una afirmación de reproducibilidad al escalón que la evidencia sostiene. |
 | 46 | `model-evaluation-discipline` | Machine learning | Una evaluación que realmente puede fallar — baseline obligatorio, intervalo en vez de estimación puntual, peor slice en vez de media, y controles negativos. |
 | 47 | `training-serving-parity` | Machine learning | Las features con las que se entrenó un modelo no son las que se le sirven — dos implementaciones de un mismo cálculo, y el default silencioso que responde con confianza sobre un vector nunca visto. |
+| 48 | `beyond-the-fix` | Razonamiento central | Auditar las correcciones mismas — un parche prueba que alguien supo que ahí había algo mal, nunca que ahora esté bien; ocho formas en que un fix se queda corto, y el control pre-fix que las distingue. |
 
 ### Bucle de validación adversarial
 
@@ -295,6 +300,7 @@ contención devuelven el hallazgo confirmado al lado azul:
    │  invariant-hunting · parser-differential-hunting    │
    │  authorization-surface-mapping · beyond-the-sink    │
    │  oracle-driven-fuzzing · resource-exhaustion-review │
+   │  beyond-the-fix (the fix history is the map)        │
    └──────────────────────────┼──────────────────────────┘
                               ▼
       discriminating-proof → red-team-auditing → confirmado / refutado
@@ -374,6 +380,7 @@ referencia largo que no corresponde al cuerpo siempre cargado.
 - **No se puede grepear una ausencia.** Los checks faltantes, las celdas no enumeradas y los límites no escritos son invisibles en un diff — se encuentran enumerando lo que el sistema afirma hacer cumplir y probando los huecos.
 - **Un hallazgo no termina cuando se parchea.** La instancia muere con el fix; la clase no. Reportar, custodiar, y la decisión de no publicar tienen cada una su propia disciplina.
 - **Un resultado demasiado bueno es un reporte de bug.** En cualquier otro dominio un defecto hace que algo falle; el leakage hace que todo se vea mejor, así que la alarma tiene que invertirse.
+- **Un fix prueba el pasado, no el presente.** Que alguien lo haya arreglado significa que arregló eso y nada más — el archivo parcheado es el código menos revisado del repo y el lugar más probable del próximo bug.
 
 ---
 
