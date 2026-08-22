@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 41 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 43 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -51,6 +51,8 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 39 | `authorization-surface-mapping` | Adversarial validation | Building the actor × resource × action matrix and testing the cells nobody wrote a test for — because a missing check looks like nothing. |
 | 40 | `assume-breach-modeling` | Adversarial validation | A position is already held — mapping what that identity reaches, and finding the choke point whose removal cuts the most paths. |
 | 41 | `resource-exhaustion-review` | Input & data | A small input buys a large amount of work or memory — asymmetry ratios, unbounded allocation, super-linear algorithms, missing backpressure. |
+| 42 | `remediation-driven-reporting` | Adversarial validation | Writing the report so the class gets fixed, not the instance — surviving triage, severity scored to demonstrated impact, and verifying the patch against the class. |
+| 43 | `finding-custody` | Evidence governance | A confirmed finding after it is reported — instance vs class vs method, the patch-diffing window, custody of the PoC, and a disclosure decision with a revisit trigger. |
 
 ### Adversarial validation loop
 
@@ -77,6 +79,10 @@ containment skills carry a confirmed finding back out to the blue side:
       purple-team-exercise → detection gaps
                               ▼
       detection-engineering → proven rule → (retest closes the loop)
+
+   when the target is someone else's:
+      remediation-driven-reporting → the class gets fixed, not the instance
+      finding-custody → what you did NOT say, and what reopens the decision
 ```
 
 Everything on the offensive side of this library exists to produce a defensive
@@ -116,6 +122,7 @@ material that does not belong in the always-loaded body.
 - **Proportional gates before irreversible actions.** Preview the exact targets, assert the expected count before seeing it, and write the undo plan before acting — not after.
 - **Red exists to produce blue.** A confirmed finding is not the deliverable; the bound, the bulkhead, the generated negative test, and the detection requirement are.
 - **You cannot grep for an absence.** Missing checks, unenumerated cells, and unstated limits are invisible in a diff — they are found by enumerating what the system claims to enforce and testing the gaps.
+- **A finding is not finished when it is patched.** The instance dies with the fix; the class does not. Reporting, custody, and the decision not to publish all have their own discipline.
 
 ---
 
@@ -152,6 +159,7 @@ material that does not belong in the always-loaded body.
                     │ purple-team-exercise    │
                     │ detection-engineering   │
                     │ falsifiable-testing     │
+                    │ remediation-reporting   │
                     └────────────┬────────────┘
                                  │
              ┌───────────────────┼───────────────────┐
@@ -178,7 +186,7 @@ material that does not belong in the always-loaded body.
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 41 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 43 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -229,6 +237,8 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 39 | `authorization-surface-mapping` | Validación adversarial | Construir la matriz actor × recurso × acción y probar las celdas para las que nadie escribió un test — porque un check ausente no se ve. |
 | 40 | `assume-breach-modeling` | Validación adversarial | Una posición ya está tomada — mapear qué alcanza esa identidad y encontrar el cuello de botella cuya eliminación corta más caminos. |
 | 41 | `resource-exhaustion-review` | Input y datos | Un input pequeño compra una cantidad enorme de trabajo o memoria — ratios de asimetría, asignación no acotada, algoritmos superlineales, falta de backpressure. |
+| 42 | `remediation-driven-reporting` | Validación adversarial | Escribir el reporte para que se arregle la clase, no la instancia — sobrevivir al triage, severidad ajustada al impacto demostrado, y verificar el parche contra la clase. |
+| 43 | `finding-custody` | Gobernanza de evidencia | Un hallazgo confirmado después de reportarlo — instancia vs clase vs método, la ventana de patch-diffing, custodia del PoC, y una decisión de divulgación con disparador de revisión. |
 
 ### Bucle de validación adversarial
 
@@ -255,6 +265,10 @@ contención devuelven el hallazgo confirmado al lado azul:
       purple-team-exercise → gaps de detección
                               ▼
       detection-engineering → regla probada → (el retest cierra el bucle)
+
+   cuando el objetivo es de otro:
+      remediation-driven-reporting → se arregla la clase, no la instancia
+      finding-custody → lo que NO dijiste, y qué reabre la decisión
 ```
 
 Todo lo que en esta biblioteca está del lado ofensivo existe para producir un
@@ -295,6 +309,7 @@ referencia largo que no corresponde al cuerpo siempre cargado.
 - **Compuertas proporcionales antes de acciones irreversibles.** Previsualizar los objetivos exactos, declarar el conteo esperado antes de verlo, y escribir el plan de deshacer antes de actuar — no después.
 - **El rojo existe para producir azul.** El hallazgo confirmado no es el entregable; lo son el límite, el mamparo, el test negativo generado y el requisito de detección.
 - **No se puede grepear una ausencia.** Los checks faltantes, las celdas no enumeradas y los límites no escritos son invisibles en un diff — se encuentran enumerando lo que el sistema afirma hacer cumplir y probando los huecos.
+- **Un hallazgo no termina cuando se parchea.** La instancia muere con el fix; la clase no. Reportar, custodiar, y la decisión de no publicar tienen cada una su propia disciplina.
 
 ---
 
