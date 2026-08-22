@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 46 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 47 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -56,6 +56,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 44 | `data-leakage-hunting` | Machine learning | The one bug class whose symptom is a better score — evaluation data reaching the model through preprocessing, time, groups, duplicates, or a spent test set. |
 | 45 | `training-run-provenance` | Machine learning | Determinism where it is achievable — the artifact, not the process: a sealed manifest, named nondeterminism, and a reproducibility claim at the rung the evidence supports. |
 | 46 | `model-evaluation-discipline` | Machine learning | An evaluation that can actually fail — mandatory baseline, interval instead of point estimate, worst slice instead of mean, and negative controls. |
+| 47 | `training-serving-parity` | Machine learning | The features a model was trained on are not the features it is served — two implementations of one computation, and the silent default that answers confidently on a vector never seen. |
 
 ### Adversarial validation loop
 
@@ -96,7 +97,7 @@ fired for the right reason.
 
 ML breaks three assumptions the rest of the library rests on: the test is a
 metric rather than a pass/fail, the data is the real program, and the
-highest-severity bug class *raises* the score. Skills 44–46 restore them, and
+highest-severity bug class *raises* the score. Skills 44–47 restore them, and
 they meet `deterministic-core` at a specific boundary:
 
 ```
@@ -104,9 +105,10 @@ training run        →   frozen artifact   →   inference   →   decision
 nondeterministic        hashed, immutable     deterministic     exact
 training-run-           the seam              same artifact     deterministic-core
 provenance                                    + input           applies unmodified
-       ↑                                            ↑
-data-leakage-hunting                    model-evaluation-discipline
-(is the number real?)                   (is the number a measurement?)
+       ↑                        ↑                   ↑
+data-leakage-hunting   training-serving-parity   model-evaluation-discipline
+(is the number real?)  (is the served input      (is the number a
+                        the trained input?)       measurement?)
 ```
 
 Determinism does not stop being reachable in ML — it stops being reachable
@@ -214,13 +216,14 @@ material that does not belong in the always-loaded body.
                   data-leakage-hunting
                   training-run-provenance
                   model-evaluation-discipline
+                  training-serving-parity
 
                   
 ---
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 46 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 47 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -276,6 +279,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 44 | `data-leakage-hunting` | Machine learning | La única clase de bug cuyo síntoma es una mejor métrica — datos de evaluación que llegan al modelo por preprocesamiento, tiempo, grupos, duplicados o un test set gastado. |
 | 45 | `training-run-provenance` | Machine learning | Determinismo donde sí es alcanzable — el artefacto, no el proceso: manifiesto sellado, no-determinismo nombrado, y una afirmación de reproducibilidad al escalón que la evidencia sostiene. |
 | 46 | `model-evaluation-discipline` | Machine learning | Una evaluación que realmente puede fallar — baseline obligatorio, intervalo en vez de estimación puntual, peor slice en vez de media, y controles negativos. |
+| 47 | `training-serving-parity` | Machine learning | Las features con las que se entrenó un modelo no son las que se le sirven — dos implementaciones de un mismo cálculo, y el default silencioso que responde con confianza sobre un vector nunca visto. |
 
 ### Bucle de validación adversarial
 
@@ -316,7 +320,7 @@ regla que disparó por el motivo correcto.
 
 ML rompe tres supuestos sobre los que se apoya el resto de la biblioteca: el
 test es una métrica y no un pass/fail, los datos son el programa real, y la
-clase de bug de mayor severidad *sube* la métrica. Las skills 44–46 los
+clase de bug de mayor severidad *sube* la métrica. Las skills 44–47 los
 restauran, y se encuentran con `deterministic-core` en un límite preciso:
 
 ```
@@ -324,9 +328,10 @@ corrida de entren.  →   artefacto congelado →  inferencia  →   decisión
 no determinista         hasheado, inmutable    determinista    exacta
 training-run-           la costura             mismo artefacto deterministic-core
 provenance                                     + input         aplica sin cambios
-       ↑                                            ↑
-data-leakage-hunting                    model-evaluation-discipline
-(¿el número es real?)                   (¿el número es una medición?)
+       ↑                        ↑                   ↑
+data-leakage-hunting   training-serving-parity   model-evaluation-discipline
+(¿el número es real?)  (¿el input servido es     (¿el número es una
+                        el input entrenado?)      medición?)
 ```
 
 El determinismo no deja de ser alcanzable en ML — deja de serlo *aguas arriba
