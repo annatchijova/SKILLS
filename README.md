@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 41 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 47 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -51,6 +51,12 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 39 | `authorization-surface-mapping` | Adversarial validation | Building the actor × resource × action matrix and testing the cells nobody wrote a test for — because a missing check looks like nothing. |
 | 40 | `assume-breach-modeling` | Adversarial validation | A position is already held — mapping what that identity reaches, and finding the choke point whose removal cuts the most paths. |
 | 41 | `resource-exhaustion-review` | Input & data | A small input buys a large amount of work or memory — asymmetry ratios, unbounded allocation, super-linear algorithms, missing backpressure. |
+| 42 | `remediation-driven-reporting` | Adversarial validation | Writing the report so the class gets fixed, not the instance — surviving triage, severity scored to demonstrated impact, and verifying the patch against the class. |
+| 43 | `finding-custody` | Evidence governance | A confirmed finding after it is reported — instance vs class vs method, the patch-diffing window, custody of the PoC, and a disclosure decision with a revisit trigger. |
+| 44 | `data-leakage-hunting` | Machine learning | The one bug class whose symptom is a better score — evaluation data reaching the model through preprocessing, time, groups, duplicates, or a spent test set. |
+| 45 | `training-run-provenance` | Machine learning | Determinism where it is achievable — the artifact, not the process: a sealed manifest, named nondeterminism, and a reproducibility claim at the rung the evidence supports. |
+| 46 | `model-evaluation-discipline` | Machine learning | An evaluation that can actually fail — mandatory baseline, interval instead of point estimate, worst slice instead of mean, and negative controls. |
+| 47 | `training-serving-parity` | Machine learning | The features a model was trained on are not the features it is served — two implementations of one computation, and the silent default that answers confidently on a vector never seen. |
 
 ### Adversarial validation loop
 
@@ -77,11 +83,37 @@ containment skills carry a confirmed finding back out to the blue side:
       purple-team-exercise → detection gaps
                               ▼
       detection-engineering → proven rule → (retest closes the loop)
+
+   when the target is someone else's:
+      remediation-driven-reporting → the class gets fixed, not the instance
+      finding-custody → what you did NOT say, and what reopens the decision
 ```
 
 Everything on the offensive side of this library exists to produce a defensive
 artifact: a bound, a bulkhead, a generated negative test, or a rule that has
 fired for the right reason.
+
+### The machine-learning seam
+
+ML breaks three assumptions the rest of the library rests on: the test is a
+metric rather than a pass/fail, the data is the real program, and the
+highest-severity bug class *raises* the score. Skills 44–47 restore them, and
+they meet `deterministic-core` at a specific boundary:
+
+```
+training run        →   frozen artifact   →   inference   →   decision
+nondeterministic        hashed, immutable     deterministic     exact
+training-run-           the seam              same artifact     deterministic-core
+provenance                                    + input           applies unmodified
+       ↑                        ↑                   ↑
+data-leakage-hunting   training-serving-parity   model-evaluation-discipline
+(is the number real?)  (is the served input      (is the number a
+                        the trained input?)       measurement?)
+```
+
+Determinism does not stop being reachable in ML — it stops being reachable
+*upstream of the artifact*. Everything downstream is held to the same standard
+as any other consequential output path here.
 
 ---
 
@@ -116,6 +148,8 @@ material that does not belong in the always-loaded body.
 - **Proportional gates before irreversible actions.** Preview the exact targets, assert the expected count before seeing it, and write the undo plan before acting — not after.
 - **Red exists to produce blue.** A confirmed finding is not the deliverable; the bound, the bulkhead, the generated negative test, and the detection requirement are.
 - **You cannot grep for an absence.** Missing checks, unenumerated cells, and unstated limits are invisible in a diff — they are found by enumerating what the system claims to enforce and testing the gaps.
+- **A finding is not finished when it is patched.** The instance dies with the fix; the class does not. Reporting, custody, and the decision not to publish all have their own discipline.
+- **A result that looks too good is a bug report.** In every other domain a defect makes something fail; leakage makes everything look better, so the alarm has to be inverted.
 
 ---
 
@@ -152,6 +186,7 @@ material that does not belong in the always-loaded body.
                     │ purple-team-exercise    │
                     │ detection-engineering   │
                     │ falsifiable-testing     │
+                    │ remediation-reporting   │
                     └────────────┬────────────┘
                                  │
              ┌───────────────────┼───────────────────┐
@@ -173,12 +208,22 @@ material that does not belong in the always-loaded body.
                   git-discipline
                   irreversible-action-gate
 
+                    MACHINE LEARNING
+                    (the same discipline, where the
+                     test is a metric and the data
+                     is the program)
+
+                  data-leakage-hunting
+                  training-run-provenance
+                  model-evaluation-discipline
+                  training-serving-parity
+
                   
 ---
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 41 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 47 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -229,6 +274,12 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 39 | `authorization-surface-mapping` | Validación adversarial | Construir la matriz actor × recurso × acción y probar las celdas para las que nadie escribió un test — porque un check ausente no se ve. |
 | 40 | `assume-breach-modeling` | Validación adversarial | Una posición ya está tomada — mapear qué alcanza esa identidad y encontrar el cuello de botella cuya eliminación corta más caminos. |
 | 41 | `resource-exhaustion-review` | Input y datos | Un input pequeño compra una cantidad enorme de trabajo o memoria — ratios de asimetría, asignación no acotada, algoritmos superlineales, falta de backpressure. |
+| 42 | `remediation-driven-reporting` | Validación adversarial | Escribir el reporte para que se arregle la clase, no la instancia — sobrevivir al triage, severidad ajustada al impacto demostrado, y verificar el parche contra la clase. |
+| 43 | `finding-custody` | Gobernanza de evidencia | Un hallazgo confirmado después de reportarlo — instancia vs clase vs método, la ventana de patch-diffing, custodia del PoC, y una decisión de divulgación con disparador de revisión. |
+| 44 | `data-leakage-hunting` | Machine learning | La única clase de bug cuyo síntoma es una mejor métrica — datos de evaluación que llegan al modelo por preprocesamiento, tiempo, grupos, duplicados o un test set gastado. |
+| 45 | `training-run-provenance` | Machine learning | Determinismo donde sí es alcanzable — el artefacto, no el proceso: manifiesto sellado, no-determinismo nombrado, y una afirmación de reproducibilidad al escalón que la evidencia sostiene. |
+| 46 | `model-evaluation-discipline` | Machine learning | Una evaluación que realmente puede fallar — baseline obligatorio, intervalo en vez de estimación puntual, peor slice en vez de media, y controles negativos. |
+| 47 | `training-serving-parity` | Machine learning | Las features con las que se entrenó un modelo no son las que se le sirven — dos implementaciones de un mismo cálculo, y el default silencioso que responde con confianza sobre un vector nunca visto. |
 
 ### Bucle de validación adversarial
 
@@ -255,11 +306,37 @@ contención devuelven el hallazgo confirmado al lado azul:
       purple-team-exercise → gaps de detección
                               ▼
       detection-engineering → regla probada → (el retest cierra el bucle)
+
+   cuando el objetivo es de otro:
+      remediation-driven-reporting → se arregla la clase, no la instancia
+      finding-custody → lo que NO dijiste, y qué reabre la decisión
 ```
 
 Todo lo que en esta biblioteca está del lado ofensivo existe para producir un
 artefacto defensivo: un límite, un mamparo, un test negativo generado, o una
 regla que disparó por el motivo correcto.
+
+### La costura de machine learning
+
+ML rompe tres supuestos sobre los que se apoya el resto de la biblioteca: el
+test es una métrica y no un pass/fail, los datos son el programa real, y la
+clase de bug de mayor severidad *sube* la métrica. Las skills 44–47 los
+restauran, y se encuentran con `deterministic-core` en un límite preciso:
+
+```
+corrida de entren.  →   artefacto congelado →  inferencia  →   decisión
+no determinista         hasheado, inmutable    determinista    exacta
+training-run-           la costura             mismo artefacto deterministic-core
+provenance                                     + input         aplica sin cambios
+       ↑                        ↑                   ↑
+data-leakage-hunting   training-serving-parity   model-evaluation-discipline
+(¿el número es real?)  (¿el input servido es     (¿el número es una
+                        el input entrenado?)      medición?)
+```
+
+El determinismo no deja de ser alcanzable en ML — deja de serlo *aguas arriba
+del artefacto*. Todo lo que está aguas abajo se sostiene al mismo estándar que
+cualquier otro camino de salida consecuente acá.
 
 ---
 
@@ -295,6 +372,8 @@ referencia largo que no corresponde al cuerpo siempre cargado.
 - **Compuertas proporcionales antes de acciones irreversibles.** Previsualizar los objetivos exactos, declarar el conteo esperado antes de verlo, y escribir el plan de deshacer antes de actuar — no después.
 - **El rojo existe para producir azul.** El hallazgo confirmado no es el entregable; lo son el límite, el mamparo, el test negativo generado y el requisito de detección.
 - **No se puede grepear una ausencia.** Los checks faltantes, las celdas no enumeradas y los límites no escritos son invisibles en un diff — se encuentran enumerando lo que el sistema afirma hacer cumplir y probando los huecos.
+- **Un hallazgo no termina cuando se parchea.** La instancia muere con el fix; la clase no. Reportar, custodiar, y la decisión de no publicar tienen cada una su propia disciplina.
+- **Un resultado demasiado bueno es un reporte de bug.** En cualquier otro dominio un defecto hace que algo falle; el leakage hace que todo se vea mejor, así que la alarma tiene que invertirse.
 
 ---
 
