@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 69 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 72 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -81,6 +81,9 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 67 | `social-engineering-plausibility` | Security operations | A human-trust exploit is not fixed by a technical control — the target made a reasonable call on manufactured context; move the defense to the process, not the person. |
 | 68 | `deception-signal-quality` | Security operations | A decoy earns its keep only if nothing legitimate ever touches it — engineer the honeytoken so a trigger is a true positive by construction, the inverse of a noisy alert. |
 | 69 | `ot-safety-first-threat-model` | Security operations | OT inverts the triad — availability and physical safety first, where patching or scanning can halt a process or hurt someone; do not import IT reflexes unchecked. |
+| 70 | `client-side-trust-boundary` | Security operations | Code and data on a device the user controls belong to the adversary — a client-side check, secret, or obfuscation is a suggestion, not a control; re-make every decision server-side. |
+| 71 | `root-of-trust-reasoning` | Determinism & integrity | You cannot verify a system from inside it — a compromise below your vantage point controls what you see; anchor integrity to a root below the layer that could lie. |
+| 72 | `data-provenance-mapping` | Evidence governance | You cannot delete, protect, or scope a breach of data whose real flow you never mapped — the forgotten copy in a log, a backup, or a vendor is the failed DSAR. |
 
 ### Adversarial validation loop
 

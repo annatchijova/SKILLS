@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 69 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 72 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -81,6 +81,9 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 67 | `social-engineering-plausibility` | Operaciones de seguridad | Un exploit de confianza humana no se arregla con un control técnico — el objetivo decidió razonablemente sobre contexto fabricado; mové la defensa al proceso, no a la persona. |
 | 68 | `deception-signal-quality` | Operaciones de seguridad | Un señuelo sirve sólo si nada legítimo lo toca — diseñá el honeytoken para que un disparo sea verdadero-positivo por construcción, el inverso de una alerta ruidosa. |
 | 69 | `ot-safety-first-threat-model` | Operaciones de seguridad | OT invierte la tríada — disponibilidad y seguridad física primero, donde parchear o escanear puede frenar un proceso o lastimar a alguien; no importes reflejos de IT sin chequear. |
+| 70 | `client-side-trust-boundary` | Operaciones de seguridad | El código y los datos en un dispositivo del usuario son del adversario — un chequeo, secreto u ofuscación del lado del cliente es una sugerencia, no un control; rehacé cada decisión en el servidor. |
+| 71 | `root-of-trust-reasoning` | Determinismo e integridad | No podés verificar un sistema desde adentro — un compromiso por debajo de tu punto de observación controla lo que ves; anclá la integridad a una raíz por debajo de la capa que podría mentir. |
+| 72 | `data-provenance-mapping` | Gobernanza de evidencia | No podés borrar, proteger ni acotar la brecha de datos cuyo flujo real nunca mapeaste — la copia olvidada en un log, un backup o un proveedor es el DSAR fallido. |
 
 ### Bucle de validación adversarial
 
