@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 53 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 69 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -65,6 +65,38 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 51 | `credential-material-triage` | Credenciales | Convertir "encontramos una credencial" en un hallazgo — como qué autentica, qué autoriza, por cuánto tiempo y cómo se revoca, sin inflar un hash en un compromiso. |
 | 52 | `cloud-control-plane-reasoning` | Operaciones de seguridad | Razonar el compromiso cloud sobre el grafo de identidad y control-plane, no el diagrama de red — donde una key robada está a un AssumeRole de toda la cuenta. |
 | 53 | `untrusted-sample-handling` | Operaciones de seguridad | Examinar un artefacto hostil de forma segura — nunca dejarlo ejecutar donde alcance algo real, nunca confundir lo que puede hacer con aquello a lo que apuntaba. |
+| 54 | `exploitability-triage` | Operaciones de seguridad | CVSS no es riesgo — un hit del scanner es un candidato hasta probar que el código vulnerable es alcanzable, alcanzado por input del atacante y explotable en este deploy. |
+| 55 | `hypothesis-driven-hunting` | Operaciones de seguridad | Un hunt es una hipótesis falsable con un "no encontré nada" declarado de antemano — no un barrido de keywords, y "estamos limpios" nunca es lo que prueba un resultado vacío. |
+| 56 | `intel-source-evaluation` | Operaciones de seguridad | Gradá la fuente y el indicador antes de actuar — fiabilidad admiralty, pyramid of pain, decay del IOC, base rate; el intel sin gradar bloquea tráfico benigno y quema confianza. |
+| 57 | `traffic-as-evidence` | Operaciones de seguridad | Leé el tráfico como evidencia bajo dos límites — no ves el payload y lo raro suele ser benigno; el beaconing y JA3 son señales débiles cuyo sentido vive en el baseline. |
+| 58 | `alert-triage-economics` | Operaciones de seguridad | La atención del analista es el recurso escaso — triage por pérdida esperada, no por el label de severidad, porque la cola que entrena el descarte es la vulnerabilidad real. |
+| 59 | `container-trust-boundary` | Operaciones de seguridad | Un contenedor es aislamiento, no un borde de seguridad — el perímetro es el kernel compartido, la procedencia de la imagen y la identidad de orquestación, no el borde del contenedor. |
+| 60 | `containment-under-uncertainty` | Operaciones de seguridad | Contené antes de conocer el alcance, razonando en movimientos reversibles vs irreversibles — actuar alerta al adversario, esperar deja sangrar, y "no está claro" no puede volverse "no hicimos nada". |
+| 61 | `acquisition-order-of-volatility` | Gobernanza de evidencia | Recolectá en orden de volatilidad o destruís lo que viniste a buscar — memoria antes que disco, hash en origen, write-block; el acto de recolectar altera la escena y hay que contabilizarlo. |
+| 62 | `pipeline-trust` | Cadena de suministro | Un pipeline CI/CD es un entorno de ejecución privilegiado que corre código influenciable por el atacante con credenciales de producción — poisoned-pipeline-execution, no "solo config". |
+| 63 | `zero-trust-as-a-claim` | Operaciones de seguridad | "Zero trust" es una propiedad por request a verificar, no un producto — encontrá la confianza implícita que sobrevive: red plana tras la VPN, un mesh que autentica pero nunca autoriza. |
+| 64 | `recovery-integrity` | Operaciones de seguridad | Un backup que no probaste restaurable e intacto es una esperanza, no una recuperación — y vive dentro del blast radius con las credenciales que cayeron. |
+| 65 | `control-effectiveness-vs-existence` | Operaciones de seguridad | Un control que existe no es un control que funciona — el compliance atesta existencia, la seguridad exige efectividad contra la amenaza que nombra; probalo, no marques la casilla. |
+| 66 | `crypto-misuse-reasoning` | Operaciones de seguridad | Juzgá la cripto por cómo se usa, no por la primitiva que nombra — nonce reusado, ECB, ciphertext sin autenticar, un KDF casero, un downgrade aceptado; "usamos AES" no dice nada. |
+| 67 | `social-engineering-plausibility` | Operaciones de seguridad | Un exploit de confianza humana no se arregla con un control técnico — el objetivo tomó una decisión razonable sobre un contexto fabricado; mové la defensa de la persona al proceso. |
+| 68 | `deception-signal-quality` | Operaciones de seguridad | Un señuelo es un verdadero positivo por construcción solo si nada legítimo puede tocarlo — llevá la tasa benigna a cero, ponelo en el path del atacante, o es decoración. |
+| 69 | `ot-safety-first-threat-model` | Operaciones de seguridad | OT invierte la tríada CIA — disponibilidad y seguridad física primero, donde los reflejos de patch/scan/reboot pueden frenar un proceso o lastimar a alguien; probá cada control contra el proceso físico. |
+| 54 | `exploitability-triage` | Operaciones de seguridad | CVSS no es riesgo — una vulnerabilidad es candidata hasta demostrar que el código vulnerable es alcanzable, alcanzado por input del atacante y explotable con las mitigaciones presentes. |
+| 55 | `hypothesis-driven-hunting` | Operaciones de seguridad | Un hunt es una hipótesis falsable, no un barrido de keywords — definí antes de consultar qué lo refutaría y qué prueba realmente un "no encontré nada". |
+| 56 | `intel-source-evaluation` | Operaciones de seguridad | Gradá la fuente y el indicador antes de actuar — un IOC es una afirmación con vencimiento; accionar intel sin gradar bloquea tráfico benigno y quema confianza. |
+| 57 | `traffic-as-evidence` | Operaciones de seguridad | El tráfico es evidencia bajo los límites de cifrado y base rate, nunca un veredicto — el beaconing y los fingerprints son señales débiles cuyo sentido vive en el baseline. |
+| 58 | `alert-triage-economics` | Operaciones de seguridad | La atención del analista es el recurso escaso — triage por pérdida esperada, no por el label de severidad; la cola que entrena el descarte es la vulnerabilidad real. |
+| 59 | `container-trust-boundary` | Operaciones de seguridad | Un contenedor es aislamiento, no un borde de seguridad — el perímetro real es el kernel compartido, la procedencia de la imagen y la identidad de orquestación que porta. |
+| 60 | `containment-under-uncertainty` | Operaciones de seguridad | Contené antes de conocer el alcance, en movimientos reversibles vs irreversibles — actuar avisa al adversario, esperar deja sangrar; que "no sé" no se vuelva "nada". |
+| 61 | `acquisition-order-of-volatility` | Gobernanza de evidencia | Recolectá en orden de volatilidad o destruís lo que viniste a buscar — la RAM y el estado de red se evaporan al reiniciar, y recolectar altera la escena. |
+| 62 | `pipeline-trust` | Cadena de suministro | El CI/CD corre código influenciable por el atacante con credenciales de producción — el build es un entorno de ejecución privilegiado, no config, y casi nunca está en el modelo. |
+| 63 | `zero-trust-as-a-claim` | Operaciones de seguridad | "Zero trust" es una propiedad por request a verificar, no un producto — encontrá la confianza implícita que sobrevive: una red plana, un mesh que autentica pero no autoriza. |
+| 64 | `recovery-integrity` | Operaciones de seguridad | Un backup que no probaste restaurable e intacto es una esperanza, no una recuperación — y suele estar dentro del blast radius con las mismas credenciales. |
+| 65 | `control-effectiveness-vs-existence` | Verificación | Un control que existe no es un control que funciona — compliance atestigua presencia, seguridad exige resistencia a la amenaza que el control nombra. |
+| 66 | `crypto-misuse-reasoning` | Criptografía | El peligro es el mal uso, no el algoritmo — "usamos AES" no dice nada; los quiebres son nonce reusado, ECB, ciphertext sin autenticar, un KDF casero, un downgrade. |
+| 67 | `social-engineering-plausibility` | Operaciones de seguridad | Un exploit de confianza humana no se arregla con un control técnico — el objetivo decidió razonablemente sobre contexto fabricado; mové la defensa al proceso, no a la persona. |
+| 68 | `deception-signal-quality` | Operaciones de seguridad | Un señuelo sirve sólo si nada legítimo lo toca — diseñá el honeytoken para que un disparo sea verdadero-positivo por construcción, el inverso de una alerta ruidosa. |
+| 69 | `ot-safety-first-threat-model` | Operaciones de seguridad | OT invierte la tríada — disponibilidad y seguridad física primero, donde parchear o escanear puede frenar un proceso o lastimar a alguien; no importes reflejos de IT sin chequear. |
 
 ### Bucle de validación adversarial
 

@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 53 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 69 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -65,6 +65,38 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 51 | `credential-material-triage` | Credentials | Turning "we found a credential" into a finding — what it authenticates as, authorizes, for how long, and how to revoke it, without inflating a hash into a compromise. |
 | 52 | `cloud-control-plane-reasoning` | Security operations | Reasoning about cloud compromise on the identity and control-plane graph, not the network diagram — where a stolen key is one AssumeRole from the whole account. |
 | 53 | `untrusted-sample-handling` | Security operations | Examining a hostile artifact safely — never let it execute where it can reach anything real, never confuse what it can do with what it was aimed at. |
+| 54 | `exploitability-triage` | Security operations | CVSS is not risk — a scanner hit is a candidate until the vulnerable code is reachable, reached by attacker input, and exploitable in this deployment. |
+| 55 | `hypothesis-driven-hunting` | Security operations | A threat hunt is a falsifiable hypothesis with a pre-declared meaning for "found nothing" — not a keyword sweep, and "clean" is never what empty proves. |
+| 56 | `intel-source-evaluation` | Security operations | Grade the source and the indicator before acting — admiralty reliability, pyramid of pain, IOC decay, base rate; ungraded intel blocks benign traffic and burns trust. |
+| 57 | `traffic-as-evidence` | Security operations | Read traffic as evidence under two limits — you cannot see the payload and rare is usually benign; beaconing and JA3 are weak signals whose meaning lives in the baseline. |
+| 58 | `alert-triage-economics` | Security operations | Analyst attention is the scarce resource — triage by expected loss not by the severity label, because the queue that trains dismissal is the real vulnerability. |
+| 59 | `container-trust-boundary` | Security operations | A container is isolation, not a security boundary — the perimeter is the shared kernel, the image provenance, and the orchestration identity, not the container edge. |
+| 60 | `containment-under-uncertainty` | Security operations | Contain before scope is known, reasoning in reversible vs irreversible moves — acting tips off the adversary, waiting lets the bleed continue, and "unclear" must not become "nothing". |
+| 61 | `acquisition-order-of-volatility` | Evidence governance | Collect in volatility order or destroy what you came for — memory before disk, hash at source, write-block; the act of collecting alters the scene and must be accounted for. |
+| 62 | `pipeline-trust` | Supply chain | A CI/CD pipeline is a privileged execution environment running attacker-influenceable code with production credentials — poisoned-pipeline-execution, not "just config". |
+| 63 | `zero-trust-as-a-claim` | Security operations | "Zero trust" is a per-request property to verify, not a product — find the implicit trust that survives: flat network behind the VPN, a mesh that authenticates but never authorizes. |
+| 64 | `recovery-integrity` | Security operations | A backup you have not proven restorable and untampered is a hope, not a recovery — and it lives inside the blast radius with the credentials that got popped. |
+| 65 | `control-effectiveness-vs-existence` | Security operations | A control that exists is not a control that works — compliance attests existence, security requires effectiveness against the threat it names; test it, do not check the box. |
+| 66 | `crypto-misuse-reasoning` | Security operations | Judge crypto by how it is used, not the primitive it names — nonce reuse, ECB, unauthenticated ciphertext, a homemade KDF, an accepted downgrade; "we use AES" says nothing. |
+| 67 | `social-engineering-plausibility` | Security operations | A human-trust exploit is not fixed by a technical control — the target made a reasonable decision on manufactured context; move the defense from the person to the process. |
+| 68 | `deception-signal-quality` | Security operations | A decoy is a true positive by construction only if nothing legitimate can touch it — engineer the benign rate to zero, place it on the attacker path, or it is decoration. |
+| 69 | `ot-safety-first-threat-model` | Security operations | OT inverts the CIA triad — availability and safety first, where patch/scan/reboot reflexes can halt a process or hurt someone; test each control against the physical process. |
+| 54 | `exploitability-triage` | Security operations | CVSS is not risk — a vulnerability is a candidate until the vulnerable code is shown reachable, reached by attacker input, and exploitable given the mitigations actually present. |
+| 55 | `hypothesis-driven-hunting` | Security operations | A threat hunt is a falsifiable hypothesis, not a keyword sweep — state before you query what would refute it and what "found nothing" really proves. |
+| 56 | `intel-source-evaluation` | Security operations | Grade the source and the indicator before acting — an IOC is a claim with a shelf life; auto-actioning ungraded intel blocks benign traffic and burns trust. |
+| 57 | `traffic-as-evidence` | Security operations | Network traffic is evidence under encryption and base-rate limits, never a verdict — beaconing and fingerprints are weak signals whose meaning lives in baseline. |
+| 58 | `alert-triage-economics` | Security operations | Analyst attention is the scarce resource — triage by expected loss, not the severity label; the queue that trains dismissal is the real vulnerability. |
+| 59 | `container-trust-boundary` | Security operations | A container is isolation, not a security boundary — the real perimeter is the shared kernel, the image provenance, and the orchestration identity it holds. |
+| 60 | `containment-under-uncertainty` | Security operations | Contain before scope is known, in reversible-vs-irreversible moves — acting tips off the adversary, waiting lets the bleed continue; never let "unsure" become "nothing". |
+| 61 | `acquisition-order-of-volatility` | Evidence governance | Collect in order of volatility or destroy what you came for — memory and network state evaporate on reboot, and the act of collecting alters the scene. |
+| 62 | `pipeline-trust` | Supply chain | CI/CD runs attacker-influenceable code with production credentials — the build is a privileged execution environment, not config, and rarely in the threat model. |
+| 63 | `zero-trust-as-a-claim` | Security operations | "Zero trust" is a per-request property to verify, not a product — find the implicit trust that survives: a flat network, a mesh that authenticates but never authorizes. |
+| 64 | `recovery-integrity` | Security operations | A backup you have not proven restorable and untampered is a hope, not a recovery — and it usually sits inside the blast radius with the same credentials. |
+| 65 | `control-effectiveness-vs-existence` | Verification | A control that exists is not a control that works — compliance attests presence, security requires resistance to the threat the control names. |
+| 66 | `crypto-misuse-reasoning` | Cryptography | The danger is the misuse, not the algorithm — "we use AES" says nothing; the breaks are nonce reuse, ECB, unauthenticated ciphertext, a homemade KDF, a downgrade. |
+| 67 | `social-engineering-plausibility` | Security operations | A human-trust exploit is not fixed by a technical control — the target made a reasonable call on manufactured context; move the defense to the process, not the person. |
+| 68 | `deception-signal-quality` | Security operations | A decoy earns its keep only if nothing legitimate ever touches it — engineer the honeytoken so a trigger is a true positive by construction, the inverse of a noisy alert. |
+| 69 | `ot-safety-first-threat-model` | Security operations | OT inverts the triad — availability and physical safety first, where patching or scanning can halt a process or hurt someone; do not import IT reflexes unchecked. |
 
 ### Adversarial validation loop
 
