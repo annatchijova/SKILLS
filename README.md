@@ -1,6 +1,6 @@
 # SKILLS — Engineering Discipline Skill Set
 
-A collection of 48 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 50 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -58,6 +58,8 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 46 | `model-evaluation-discipline` | Machine learning | An evaluation that can actually fail — mandatory baseline, interval instead of point estimate, worst slice instead of mean, and negative controls. |
 | 47 | `training-serving-parity` | Machine learning | The features a model was trained on are not the features it is served — two implementations of one computation, and the silent default that answers confidently on a vector never seen. |
 | 48 | `beyond-the-fix` | Core reasoning | Auditing the fixes themselves — a patch proves someone knew something was wrong there, never that it is now right; eight ways a fix falls short, and the pre-fix control that tells them apart. |
+| 49 | `variant-analysis` | Adversarial validation | A known bug (CVE/advisory/fix commit) or one you just found — extract the violated invariant, hunt the same class across shared deps and sibling sinks, and settle dedupe and fix-coverage before filing. |
+| 50 | `dont-fall-in-love-with-the-bug` | Adversarial validation | A finding reproduces and is about to be written up — the gate that makes you earn the report: root cause, variant sweep, bypass-the-fix, blast radius, and severity against a named comparable. |
 
 ### Adversarial validation loop
 
@@ -227,7 +229,7 @@ material that does not belong in the always-loaded body.
 
 # SKILLS — Conjunto de Skills de Disciplina de Ingeniería
 
-Una colección de 48 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 50 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -285,6 +287,8 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 46 | `model-evaluation-discipline` | Machine learning | Una evaluación que realmente puede fallar — baseline obligatorio, intervalo en vez de estimación puntual, peor slice en vez de media, y controles negativos. |
 | 47 | `training-serving-parity` | Machine learning | Las features con las que se entrenó un modelo no son las que se le sirven — dos implementaciones de un mismo cálculo, y el default silencioso que responde con confianza sobre un vector nunca visto. |
 | 48 | `beyond-the-fix` | Razonamiento central | Auditar las correcciones mismas — un parche prueba que alguien supo que ahí había algo mal, nunca que ahora esté bien; ocho formas en que un fix se queda corto, y el control pre-fix que las distingue. |
+| 49 | `variant-analysis` | Validación adversarial | Un bug conocido (CVE/advisory/commit de fix) o uno que acabás de encontrar — extraer el invariante violado, cazar la misma clase en dependencias compartidas y sinks hermanos, y resolver dedupe y cobertura del fix antes de reportar. |
+| 50 | `dont-fall-in-love-with-the-bug` | Validación adversarial | Un hallazgo reproduce y está por escribirse — el gate que te hace ganarte el reporte: causa raíz, barrido de variantes, bypass del fix, radio de impacto y severidad contra un comparable nombrado. |
 
 ### Bucle de validación adversarial
 
