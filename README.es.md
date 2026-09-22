@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 80 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 81 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -92,6 +92,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 78 | `frontend-component-boundaries` | Frontend & UX | Boundaries de componentes por cohesión, comportamiento, semántica, reuso y razón compartida de cambio — no una regla mecánica de "una responsabilidad" que fragmenta de forma ceremonial. |
 | 79 | `frontend-performance-budgets` | Frontend & UX | Métricas de resultado (LCP/INP/CLS) trazadas a su presupuesto de recurso causal (JS enviado, imágenes, fuentes, terceros, hidratación) — fijado antes de programar, no medido después. |
 | 80 | `frontend-testing-strategy` | Frontend & UX | Asignación por Testing Trophy (static > unit > integration > E2E) y aserciones sobre lo que el usuario percibe — selectores por role/label, nunca estado interno. |
+| 81 | `cloud-architecture-selection` | Process | Deriva la infraestructura de constraints duros y capacidades requeridas, nunca de popularidad de marca — selecciona capacidades antes que productos, y nunca trata un precio/SKU/límite como verdad permanente. |
 
 ### Bucle de percepción frontend / UX
 

@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 80 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 81 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -92,6 +92,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 78 | `frontend-component-boundaries` | Frontend & UX | Component boundaries by cohesion, behavior, semantics, reuse, and shared reason to change — not a mechanical "one responsibility" rule that fragments ceremonially. |
 | 79 | `frontend-performance-budgets` | Frontend & UX | Outcome metrics (LCP/INP/CLS) traced to their causal resource budget (JS shipped, images, fonts, third parties, hydration) — set before the fact, not measured after. |
 | 80 | `frontend-testing-strategy` | Frontend & UX | Testing Trophy allocation (static > unit > integration > E2E) and assertions on what the user perceives — role/label selectors, never internal state. |
+| 81 | `cloud-architecture-selection` | Process | Derive infrastructure from hard constraints and required capabilities, never from brand popularity — select capabilities before products, and never treat a price/SKU/limit as permanent truth. |
 
 ### Frontend / UX perception loop
 
