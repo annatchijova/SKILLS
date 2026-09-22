@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 74 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 80 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -86,6 +86,45 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 72 | `data-provenance-mapping` | Evidence governance | You cannot delete, protect, or scope a breach of data whose real flow you never mapped — the forgotten copy in a log, a backup, or a vendor is the failed DSAR. |
 | 73 | `variant-analysis` | Adversarial validation | A known bug (CVE/advisory/fix commit) or one you just found — extract the violated invariant, hunt the same class across shared deps and sibling sinks, and settle dedupe and fix-coverage before filing. |
 | 74 | `dont-fall-in-love-with-the-bug` | Adversarial validation | A finding reproduces and is about to be written up — the gate that makes you earn the report: root cause, variant sweep, bypass-the-fix, blast radius, and severity against a named comparable. |
+| 75 | `frontend-accessibility-by-construction` | Frontend & UX | Interactive components built operable and perceivable by construction — native HTML and keyboard operability first, ARIA only where HTML has no equivalent, never as a patch. |
+| 76 | `non-overwhelming-ux` | Frontend & UX | Cognitive, sensory, and choice load in a flow — grounded in WCAG 2.2/COGA, useful for every user under stress or divided attention, not only neurodivergent ones. |
+| 77 | `resilient-ui-states` | Frontend & UX | Loading/success/empty/error are all mandatory states, none optional — scoped error boundaries, specific messages, and form validation that never discards user input. |
+| 78 | `frontend-component-boundaries` | Frontend & UX | Component boundaries by cohesion, behavior, semantics, reuse, and shared reason to change — not a mechanical "one responsibility" rule that fragments ceremonially. |
+| 79 | `frontend-performance-budgets` | Frontend & UX | Outcome metrics (LCP/INP/CLS) traced to their causal resource budget (JS shipped, images, fonts, third parties, hydration) — set before the fact, not measured after. |
+| 80 | `frontend-testing-strategy` | Frontend & UX | Testing Trophy allocation (static > unit > integration > E2E) and assertions on what the user perceives — role/label selectors, never internal state. |
+
+### Frontend / UX perception loop
+
+Six skills, one question each, ordered as a human actually meets an interface
+— from "can I perceive and operate it" to "can we prove it behaves the way
+the user perceives it":
+
+```
+HUMAN / SYSTEM INTERFACE
+        │
+        ├── frontend-accessibility-by-construction
+        │       └── can it be perceived and operated?
+        │
+        ├── non-overwhelming-ux
+        │       └── can it be understood, and can the task be sustained?
+        │
+        ├── resilient-ui-states
+        │       └── does the user know what state the system is in?
+        │
+        ├── frontend-component-boundaries
+        │       └── does the implementation preserve coherent units?
+        │
+        ├── frontend-performance-budgets
+        │       └── does the technical cost violate the promised experience?
+        │
+        └── frontend-testing-strategy
+                └── can we prove the behavior the user perceives?
+```
+
+None of the six duplicates `client-side-trust-boundary` or
+`validate-at-the-boundary` — those two govern trust and input validation;
+this loop governs perception, load, state legibility, structure, cost, and
+proof, for a user who is assumed honest.
 
 ### Adversarial validation loop
 

@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 74 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 80 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -86,6 +86,45 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 72 | `data-provenance-mapping` | Gobernanza de evidencia | No podés borrar, proteger ni acotar la brecha de datos cuyo flujo real nunca mapeaste — la copia olvidada en un log, un backup o un proveedor es el DSAR fallido. |
 | 73 | `variant-analysis` | Validación adversarial | Un bug conocido (CVE/advisory/commit de fix) o uno que acabás de encontrar — extraer el invariante violado, cazar la misma clase en dependencias compartidas y sinks hermanos, y resolver dedupe y cobertura del fix antes de reportar. |
 | 74 | `dont-fall-in-love-with-the-bug` | Validación adversarial | Un hallazgo reproduce y está por escribirse — el gate que te hace ganarte el reporte: causa raíz, barrido de variantes, bypass del fix, radio de impacto y severidad contra un comparable nombrado. |
+| 75 | `frontend-accessibility-by-construction` | Frontend & UX | Componentes interactivos construidos operables y perceptibles desde el origen — HTML nativo y operabilidad por teclado primero, ARIA solo donde el HTML no alcanza, nunca como parche. |
+| 76 | `non-overwhelming-ux` | Frontend & UX | Carga cognitiva, sensorial y de elección en un flujo — fundamentada en WCAG 2.2/COGA, útil para cualquier usuario bajo estrés o atención dividida, no solo para neurodivergentes. |
+| 77 | `resilient-ui-states` | Frontend & UX | Loading/success/empty/error son estados obligatorios, ninguno opcional — error boundaries acotados, mensajes específicos, y validación de formularios que nunca descarta lo que el usuario ya cargó. |
+| 78 | `frontend-component-boundaries` | Frontend & UX | Boundaries de componentes por cohesión, comportamiento, semántica, reuso y razón compartida de cambio — no una regla mecánica de "una responsabilidad" que fragmenta de forma ceremonial. |
+| 79 | `frontend-performance-budgets` | Frontend & UX | Métricas de resultado (LCP/INP/CLS) trazadas a su presupuesto de recurso causal (JS enviado, imágenes, fuentes, terceros, hidratación) — fijado antes de programar, no medido después. |
+| 80 | `frontend-testing-strategy` | Frontend & UX | Asignación por Testing Trophy (static > unit > integration > E2E) y aserciones sobre lo que el usuario percibe — selectores por role/label, nunca estado interno. |
+
+### Bucle de percepción frontend / UX
+
+Seis skills, una pregunta cada una, ordenadas como un ser humano realmente se
+encuentra con una interfaz — desde "¿puedo percibirla y operarla?" hasta
+"¿podemos demostrar que se comporta como el usuario la percibe?":
+
+```
+INTERFAZ HUMANO / SISTEMA
+        │
+        ├── frontend-accessibility-by-construction
+        │       └── ¿puede percibirlo y operarlo?
+        │
+        ├── non-overwhelming-ux
+        │       └── ¿puede comprenderlo y sostener la tarea?
+        │
+        ├── resilient-ui-states
+        │       └── ¿entiende en qué estado está el sistema?
+        │
+        ├── frontend-component-boundaries
+        │       └── ¿la implementación conserva unidades coherentes?
+        │
+        ├── frontend-performance-budgets
+        │       └── ¿el costo técnico viola la experiencia prometida?
+        │
+        └── frontend-testing-strategy
+                └── ¿podemos demostrar el comportamiento que percibe?
+```
+
+Ninguna de las seis duplica `client-side-trust-boundary` ni
+`validate-at-the-boundary` — esas dos gobiernan confianza y validación de
+input; este bucle gobierna percepción, carga, legibilidad de estado,
+estructura, costo y prueba, para un usuario que se asume honesto.
 
 ### Bucle de validación adversarial
 
