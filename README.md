@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 87 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
+A collection of 88 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -99,6 +99,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 85 | `progressive-technical-disclosure` | Process | Order a README/hackathon submission by reader cognitive dependency (problem -> mental model -> behavior -> differentiator -> mechanism -> evidence -> depth), not architectural importance — never delete technical depth, route it to a Technical README. |
 | 86 | `destination-driven-construction` | Process | Build toward a chosen ambitious product in coherent levels, each carrying the invariants it will need later from the start — never suggest MVP-shaped scoping unless asked; per-level adversarial review, integrated testing only at the time horizon. |
 | 87 | `debt-closure-discipline` | Process | Priority determines resolution order, not permission to accumulate indefinitely — every known issue ends resolved, explicitly rejected with a reason, or documented as still-open; "documented" is not "resolved." |
+| 88 | `honest-technical-oratory` | Process | Present a project out loud under a real time limit — no exaggeration ("fatal errors" per YC), no caveat-first opening, plain language calibrated to the audience without becoming false, "I don't know" over an improvised answer in Q&A. |
 
 ### Frontend / UX perception loop
 

@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 87 skills que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad — para Claude Code, Codex, Kimi y otros agentes de IA para código. En Claude Code, cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla. Los agentes sin ese mecanismo de auto-activación igual pueden usar las mismas skills: apuntá un `AGENTS.md` o system prompt a los archivos `SKILL.md` correspondientes, o cargá uno directamente como contexto cuando aplican sus condiciones de trigger — la metodología de cada archivo es agnóstica del agente, aunque el mecanismo de carga no lo sea.
+Una colección de 88 skills que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad — para Claude Code, Codex, Kimi y otros agentes de IA para código. En Claude Code, cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla. Los agentes sin ese mecanismo de auto-activación igual pueden usar las mismas skills: apuntá un `AGENTS.md` o system prompt a los archivos `SKILL.md` correspondientes, o cargá uno directamente como contexto cuando aplican sus condiciones de trigger — la metodología de cada archivo es agnóstica del agente, aunque el mecanismo de carga no lo sea.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -99,6 +99,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 85 | `progressive-technical-disclosure` | Process | Ordená un README/submission de hackathon por dependencia cognitiva del lector (problema → modelo mental → comportamiento → diferenciador → mecanismo → evidencia → profundidad), no por importancia arquitectónica — nunca borres profundidad técnica, ruteala a un Technical README. |
 | 86 | `destination-driven-construction` | Process | Construí hacia un producto ambicioso elegido, en niveles coherentes, cada uno con los invariantes que va a necesitar después desde el inicio — nunca sugieras scoping tipo MVP salvo que se pida; review adversarial por nivel, testing integrado recién en el horizonte de tiempo. |
 | 87 | `debt-closure-discipline` | Process | La prioridad determina orden de resolución, no permiso para acumular indefinidamente — todo item conocido termina resuelto, explícitamente rechazado con razón, o documentado como abierto; "documentado" no es "resuelto". |
+| 88 | `honest-technical-oratory` | Process | Presentá un proyecto en vivo bajo un límite de tiempo real — sin exagerar ("fatal errors" según YC), sin abrir con caveats, lenguaje llano calibrado a la audiencia sin volverse falso, "no sé" en vez de improvisar una respuesta en Q&A. |
 
 ### Bucle de percepción frontend / UX
 
