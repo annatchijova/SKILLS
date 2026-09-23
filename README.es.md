@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 85 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 87 skills que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad — para Claude Code, Codex, Kimi y otros agentes de IA para código. En Claude Code, cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla. Los agentes sin ese mecanismo de auto-activación igual pueden usar las mismas skills: apuntá un `AGENTS.md` o system prompt a los archivos `SKILL.md` correspondientes, o cargá uno directamente como contexto cuando aplican sus condiciones de trigger — la metodología de cada archivo es agnóstica del agente, aunque el mecanismo de carga no lo sea.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -97,6 +97,8 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 83 | `distributed-write-atomicity` | Determinism & integrity | Cuando dos efectos no pueden compartir una transacción, diseñá el estado intermedio, la reentrega y la deduplicación explícitamente — outbox pattern, garantías en capas (delivery/processing/business-effect), idempotency keys forzadas por unique constraint, no por check de aplicación. |
 | 84 | `live-contract-compatibility` | Determinism & integrity | ¿Pueden productor/consumidor vN y vN+1 coexistir mientras ambos están vivos? Expand → Migrate → Contract gateado por evidencia de tráfico, nunca por tiempo transcurrido; identidad por field number en protobuf; todo match exhaustivo necesita un brazo default. |
 | 85 | `progressive-technical-disclosure` | Process | Ordená un README/submission de hackathon por dependencia cognitiva del lector (problema → modelo mental → comportamiento → diferenciador → mecanismo → evidencia → profundidad), no por importancia arquitectónica — nunca borres profundidad técnica, ruteala a un Technical README. |
+| 86 | `destination-driven-construction` | Process | Construí hacia un producto ambicioso elegido, en niveles coherentes, cada uno con los invariantes que va a necesitar después desde el inicio — nunca sugieras scoping tipo MVP salvo que se pida; review adversarial por nivel, testing integrado recién en el horizonte de tiempo. |
+| 87 | `debt-closure-discipline` | Process | La prioridad determina orden de resolución, no permiso para acumular indefinidamente — todo item conocido termina resuelto, explícitamente rechazado con razón, o documentado como abierto; "documentado" no es "resuelto". |
 
 ### Bucle de percepción frontend / UX
 

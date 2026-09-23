@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 85 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 87 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -97,6 +97,8 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 83 | `distributed-write-atomicity` | Determinism & integrity | When two effects can't share a transaction, design the intermediate state, redelivery, and deduplication explicitly — outbox pattern, layered delivery/processing/business-effect guarantees, idempotency keys enforced by a unique constraint, not an application check. |
 | 84 | `live-contract-compatibility` | Determinism & integrity | Can producer/consumer vN and vN+1 coexist while both are live? Expand -> Migrate -> Contract gated by traffic evidence, never by elapsed time; protobuf field-number identity; exhaustive matches need a default arm. |
 | 85 | `progressive-technical-disclosure` | Process | Order a README/hackathon submission by reader cognitive dependency (problem -> mental model -> behavior -> differentiator -> mechanism -> evidence -> depth), not architectural importance — never delete technical depth, route it to a Technical README. |
+| 86 | `destination-driven-construction` | Process | Build toward a chosen ambitious product in coherent levels, each carrying the invariants it will need later from the start — never suggest MVP-shaped scoping unless asked; per-level adversarial review, integrated testing only at the time horizon. |
+| 87 | `debt-closure-discipline` | Process | Priority determines resolution order, not permission to accumulate indefinitely — every known issue ends resolved, explicitly rejected with a reason, or documented as still-open; "documented" is not "resolved." |
 
 ### Frontend / UX perception loop
 
