@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 81 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
+A collection of 85 skills for Claude Code that encode disciplined software engineering, forensic reasoning, and security-first construction. Each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -93,6 +93,10 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 79 | `frontend-performance-budgets` | Frontend & UX | Outcome metrics (LCP/INP/CLS) traced to their causal resource budget (JS shipped, images, fonts, third parties, hydration) — set before the fact, not measured after. |
 | 80 | `frontend-testing-strategy` | Frontend & UX | Testing Trophy allocation (static > unit > integration > E2E) and assertions on what the user perceives — role/label selectors, never internal state. |
 | 81 | `cloud-architecture-selection` | Process | Derive infrastructure from hard constraints and required capabilities, never from brand popularity — select capabilities before products, and never treat a price/SKU/limit as permanent truth. |
+| 82 | `writing-agents-md` | Process | An AGENTS.md that changes behavior — falsifiable invariants with a named enforcement mechanism and a specific "why," grounded in this repo's real incidents, not a generic checklist any repo could have. |
+| 83 | `distributed-write-atomicity` | Determinism & integrity | When two effects can't share a transaction, design the intermediate state, redelivery, and deduplication explicitly — outbox pattern, layered delivery/processing/business-effect guarantees, idempotency keys enforced by a unique constraint, not an application check. |
+| 84 | `live-contract-compatibility` | Determinism & integrity | Can producer/consumer vN and vN+1 coexist while both are live? Expand -> Migrate -> Contract gated by traffic evidence, never by elapsed time; protobuf field-number identity; exhaustive matches need a default arm. |
+| 85 | `progressive-technical-disclosure` | Process | Order a README/hackathon submission by reader cognitive dependency (problem -> mental model -> behavior -> differentiator -> mechanism -> evidence -> depth), not architectural importance — never delete technical depth, route it to a Technical README. |
 
 ### Frontend / UX perception loop
 

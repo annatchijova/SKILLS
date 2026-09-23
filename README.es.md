@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 81 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
+Una colección de 85 skills para Claude Code que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad. Cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -93,6 +93,10 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 79 | `frontend-performance-budgets` | Frontend & UX | Métricas de resultado (LCP/INP/CLS) trazadas a su presupuesto de recurso causal (JS enviado, imágenes, fuentes, terceros, hidratación) — fijado antes de programar, no medido después. |
 | 80 | `frontend-testing-strategy` | Frontend & UX | Asignación por Testing Trophy (static > unit > integration > E2E) y aserciones sobre lo que el usuario percibe — selectores por role/label, nunca estado interno. |
 | 81 | `cloud-architecture-selection` | Process | Deriva la infraestructura de constraints duros y capacidades requeridas, nunca de popularidad de marca — selecciona capacidades antes que productos, y nunca trata un precio/SKU/límite como verdad permanente. |
+| 82 | `writing-agents-md` | Process | Un AGENTS.md que cambia el comportamiento — invariantes falseables con mecanismo de enforcement nombrado y un "por qué" específico, fundados en incidentes reales del repo, no un checklist genérico que cualquier repo podría tener. |
+| 83 | `distributed-write-atomicity` | Determinism & integrity | Cuando dos efectos no pueden compartir una transacción, diseñá el estado intermedio, la reentrega y la deduplicación explícitamente — outbox pattern, garantías en capas (delivery/processing/business-effect), idempotency keys forzadas por unique constraint, no por check de aplicación. |
+| 84 | `live-contract-compatibility` | Determinism & integrity | ¿Pueden productor/consumidor vN y vN+1 coexistir mientras ambos están vivos? Expand → Migrate → Contract gateado por evidencia de tráfico, nunca por tiempo transcurrido; identidad por field number en protobuf; todo match exhaustivo necesita un brazo default. |
+| 85 | `progressive-technical-disclosure` | Process | Ordená un README/submission de hackathon por dependencia cognitiva del lector (problema → modelo mental → comportamiento → diferenciador → mecanismo → evidencia → profundidad), no por importancia arquitectónica — nunca borres profundidad técnica, ruteala a un Technical README. |
 
 ### Bucle de percepción frontend / UX
 
