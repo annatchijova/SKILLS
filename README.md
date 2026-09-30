@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 88 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
+A collection of 89 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -100,6 +100,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 86 | `destination-driven-construction` | Process | Build toward a chosen ambitious product in coherent levels, each carrying the invariants it will need later from the start — never suggest MVP-shaped scoping unless asked; per-level adversarial review, integrated testing only at the time horizon. |
 | 87 | `debt-closure-discipline` | Process | Priority determines resolution order, not permission to accumulate indefinitely — every known issue ends resolved, explicitly rejected with a reason, or documented as still-open; "documented" is not "resolved." |
 | 88 | `honest-technical-oratory` | Process | Present a project out loud under a real time limit — no exaggeration ("fatal errors" per YC), no caveat-first opening, plain language calibrated to the audience without becoming false, "I don't know" over an improvised answer in Q&A. |
+| 89 | `language-selection` | Process | Select a language, DSL, query/policy language, or proof system from the problem's concrete forces, never from model familiarity or the human's prior exposure — the model expands the candidate space (including languages the human has never used), the human owns the trade-off; tie-breakers weigh total maintenance cost under actual agent assistance, not raw prior syntax fluency. |
 
 ### Frontend / UX perception loop
 
@@ -207,9 +208,11 @@ The `description` field is the trigger surface — it must name the situations,
 phrasings, and artifacts that should activate the skill, and it must stay under
 1024 characters. The body is loaded only once the skill triggers.
 
-No skill currently ships `scripts/` or `references/` subdirectories; add them
-alongside `SKILL.md` if a future skill needs executable helpers or long reference
-material that does not belong in the always-loaded body.
+Most skills ship only `SKILL.md`. A skill may add a `references/` subdirectory
+for long reference material that should not sit in the always-loaded body (e.g.
+`language-selection/references/candidate-index.md`, a lookup table consulted
+only when surfacing candidates, not required reading); add `scripts/` similarly
+if a future skill needs executable helpers.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Idioma:** [English](README.md) · Español
 
-Una colección de 88 skills que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad — para Claude Code, Codex, Kimi y otros agentes de IA para código. En Claude Code, cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla. Los agentes sin ese mecanismo de auto-activación igual pueden usar las mismas skills: apuntá un `AGENTS.md` o system prompt a los archivos `SKILL.md` correspondientes, o cargá uno directamente como contexto cuando aplican sus condiciones de trigger — la metodología de cada archivo es agnóstica del agente, aunque el mecanismo de carga no lo sea.
+Una colección de 89 skills que codifican ingeniería de software disciplinada, razonamiento forense y construcción orientada a seguridad — para Claude Code, Codex, Kimi y otros agentes de IA para código. En Claude Code, cada skill se activa automáticamente cuando la conversación coincide con sus condiciones de trigger, inyectando metodología sin que el usuario tenga que pedirla. Los agentes sin ese mecanismo de auto-activación igual pueden usar las mismas skills: apuntá un `AGENTS.md` o system prompt a los archivos `SKILL.md` correspondientes, o cargá uno directamente como contexto cuando aplican sus condiciones de trigger — la metodología de cada archivo es agnóstica del agente, aunque el mecanismo de carga no lo sea.
 
 Estas skills forman un sistema coherente construido sobre la semiótica triádica de Charles Sanders Peirce y el bucle de inferencia abductiva (abducción → deducción → inducción). Cubren el ciclo de vida completo de ingeniería: investigación, construcción, parcheo, pruebas, auditoría y hardening.
 
@@ -100,6 +100,7 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 | 86 | `destination-driven-construction` | Process | Construí hacia un producto ambicioso elegido, en niveles coherentes, cada uno con los invariantes que va a necesitar después desde el inicio — nunca sugieras scoping tipo MVP salvo que se pida; review adversarial por nivel, testing integrado recién en el horizonte de tiempo. |
 | 87 | `debt-closure-discipline` | Process | La prioridad determina orden de resolución, no permiso para acumular indefinidamente — todo item conocido termina resuelto, explícitamente rechazado con razón, o documentado como abierto; "documentado" no es "resuelto". |
 | 88 | `honest-technical-oratory` | Process | Presentá un proyecto en vivo bajo un límite de tiempo real — sin exagerar ("fatal errors" según YC), sin abrir con caveats, lenguaje llano calibrado a la audiencia sin volverse falso, "no sé" en vez de improvisar una respuesta en Q&A. |
+| 89 | `language-selection` | Process | Elegí un lenguaje, DSL, lenguaje de consulta/policy, o sistema de prueba a partir de las fuerzas concretas del problema, nunca por familiaridad del modelo o por lo que el humano ya conoce — el modelo expande el espacio de candidatos (incluyendo lenguajes que el humano nunca usó), el humano es dueño del trade-off; los desempates pesan el costo de mantenimiento total bajo asistencia real de agentes, no la fluidez previa de sintaxis. |
 
 ### Bucle de percepción frontend / UX
 
@@ -208,9 +209,12 @@ situaciones, formulaciones y artefactos que deberían activar la skill, y debe
 mantenerse por debajo de 1024 caracteres. El cuerpo se carga recién cuando la
 skill se activa.
 
-Ninguna skill incluye hoy subdirectorios `scripts/` o `references/`; se agregan
-junto a `SKILL.md` si una skill futura necesita helpers ejecutables o material de
-referencia largo que no corresponde al cuerpo siempre cargado.
+La mayoría de las skills incluyen solo `SKILL.md`. Una skill puede sumar un
+subdirectorio `references/` para material de referencia largo que no debería
+vivir en el cuerpo siempre cargado (ej. `language-selection/references/
+candidate-index.md`, una tabla de consulta que se lee solo al surgir
+candidatos, no lectura obligatoria); se agrega `scripts/` de forma análoga si
+una skill futura necesita helpers ejecutables.
 
 ---
 
