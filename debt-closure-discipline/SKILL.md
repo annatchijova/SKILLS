@@ -36,6 +36,15 @@ Composes with the library:
   the fix-quality audit. A fix that closes an item under this skill's
   discipline still owes `beyond-the-fix`'s scrutiny before the item is
   actually marked resolved.
+- **known-defect-disposition** — this skill's state 3 ("documented as an
+  open, unresolved constraint") is exactly the deferral that skill gates:
+  before any P2–P4 finding is allowed into state 3, it requires an
+  escalation analysis (can interaction, composition, or adversarial control
+  raise its severity) and a structured record with a revisit trigger, not a
+  bare note that it exists. Use this skill's three-state framing to decide
+  *where* a defect lands; use that skill's gate and record format to decide
+  *how* it gets there when the defect is a security- or correctness-bearing
+  finding under priority triage.
 - **git-discipline** — "history belongs in version control ... not in the
   active control flow" (below) leans on that skill's forward-only,
   recoverable history as the place old context actually lives.

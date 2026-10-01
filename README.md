@@ -2,7 +2,7 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 89 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
+A collection of 90 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
 
@@ -101,6 +101,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 87 | `debt-closure-discipline` | Process | Priority determines resolution order, not permission to accumulate indefinitely — every known issue ends resolved, explicitly rejected with a reason, or documented as still-open; "documented" is not "resolved." |
 | 88 | `honest-technical-oratory` | Process | Present a project out loud under a real time limit — no exaggeration ("fatal errors" per YC), no caveat-first opening, plain language calibrated to the audience without becoming false, "I don't know" over an improvised answer in Q&A. |
 | 89 | `language-selection` | Process | Select a language, DSL, query/policy language, or proof system from the problem's concrete forces, never from model familiarity or the human's prior exposure — the model expands the candidate space (including languages the human has never used), the human owns the trade-off; tie-breakers weigh total maintenance cost under actual agent assistance, not raw prior syntax fluency. |
+| 90 | `known-defect-disposition` | Process | Severity controls response urgency, not neglect — P2/P4 are known defects requiring disposition, not a silent backlog; deferral is gated on an escalation analysis (can interaction, composition, or adversarial control raise the severity) and recorded in a structured `PENDING_BUGS.md` entry with reason, accepted exposure, and a revisit trigger. "Not blocking current work" is scheduling, not a disposition. |
 
 ### Frontend / UX perception loop
 
