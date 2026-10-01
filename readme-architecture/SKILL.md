@@ -1,5 +1,5 @@
 ---
-name: progressive-technical-disclosure
+name: readme-architecture
 description: Order a complex technical project's presentation (a README, a hackathon submission, a project landing doc) by the reader's cognitive dependency, not by architectural importance — problem before mechanism, observable behavior before internals, evidence before technical depth. Use whenever writing or reviewing a README, a hackathon README/pitch doc, or any human-facing document that introduces a technically deep system. Trigger on "write a README", "review this README", "hackathon submission", "this reads too abstract", "where should the architecture section go", or a document that opens with implementation detail before the reader knows what problem it solves. Not a simplification skill — depth is never deleted, only routed to where the reader who wants it can find it. Governs document structure and reading order; daubert-defensible-writing governs the individual sentence's epistemic honesty within it.
 ---
 

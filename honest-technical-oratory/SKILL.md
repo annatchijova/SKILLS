@@ -1,6 +1,6 @@
 ---
 name: honest-technical-oratory
-description: Present a technical project out loud, under a real time limit, to an audience that may not share your vocabulary or technical background — without hyping unearned claims, without opening on caveats, and without inventing an answer live rather than saying "I don't know." Use whenever preparing or delivering a pitch, demo, talk, or hackathon presentation; whenever deciding what goes on a slide versus what stays for Q&A; or whenever a draft pitch either overclaims or buries its own value under limitations. Trigger on "pitch", "demo day", "hackathon presentation", "how should I present this", "prepare a talk", "what goes on the slides", "practice the pitch", "judges asked". Governs the live, time-boxed, spoken medium — progressive-technical-disclosure governs the written document a reader consults on demand; daubert-defensible-writing's claim discipline still applies here, just under the constraint that there is no room to attach a footnote in real time.
+description: Present a technical project out loud, under a real time limit, to an audience that may not share your vocabulary or technical background — without hyping unearned claims, without opening on caveats, and without inventing an answer live rather than saying "I don't know." Use whenever preparing or delivering a pitch, demo, talk, or hackathon presentation; whenever deciding what goes on a slide versus what stays for Q&A; or whenever a draft pitch either overclaims or buries its own value under limitations. Trigger on "pitch", "demo day", "hackathon presentation", "how should I present this", "prepare a talk", "what goes on the slides", "practice the pitch", "judges asked". Governs the live, time-boxed, spoken medium — readme-architecture governs the written document a reader consults on demand; daubert-defensible-writing's claim discipline still applies here, just under the constraint that there is no room to attach a footnote in real time.
 ---
 
 # Honest Technical Oratory
@@ -14,7 +14,7 @@ one.
 
 Composes with the library:
 
-- **progressive-technical-disclosure** — governs the written material this
+- **readme-architecture** — governs the written material this
   presentation is built on and hands off to (the README, the Technical
   README); this skill governs the spoken delivery of a subset of that same
   content under a hard time limit. Don't restate that skill's ordering
@@ -44,7 +44,7 @@ claim — it makes every other true claim in the pitch suspect too.
 
 **MUST NOT** open the presentation with limitations, caveats, or everything
 the system doesn't do. This is the same principle
-`progressive-technical-disclosure` states for a README ("narrow the claim
+`readme-architecture` states for a README ("narrow the claim
 instead of surrounding it with disclaimers"), applied more strictly here
 because the medium is stricter: a written document can put exhaustive
 limitations in a linked Technical README section a reader visits when
@@ -73,7 +73,7 @@ done.
 
 **SHOULD** state, early and in plain language, what the project actually
 does before naming the mechanism — the same problem-before-mechanism
-ordering `progressive-technical-disclosure` requires of a README, compressed
+ordering `readme-architecture` requires of a README, compressed
 into the opening lines of a talk instead of an opening section.
 
 ## Calibrating vocabulary without lying about the system
@@ -90,7 +90,7 @@ asked.
 **MUST NOT** simplify a description until it becomes false — an analogy or
 plain-language account is a real, bounded model of the system, not a
 description of an easier system that happens to sound similar. This is
-`progressive-technical-disclosure`'s "narrow the claim" principle again,
+`readme-architecture`'s "narrow the claim" principle again,
 applied to word choice: if the plain-language version can't be defended as
 true under a follow-up question, it wasn't a simplification, it was a
 different, easier claim standing in for the real one.
@@ -115,7 +115,7 @@ passive — underselling real work out of excessive hedging — and from
 aggressive — dismissing a legitimate question or overselling to shut down
 scrutiny). Undervaluing genuine results to seem humble is not honesty; it's
 a different failure mode that produces the same outcome as
-`progressive-technical-disclosure`'s caveat-first anti-pattern — an accurate
+`readme-architecture`'s caveat-first anti-pattern — an accurate
 project that reads, to the room, as less than it is.
 
 ## Q&A: "I don't know" preserves credibility; improvising destroys it
@@ -135,7 +135,7 @@ answer, caught later, damages every other claim made in the talk; an honest
   names as fatal.
 - **Caveat-first opening**: leading with limitations, non-goals, or
   disclaimers before the audience knows what was built — the oral,
-  time-boxed version of `progressive-technical-disclosure`'s caveat-first
+  time-boxed version of `readme-architecture`'s caveat-first
   anti-pattern, with less room to recover from it.
 - **Closing on future work**: ending the talk on what isn't done yet instead
   of on the strongest true contribution made.
