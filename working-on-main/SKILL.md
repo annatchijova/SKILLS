@@ -58,9 +58,15 @@ she might want back exactly as it stood), cut a named tag and push it to the
 remote:
 
 ```
-git tag -a "freeze-<short-description>-$(date +%Y%m%d-%H%M%S)" -m "<why this point matters>"
-git push origin "freeze-<short-description>-$(date +%Y%m%d-%H%M%S)"
+tag="freeze-<short-description>-$(date +%Y%m%d-%H%M%S)"
+git tag -a "$tag" -m "<why this point matters>"
+git push origin "$tag"
 ```
+
+Compute the tag name once, into a variable — never re-evaluate `date` across
+the two commands. If they run in different seconds, the push can reference a
+tag that was never created under that exact name, which is precisely the
+kind of implicit, unverifiable state this skill exists to eliminate.
 
 This is distinct from the per-session restore-point tag in `git-discipline`:
 that one guards the session; this one guards a specific point in the work the
