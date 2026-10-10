@@ -2,9 +2,11 @@
 
 **Language:** English · [Español](README.es.md)
 
-A collection of 91 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
+A collection of 92 skills that encode disciplined software engineering, forensic reasoning, and security-first construction — for Claude Code, Codex, Kimi, and other AI coding agents. In Claude Code, each skill activates automatically when the conversation matches its trigger conditions, injecting methodology without requiring the user to ask for it. Agents without that auto-trigger mechanism can still use the same skills: point an `AGENTS.md` or system prompt at the relevant `SKILL.md` files, or load one directly as context when its trigger conditions apply — the methodology in each file is agent-agnostic even where the loading mechanism isn't.
 
 These skills form a coherent system built on Charles Sanders Peirce's triadic semiotics and the abductive inference loop (abduction → deduction → induction). They cover the full engineering lifecycle: investigation, construction, patching, testing, auditing, and hardening.
+
+**A note on skills #91 and #92.** Skills 1–90 are engineering methodology: recommended as general practice, independent of who is using them. Skills 91 (`terminal-first`) and 92 (`working-on-main`) are different — they encode Anna's personal operating preferences, not a methodology claim. They exist because they make *her* more comfortable working with an agent day to day; they are not asserted to be the simplest or best-fitting approach for anyone else. If you're adopting this set, read and evaluate 91 and 92 on their own merits before installing them — they may not match how you want to work.
 
 ---
 
@@ -103,6 +105,7 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 | 89 | `language-selection` | Process | Select a language, DSL, query/policy language, or proof system from the problem's concrete forces, never from model familiarity or the human's prior exposure — the model expands the candidate space (including languages the human has never used), the human owns the trade-off; tie-breakers weigh total maintenance cost under actual agent assistance, not raw prior syntax fluency. |
 | 90 | `known-defect-disposition` | Process | Severity controls response urgency, not neglect — P2/P4 are known defects requiring disposition, not a silent backlog; deferral is gated on an escalation analysis (can interaction, composition, or adversarial control raise the severity) and recorded in a structured `PENDING_BUGS.md` entry with reason, accepted exposure, and a revisit trigger. "Not blocking current work" is scheduling, not a disposition. |
 | 91 | `terminal-first` | Agent interaction | Operating a computer/service/dashboard on behalf of a user with high assistance needs — a CLI/API/script execution hierarchy before any GUI, agent-operated browser delegation before human-operated, one step at a time with no assumed UI memory when the user must act personally, and stopping to re-anchor rather than rephrasing when a step didn't land. |
+| 92 | `working-on-main` | Agent interaction | Multiple agents working directly on `main` on the user's own solo repositories, kitchen-line style — each owns its piece, none assumes another's step was done right, coordination via copy-paste or a shared `.md`; a remote-pushed freeze tag before any significant change; a branch only once something already works and is being extended in a genuinely experimental direction. |
 
 ### Frontend / UX perception loop
 
