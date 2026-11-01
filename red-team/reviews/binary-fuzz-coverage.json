@@ -1,0 +1,134 @@
+[
+  {
+    "source": "Skills/exploit-dev/offensive-basic-exploitation/SKILL.md",
+    "target": "rt-basic-exploitation/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "stack and heap bounds",
+      "allocation lifetime",
+      "integer representation",
+      "literal formatting"
+    ],
+    "rationale": "Preserves foundational native-memory analysis using boundary fixtures and repairs; omits control-flow payloads and heap exploitation recipes. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/exploit-dev/offensive-crash-analysis/SKILL.md",
+    "target": "rt-crash-analysis/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "symbol identity",
+      "first corruption versus crash site",
+      "allocation history",
+      "root-cause deduplication",
+      "hang triage"
+    ],
+    "rationale": "Preserves dump and sanitizer diagnosis with fidelity controls; automated severity is not treated as exploitability. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/exploit-dev/offensive-exploit-dev-course/SKILL.md",
+    "target": "rt-exploit-dev-course/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "staged native research",
+      "oracle calibration",
+      "causal diagnosis",
+      "graduation evidence"
+    ],
+    "rationale": "Replaces offensive milestones with reproducible defensive labs and independent replay requirements. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/exploit-dev/offensive-exploit-development/SKILL.md",
+    "target": "rt-exploit-development/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "input reachability",
+      "narrowing conversions",
+      "allocation/copy consistency",
+      "bounded impact"
+    ],
+    "rationale": "Retains causal-chain analysis and remediation validation without weaponization, evasion or mitigation bypass. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/exploit-dev/offensive-mitigations/SKILL.md",
+    "target": "rt-mitigations/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "configured versus effective protection",
+      "binary hardening metadata",
+      "runtime policy enforcement",
+      "coverage limits"
+    ],
+    "rationale": "Replaces bypass catalog with defense-specific evidence and harmless policy probes; does not inherit unverified platform defaults. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/exploit-dev/offensive-toctou/SKILL.md",
+    "target": "rt-toctou/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "checked/used identity",
+      "double-fetch snapshots",
+      "transaction atomicity",
+      "idempotency binding"
+    ],
+    "rationale": "Uses deterministic user-space schedules and test-owned objects instead of privileged races or timing-amplification recipes. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/fuzzing/offensive-bug-identification/SKILL.md",
+    "target": "rt-bug-identification/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "entry-point mapping",
+      "patch comparison",
+      "size dataflow",
+      "caller-guard refutation"
+    ],
+    "rationale": "Preserves static/dynamic discovery while separating reachable target defects from internal-harness misuse. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/fuzzing/offensive-fuzzing/SKILL.md",
+    "target": "fuzz-campaign-design/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "oracle sensitivity",
+      "structured and malformed corpora",
+      "persistent-state isolation",
+      "coverage plateau diagnosis",
+      "minimized replay"
+    ],
+    "rationale": "Strengthens the existing skill by anchored insertion after a temporary backup, retaining existing content and adding discriminating experiments. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/fuzzing/offensive-fuzzing-course/SKILL.md",
+    "target": "rt-fuzzing-course/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "graded fuzzing labs",
+      "semantic oracles",
+      "stateful harnesses",
+      "regression graduation"
+    ],
+    "rationale": "Preserves engine, corpus and triage learning through evidence gates rather than crash-count or exploitation milestones. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  },
+  {
+    "source": "Skills/fuzzing/offensive-vuln-classes/SKILL.md",
+    "target": "rt-vuln-classes/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "differential class diagnosis",
+      "spatial versus temporal safety",
+      "arithmetic root causes",
+      "parser and concurrency contracts"
+    ],
+    "rationale": "Replaces CVE-driven classification and inherited severity with mechanism-specific discriminators and bounded impact. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+    "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use."
+  }
+]

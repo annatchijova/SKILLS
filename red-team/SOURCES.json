@@ -1,0 +1,173 @@
+{
+  "source_revision": "e4b4f50627ceac4f6265faea2c1362cf78dcdb99",
+  "files": [
+    {
+      "source": "abductive-engineering/SKILL.md",
+      "sha256": "ed8dce445420a1d92dfde62e01be3fa2897a659a267311334e922ba45c60430c"
+    },
+    {
+      "source": "abductive-engineering/references/peirce-foundations.md",
+      "sha256": "e99bba62f0b9434adeeabcfe769a27d7fed8f523eddd66d9a32bd5ca4ead7c5d"
+    },
+    {
+      "source": "agent-trust-boundaries/SKILL.md",
+      "sha256": "4d8b853663107b59ac9944232917cf98b3db5a32a1bf10c353f60b6eb7d70120"
+    },
+    {
+      "source": "atomic-state-mutation/SKILL.md",
+      "sha256": "6f50be718a587f801d9c7794a6cd431b8ad1342583facda4c9c7333d48ff35cf"
+    },
+    {
+      "source": "atomic-state-mutation/atomic-state-mutation.trigger.json",
+      "sha256": "45f0b1b68264bd1f44e5a1c1bc9e0e1297f633327a7fc4538fe588d1edb14e4b"
+    },
+    {
+      "source": "atomic-state-mutation/scripts/atomic_sqlite.py",
+      "sha256": "41d06cf00f2bf04cc7ed53acbd2c66e77595c3f32bfde561a97c1d558a582350"
+    },
+    {
+      "source": "attack-surface-triage/SKILL.md",
+      "sha256": "16d6abbf8f90a313d8c57d3508d7da582cdd04ef7243a3e49f1c7f0d17398dc8"
+    },
+    {
+      "source": "authorization-surface-mapping/SKILL.md",
+      "sha256": "86f631e940337209cd4a209b9c2ec399ad7be64b93894242ef075c19cb56e280"
+    },
+    {
+      "source": "claim-provenance-discipline/SKILL.md",
+      "sha256": "2bd51ff6ec55158782aab486366303194d8718a32e896c3e08351a2e4539e258"
+    },
+    {
+      "source": "cloud-control-plane-reasoning/SKILL.md",
+      "sha256": "6ce6ffd1c724c1ed0de1e8de75853334a99767f3630cfd4e680d799509cec2d4"
+    },
+    {
+      "source": "concurrency-reasoning/SKILL.md",
+      "sha256": "cce54bf5d1e6e9149c4d96156fa8efef6e53ec8858bfa6d092fa4db4069822ba"
+    },
+    {
+      "source": "container-trust-boundary/SKILL.md",
+      "sha256": "257c0c9b36260d247ddd58810f0e9fab956d2bcfbdcb2e92d136524e8687156f"
+    },
+    {
+      "source": "dependency-provenance/SKILL.md",
+      "sha256": "9507f18ed8ea87149eded143b539060ba4e8ad84035ba4b0d0129955511a252d"
+    },
+    {
+      "source": "detection-engineering/SKILL.md",
+      "sha256": "c71be30ff80d9fc90579d61b56afd3777a14b831e362a4216bb06aa7cef288b7"
+    },
+    {
+      "source": "deterministic-core/SKILL.md",
+      "sha256": "2056c7de242734d283db0325395777a0f8acf4d12df7b9ff392dadadaf843d1c"
+    },
+    {
+      "source": "deterministic-core/deterministic-core.trigger.json",
+      "sha256": "b8e2a323a3afcebedc303bd8a25e2bf275d06d619971feb0e43dc2ac2a0dddf5"
+    },
+    {
+      "source": "deterministic-core/scripts/canonicalize.py",
+      "sha256": "e4e88360c4a9c8f61e27d4242feaeeb973bbec5899896e5225ecc1e1bbb23b15"
+    },
+    {
+      "source": "deterministic-core/scripts/determinism_check.py",
+      "sha256": "08e2c19ddcc267de2294363c329075d18ce30fb730f044e810a01acd94b79147"
+    },
+    {
+      "source": "discriminating-proof/SKILL.md",
+      "sha256": "b903a62681542364ce5589a2964e8bd3cef9f394ca0c03740c78b23a759587b1"
+    },
+    {
+      "source": "distributed-write-atomicity/SKILL.md",
+      "sha256": "7892c0905cd3337f64225d11442a74584a2f25df916ecf2fa759a23bbf32549e"
+    },
+    {
+      "source": "exploitability-triage/SKILL.md",
+      "sha256": "87c7efe3db0f29f5704c4d1f03e68e98019acde387d79b3a921473c6f5db180f"
+    },
+    {
+      "source": "falsifiable-testing/SKILL.md",
+      "sha256": "bad816f7aed59d8bdc3e371117458fcdfe79db8e272ceb3efbda20ba2cefa2ea"
+    },
+    {
+      "source": "finding-custody/SKILL.md",
+      "sha256": "d01bc65db3e56b71d8465c483245ee9b1e8bc9a2d827334cbecd911eaf971f12"
+    },
+    {
+      "source": "forensic-logging-design/SKILL.md",
+      "sha256": "01026b17833efbabd01fb9ce761ad9c89ca7449fc546df7429b9a658561c86c9"
+    },
+    {
+      "source": "honest-degradation/SKILL.md",
+      "sha256": "48ca19af5b385b29359aa61df2586c35d2954516063f01d7295bc08cf10090bb"
+    },
+    {
+      "source": "honest-degradation/honest-degradation.trigger.json",
+      "sha256": "a14a0e0748be51f9bb7d291810d43cc396209f9f049ea06c021fca3b1c64e343"
+    },
+    {
+      "source": "honest-degradation/references/patterns.md",
+      "sha256": "c42ab4ad193d0a99fed5d910093434c56cf5a4d0d0d9c2c2fab465a2b2a7d42e"
+    },
+    {
+      "source": "honest-degradation/scripts/tristate_runner.py",
+      "sha256": "ba0a6d5cee708b2ba49462053eef4761b69ce417585949dc71621aa215a68058"
+    },
+    {
+      "source": "invariant-hunting/SKILL.md",
+      "sha256": "feed3e593b0744a4ac5c2c18c3076da81414c5da68003d643ac4e1624d19cce5"
+    },
+    {
+      "source": "llm-out-of-the-loop/SKILL.md",
+      "sha256": "b96d4031a02c855c4a6b81a76dc71387d2717e270b8c36cc27406e12d8beeb93"
+    },
+    {
+      "source": "llm-out-of-the-loop/llm-out-of-the-loop.trigger.json",
+      "sha256": "d34181cc180da7e3a3b91293114dde5cab0e8763745d044672b00cb79220dd02"
+    },
+    {
+      "source": "llm-out-of-the-loop/references/architecture.md",
+      "sha256": "6609cb1d21fc15302b9264ed57a2d2969b5a1beff0841422e9e6c17e17908b9a"
+    },
+    {
+      "source": "llm-out-of-the-loop/scripts/seal_then_narrate.py",
+      "sha256": "9d7f2fdd9a202d5ab9efe1d9aacd26da5828978f45a317325ed60054515fabe0"
+    },
+    {
+      "source": "oracle-driven-fuzzing/SKILL.md",
+      "sha256": "e4c2d1ad08476f9c3b671c8e02b3c3c55e1be7ba9322607ab8f1356e5ff032af"
+    },
+    {
+      "source": "pipeline-trust/SKILL.md",
+      "sha256": "4fa6f7820d1f5d9d523bf41bcc4c8b089334b5393d8ec5c59c3369e8903c5d89"
+    },
+    {
+      "source": "purple-team-exercise/SKILL.md",
+      "sha256": "0d19f0a749542cd9b10e8bb7137d8fcb6e73f03f3a0753335eed27caf5a7abc9"
+    },
+    {
+      "source": "red-team-auditing/SKILL.md",
+      "sha256": "9ff8b1e14a786adc8b75e88be00f6541fd39d55a554bb3a2fafb93d0868ddd77"
+    },
+    {
+      "source": "remediation-driven-reporting/SKILL.md",
+      "sha256": "a3b7a820a5c90e2fb0ef5022c7d1848bd741f7d4e244854fe83197c6778b77ce"
+    },
+    {
+      "source": "tamper-evident-audit-chain/SKILL.md",
+      "sha256": "bb30d125e0c9df3fd5872f26546fa2fc7807b1015cea43e74a876e1c7609b103"
+    },
+    {
+      "source": "tamper-evident-audit-chain/scripts/audit_chain.py",
+      "sha256": "07b1de33192749b95d8130adaf513e94889828d08bdc747212988660fed6f742"
+    },
+    {
+      "source": "tamper-evident-audit-chain/tamper-evident-audit-chain.trigger.json",
+      "sha256": "668657ae1658b2fb42b0c408c798172d2c7f077a48cb4344d2c0549e188302c0"
+    },
+    {
+      "source": "variant-analysis/SKILL.md",
+      "sha256": "c35fc04c20cf6423bc91e403c5a0f988df386d8722c9c78843d81e4a5e84c3ac"
+    }
+  ]
+}

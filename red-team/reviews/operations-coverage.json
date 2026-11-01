@@ -1,0 +1,218 @@
+[
+  {
+    "source": "Skills/infrastructure/offensive-advanced-redteam/SKILL.md",
+    "target": "rt-advanced-redteam/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "objective-to-control dependency graph",
+      "deconfliction and abort handling",
+      "stage-specific evidence custody"
+    ],
+    "rationale": "Retains engagement engineering as a distinct scope; replaces covert infrastructure and chained compromise with observable, reversible exercises.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-edr-evasion/SKILL.md",
+    "target": "rt-edr-evasion/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "sensor-to-collector continuity",
+      "process and image telemetry correlation",
+      "prevention versus alert latency"
+    ],
+    "rationale": "Transforms evasion recipes into endpoint visibility and health validation, retaining telemetry-layer distinctions.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-initial-access/SKILL.md",
+    "target": "rt-initial-access/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "download-origin metadata propagation",
+      "attachment handling and application policy",
+      "remote-access authentication gates"
+    ],
+    "rationale": "Preserves ingress-chain reasoning while replacing infection chains, credential stuffing and weaponized documents with inert probes.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-keylogger-arch/SKILL.md",
+    "target": "rt-keylogger-arch/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "user-mode hook versus driver distinction",
+      "raw-input scope",
+      "desktop and session isolation"
+    ],
+    "rationale": "Corrects architectural conflation and retains input-boundary analysis without implementing capture, stealth or exfiltration.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-shellcode/SKILL.md",
+    "target": "rt-shellcode/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "memory protection transitions",
+      "static versus dynamic code provenance",
+      "architecture and policy compatibility"
+    ],
+    "rationale": "Retains executable-memory mechanics and evidence interpretation while excluding payload construction, injection and stealth.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-windows-boundaries/SKILL.md",
+    "target": "rt-windows-boundaries/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "token and mandatory integrity checks",
+      "AppContainer capabilities",
+      "broker authorization and effective DACLs"
+    ],
+    "rationale": "Separates security-boundary validation from exploit mitigation configuration; omits driver abuse and security-sensor tampering.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/infrastructure/offensive-windows-mitigations/SKILL.md",
+    "target": "rt-windows-mitigations/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "DEP and ASLR applicability",
+      "CFG and shadow-stack enforcement",
+      "VBS and HVCI effective state"
+    ],
+    "rationale": "Retains mitigation interaction analysis as distinct from authorization boundaries; replaces bypass chains with configuration and diagnostic comparisons.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/post-exploitation/offensive-data-exfiltration/SKILL.md",
+    "target": "rt-data-exfiltration/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "destination and tenant restrictions",
+      "content classification and encryption visibility",
+      "sender-receiver integrity reconciliation"
+    ],
+    "rationale": "Replaces covert channels and data staging recipes with bounded synthetic-data transfer and control measurement.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/post-exploitation/offensive-lateral-movement/SKILL.md",
+    "target": "rt-lateral-movement/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "network reachability versus service authorization",
+      "identity and protocol restrictions",
+      "cross-host telemetry correlation"
+    ],
+    "rationale": "Retains remote-service trust-boundary reasoning while removing credential extraction, relay, session hijacking and tunneling chains.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/post-exploitation/offensive-persistence/SKILL.md",
+    "target": "rt-persistence/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "trigger-action-principal relationships",
+      "autostart change detection",
+      "post-removal trigger verification"
+    ],
+    "rationale": "Retains persistence lifecycle and recovery coverage without installing backdoors or modifying authentication mechanisms.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/forensics/offensive-anti-forensics/SKILL.md",
+    "target": "rt-anti-forensics/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "event-gap and custody checks",
+      "cross-source timeline reconciliation",
+      "backup and retention recovery"
+    ],
+    "rationale": "Reverses evidence-destruction guidance into tamper detection and recovery testing, keeping filesystem and telemetry distinctions.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/forensics/offensive-c2-frameworks/SKILL.md",
+    "target": "rt-c2-frameworks/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "heartbeat correlation and proxy attribution",
+      "transport visibility limits",
+      "operator-plane authorization"
+    ],
+    "rationale": "Retains framework architecture and telemetry interpretation while removing implant generation, covert profiles and operational command channels.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/privesc/offensive-windows-privesc/SKILL.md",
+    "target": "rt-windows-privesc/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "service DACL and dependency permissions",
+      "privileged action reachability",
+      "token privilege preconditions"
+    ],
+    "rationale": "Preserves local privilege-path analysis while replacing exploit families and secret extraction with effective-access and controlled-service evidence.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/privesc/offensive-linux-privesc/SKILL.md",
+    "target": "rt-linux-privesc/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "sudo command and environment constraints",
+      "capability and namespace scope",
+      "privileged service dependency ownership"
+    ],
+    "rationale": "Retains Linux authority semantics while removing root-shell recipes, kernel exploits and credential harvesting.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/active-directory/offensive-active-directory/SKILL.md",
+    "target": "rt-active-directory/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "effective directory ACL edges",
+      "delegation and trust preconditions",
+      "certificate template enrollment constraints"
+    ],
+    "rationale": "Keeps directory authority-path analysis distinct from protocol-tool interpretation, replacing credential and ticket abuse chains with test-object validation.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/active-directory/offensive-netexec/SKILL.md",
+    "target": "rt-netexec/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "protocol-specific result semantics",
+      "authentication versus authorization",
+      "module side-effect review"
+    ],
+    "rationale": "Preserves tool-specific interpretation as a separate skill; removes spraying, dumping and chained execution while requiring version verification.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/social-engineering/offensive-phishing/SKILL.md",
+    "target": "rt-phishing/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "SPF DKIM and DMARC alignment",
+      "automated link inspection versus human interaction",
+      "report-to-response workflow"
+    ],
+    "rationale": "Retains email control and campaign measurement substance while excluding credential proxies, filter evasion and malicious attachments.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  },
+  {
+    "source": "Skills/social-engineering/offensive-social-engineering/SKILL.md",
+    "target": "rt-social-engineering/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "independent-channel identity verification",
+      "approval provenance and separation of duties",
+      "device and visitor handling workflows"
+    ],
+    "rationale": "Retains human trust and procedural boundary analysis, replacing impersonation scripts, badge cloning and malicious devices with bounded role-play.",
+    "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims"
+  }
+]

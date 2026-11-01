@@ -10,6 +10,12 @@ These skills form a coherent system built on Charles Sanders Peirce's triadic se
 
 ---
 
+## Red Team assessment collection
+
+The separate [`red-team/`](red-team/README.md) collection brings together 79 methodologically rewritten security assessment skills and 28 snapshots of existing skills. It supports authorized repository reviews, controlled lab work and detection validation. Read its [English guide](red-team/README.md), [Spanish guide](red-team/README.es.md), [source coverage map](red-team/COVERAGE.md) and [validation record](red-team/VALIDATION.md).
+
+Choose one discovery scope at a time: `python3 -B red-team/catalog.py general` selects the 92 skills listed here; `python3 -B red-team/catalog.py red-team` selects the separate 107-skill collection. The folder alone does not configure an agent's automatic discovery.
+
 ## Skills
 
 | # | Skill | Category | Activates when |

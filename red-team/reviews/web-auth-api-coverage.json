@@ -1,0 +1,256 @@
+[
+  {
+    "source": "Skills/api/offensive-api-abuse/SKILL.md",
+    "target": "rt-api-abuse/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "operation-versus-request accounting",
+      "cursor tenant binding",
+      "webhook delivery ownership"
+    ],
+    "rationale": "Retains the upstream's pagination, batching, webhook and cost mechanisms as a distinct consumption/delivery assessment; routes JWT and workflow overlap to their dedicated skills.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/api/offensive-api-security/SKILL.md",
+    "target": "api-boundary-assessment/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "method and role authorization",
+      "mass assignment",
+      "gRPC identity propagation",
+      "WebSocket per-message authorization"
+    ],
+    "rationale": "Strengthens the existing cross-transport boundary skill while routing object relationship detail, GraphQL execution and consumption accounting to distinct domain skills.",
+    "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use."
+  },
+  {
+    "source": "Skills/auth/offensive-jwt/SKILL.md",
+    "target": "token-trust-assessment/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "algorithm and key binding",
+      "issuer-scoped key cache",
+      "claim validation",
+      "token-kind separation"
+    ],
+    "rationale": "Strengthens JWT consumer and key provenance controls without secret cracking or mobile token extraction; OAuth transaction mechanics remain distinct in rt-oauth.",
+    "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use."
+  },
+  {
+    "source": "Skills/auth/offensive-oauth/SKILL.md",
+    "target": "rt-oauth/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "authorization transaction binding",
+      "issuer and client separation",
+      "refresh reuse handling",
+      "account linking"
+    ],
+    "rationale": "Replaces token capture and account takeover chains with measured transaction, issuer, refresh and linking controls; avoids universal state, cookie and lifetime prescriptions.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-business-logic/SKILL.md",
+    "target": "workflow-abuse-assessment/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "state-machine invariants",
+      "price and currency authority",
+      "idempotency and reconciliation",
+      "entitlement transitions"
+    ],
+    "rationale": "Strengthens economic and lifecycle invariants using exact synthetic ledgers while excluding fraud evasion and speculative scaling; schedule mechanics remain in rt-race-condition.",
+    "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use."
+  },
+  {
+    "source": "Skills/web/offensive-deserialization/SKILL.md",
+    "target": "rt-deserialization/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "type-controlled reconstruction",
+      "integrity-before-deserialization",
+      "queue and cache provenance"
+    ],
+    "rationale": "Preserves cross-runtime reconstruction and producer/consumer trust analysis while removing gadget generators, shell chains and version-independent PHAR assertions.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-file-upload/SKILL.md",
+    "target": "rt-file-upload/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "quarantine-to-publication transition",
+      "storage namespace isolation",
+      "processor resource bounds",
+      "signed upload scope"
+    ],
+    "rationale": "Retains upload, object-storage, archive and converter boundaries while replacing web shells, polyglots and processing exploits with inert lifecycle tests.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-graphql/SKILL.md",
+    "target": "rt-graphql/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "resolver-level authorization",
+      "alias and batch work accounting",
+      "subscription revalidation",
+      "cursor context"
+    ],
+    "rationale": "Preserves resolver, Relay, batch and subscription mechanisms; removes blind schema harvesting, credential amplification and depth-bomb procedures.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-idor/SKILL.md",
+    "target": "rt-idor/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "object ownership enforcement",
+      "parent-child authorization",
+      "export authorization",
+      "capability semantics"
+    ],
+    "rationale": "Keeps object, relationship, export and policy-engine depth distinct from broad API coverage without enumeration or mass extraction.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-open-redirect/SKILL.md",
+    "target": "rt-open-redirect/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "URL parser agreement",
+      "destination allowlisting",
+      "navigation versus server fetch"
+    ],
+    "rationale": "Retains parser and authentication redirect analysis without domain spoofing catalogs, phishing construction or token interception chains.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-parameter-pollution/SKILL.md",
+    "target": "rt-parameter-pollution/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "duplicate-key precedence",
+      "query-body source precedence",
+      "scalar-array coercion",
+      "validator-consumer mismatch"
+    ],
+    "rationale": "Retains parameter precedence and type-coercion mechanisms while replacing bypass payload catalogs with observable parser contracts.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-race-condition/SKILL.md",
+    "target": "rt-race-condition/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "check-use atomicity",
+      "idempotency key scope",
+      "write skew",
+      "lease expiry and redelivery"
+    ],
+    "rationale": "Replaces amplification and pool-exhaustion recipes with schedule-controlled atomicity, write-skew and redelivery analysis.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-rce/SKILL.md",
+    "target": "rt-rce/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "argument versus command separation",
+      "dynamic evaluation reachability",
+      "processor execution context"
+    ],
+    "rationale": "Preserves command, evaluator and processor boundary analysis while removing command payloads, shell chains, secret access and persistence.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-request-smuggling/SKILL.md",
+    "target": "rt-request-smuggling/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "front-back framing disagreement",
+      "protocol translation",
+      "connection reuse and response association"
+    ],
+    "rationale": "Retains desynchronization, connection reuse and protocol translation analysis without smuggled payload construction, queue poisoning or bypass guidance.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-sqli/SKILL.md",
+    "target": "rt-sqli/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "code-data query separation",
+      "identifier allowlisting",
+      "second-order query construction",
+      "operator injection"
+    ],
+    "rationale": "Preserves SQL, ORM, second-order and operator-boundary reasoning while replacing extraction, privilege escalation and WAF bypass recipes.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-ssrf/SKILL.md",
+    "target": "rt-ssrf/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "destination validation at connect time",
+      "redirect revalidation",
+      "resolver-connector agreement",
+      "response exposure"
+    ],
+    "rationale": "Retains fetch, DNS, redirect and egress mechanisms without metadata credential access, internal enumeration or protocol abuse chains.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-ssti/SKILL.md",
+    "target": "rt-ssti/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "template source versus data binding",
+      "second-pass rendering",
+      "sandbox capability configuration"
+    ],
+    "rationale": "Preserves engine, context, second-pass and sandbox analysis without traversal payloads, file reads or template-to-shell chains.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-waf-bypass/SKILL.md",
+    "target": "rt-waf-bypass/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "inspection coverage",
+      "normalization agreement",
+      "rule enforcement mode",
+      "body inspection limits"
+    ],
+    "rationale": "Reframes evasion into measurable inspection coverage, mode and parser validation; removes residential proxy, CAPTCHA, fingerprint and origin-bypass guidance.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-xss/SKILL.md",
+    "target": "rt-xss/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "context-sensitive output handling",
+      "DOM source-to-sink flow",
+      "sanitizer mutation",
+      "stored-content rendering"
+    ],
+    "rationale": "Retains reflected/stored/DOM, mutation and browser-policy mechanisms without payload catalogs, CSP evasion or session extraction.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  },
+  {
+    "source": "Skills/web/offensive-xxe/SKILL.md",
+    "target": "rt-xxe/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "external entity resolution",
+      "DTD and XInclude separation",
+      "schema fetch policy",
+      "expansion bounds"
+    ],
+    "rationale": "Preserves multi-parser, entity, include and schema resolution analysis without local-file extraction, metadata pivots or exponential-expansion recipes.",
+    "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use."
+  }
+]

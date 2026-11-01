@@ -1,0 +1,1163 @@
+{
+  "schema_version": 2,
+  "upstream_revision": "a8de813edc9f66f60d44cfe42d47750e89d9930b",
+  "methodology_sha256": "e7c492306fc77a7f1c9aaa5a9a0e91b1d1c9901a716ae0a2bc7c93415e10b82e",
+  "snapshot_manifest_sha256": "180bbb9201e7a12e88396c38e239384173e9a975978937e3cddaafdb1e88d90b",
+  "source_count": 79,
+  "adaptation_count": 79,
+  "copied_skill_count": 28,
+  "total_skill_count": 107,
+  "verification": "structural and byte-level only; no live target execution",
+  "rows": [
+    {
+      "source": "Skills/active-directory/offensive-active-directory/SKILL.md",
+      "target": "rt-active-directory/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "effective directory ACL edges",
+        "delegation and trust preconditions",
+        "certificate template enrollment constraints"
+      ],
+      "rationale": "Keeps directory authority-path analysis distinct from protocol-tool interpretation, replacing credential and ticket abuse chains with test-object validation.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "00e5b7cea50d450daf515cd0e541d3eb659347bb39f04caf0d88a470ca9a4c19",
+      "target_sha256": "6fc04736f35ee1b5c8b83243677dae90b9aaa4eee23fca9178125c607565bc85"
+    },
+    {
+      "source": "Skills/active-directory/offensive-netexec/SKILL.md",
+      "target": "rt-netexec/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "protocol-specific result semantics",
+        "authentication versus authorization",
+        "module side-effect review"
+      ],
+      "rationale": "Preserves tool-specific interpretation as a separate skill; removes spraying, dumping and chained execution while requiring version verification.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "cd462110388ff5dc360535e75a496a405391a68d6d1d32d4ac4205f299d47e19",
+      "target_sha256": "ddafd420bd0c17f706649b7a3b52d4f3e6ffc03c7acba71af6cc0c36e0d85179"
+    },
+    {
+      "source": "Skills/ai/offensive-ai-security/SKILL.md",
+      "target": "rt-ai-security/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "tool authority",
+        "retrieval isolation",
+        "artifact trust"
+      ],
+      "rationale": "Uses deterministic effect observations and synthetic data rather than model self-assessed success.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "345b920695dabd22392ee623512df78a8862dd30cde507a02c2d31f9139f2595",
+      "target_sha256": "765432c5374edc6effcb0f34dc52e3a7b457ac1cf0212e310624b4a8184bff85"
+    },
+    {
+      "source": "Skills/api/offensive-api-abuse/SKILL.md",
+      "target": "rt-api-abuse/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "operation-versus-request accounting",
+        "cursor tenant binding",
+        "webhook delivery ownership"
+      ],
+      "rationale": "Retains the upstream's pagination, batching, webhook and cost mechanisms as a distinct consumption/delivery assessment; routes JWT and workflow overlap to their dedicated skills.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "42cd1e419aea0b2e5a3e97c1bad3b6503fac9bf9d14a769d7eb65da5486f755a",
+      "target_sha256": "8a26aa0e7cb158c1efb2bab73a05a7a605c88b7626701e511a1594f4f4a8a2bb"
+    },
+    {
+      "source": "Skills/api/offensive-api-security/SKILL.md",
+      "target": "api-boundary-assessment/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "method and role authorization",
+        "mass assignment",
+        "gRPC identity propagation",
+        "WebSocket per-message authorization"
+      ],
+      "rationale": "Strengthens the existing cross-transport boundary skill while routing object relationship detail, GraphQL execution and consumption accounting to distinct domain skills.",
+      "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use.",
+      "source_sha256": "c76a14cfc2e427d64b769445de5d6ef233c10188c2aeee1ce3dc1631b8b1cd23",
+      "target_sha256": "6512bbe9e0623350d6bd8bc35b6c0742360e100faf00bb15ec2e1c934bb8fb91"
+    },
+    {
+      "source": "Skills/auth/offensive-jwt/SKILL.md",
+      "target": "token-trust-assessment/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "algorithm and key binding",
+        "issuer-scoped key cache",
+        "claim validation",
+        "token-kind separation"
+      ],
+      "rationale": "Strengthens JWT consumer and key provenance controls without secret cracking or mobile token extraction; OAuth transaction mechanics remain distinct in rt-oauth.",
+      "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use.",
+      "source_sha256": "f4062ca66c1241fbeb772e1671d0d86d3683e27f33744fee6723b13a934a3fb9",
+      "target_sha256": "83e31016f1a7d3b199e60f82d40dfa105964db49b6667fd2cffca76a7bef6ae1"
+    },
+    {
+      "source": "Skills/auth/offensive-oauth/SKILL.md",
+      "target": "rt-oauth/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "authorization transaction binding",
+        "issuer and client separation",
+        "refresh reuse handling",
+        "account linking"
+      ],
+      "rationale": "Replaces token capture and account takeover chains with measured transaction, issuer, refresh and linking controls; avoids universal state, cookie and lifetime prescriptions.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "1202b700fac05d63cc78c959c084cbcf9c8cb4f3b00be6cec52c7ebc98f0ec52",
+      "target_sha256": "d34658600ee57dd122c4eca172de390ead7414558729f7a55f01a371f5226299"
+    },
+    {
+      "source": "Skills/cicd/offensive-cicd-pipeline/SKILL.md",
+      "target": "pipeline-boundary-assessment/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "event eligibility",
+        "interpreter boundary",
+        "artifact handoff"
+      ],
+      "rationale": "Uses inert fixtures to distinguish untrusted data interpretation from mere token availability.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "24518b4ee312dadd456cef225d351b733a9803187293a5e32380d290b8a1ab3f",
+      "target_sha256": "b99916394dd8523c7cc80c307b51b50642ea47fccc93c252a1820b1210e3c944"
+    },
+    {
+      "source": "Skills/cicd/offensive-cicd-secrets/SKILL.md",
+      "target": "rt-cicd-secrets/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "secret residue",
+        "lease lifetime",
+        "federation claims"
+      ],
+      "rationale": "Tests synthetic credential delivery and retention separately from pipeline execution control.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "ab2ca5e4cb6a05a92e2a575e84fbb7f3af57977673ced0b96bfe3a468e4f303c",
+      "target_sha256": "8451c1d4bb96399f054763079fb07afce71723f31535ab2909b041be0891893f"
+    },
+    {
+      "source": "Skills/cloud/offensive-cloud/SKILL.md",
+      "target": "cloud-identity-assessment/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "effective IAM graph",
+        "delegation preconditions",
+        "audit-correlated marker access"
+      ],
+      "rationale": "Preserves provider-specific identity edges and separates policy simulation from demonstrated runtime authority.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "5dd13c1cac582a03db3e1ab8c9c0c147a93c2121e4cb275b8d39763cb9a144cb",
+      "target_sha256": "00d0ae5509b95abc8fb295617fff19d6cf320492630a88bc6b5838a1386aa313"
+    },
+    {
+      "source": "Skills/container/offensive-container-escape/SKILL.md",
+      "target": "rt-container-escape/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "mount identity",
+        "namespace isolation",
+        "runtime socket authority"
+      ],
+      "rationale": "Replaces host takeover recipes with host-observed canary boundary experiments.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "0646139103a2be51f4f6875e1bdf53cd00c23e259ee47e0262dc2fd0c38cb4fc",
+      "target_sha256": "43c0afd4173ef8fc51a9ec233b17da5903edc680b5e83071a6b97d8b84925be8"
+    },
+    {
+      "source": "Skills/container/offensive-k8s-attacks/SKILL.md",
+      "target": "rt-k8s-attacks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "RBAC and admission",
+        "operator deputy authority",
+        "CNI isolation"
+      ],
+      "rationale": "Separates authorization reviews, admission decisions and actual resource or traffic outcomes.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "04382cb9bfa12bf6f62bc3b2b22baf01e30e66624979450016462b158a4270e0",
+      "target_sha256": "c5c4919e1015909ebb73ffeb28950b3e59cb0b8fc8adf2c4bafdfc11f7af19f1"
+    },
+    {
+      "source": "Skills/crypto/offensive-crypto-attacks/SKILL.md",
+      "target": "rt-crypto-attacks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "nonce lifecycle",
+        "authentication ordering",
+        "error distinguishability"
+      ],
+      "rationale": "Preserves cryptographic misuse preconditions and bounded measurements without key recovery.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "75d97b1fa7546ed5defe75ed488686cc5eee7d19bbdd1ffc2f3f05b0bb48ea7b",
+      "target_sha256": "c8e81476bdd202f952e5ea1034f48b65248e9dbdf4a5e092c07a7204e2f2e945"
+    },
+    {
+      "source": "Skills/crypto/offensive-tls-attacks/SKILL.md",
+      "target": "rt-tls-attacks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "peer identity",
+        "early-data semantics",
+        "compression preconditions"
+      ],
+      "rationale": "Distinguishes negotiation and client validation from application replay or leakage impact.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "1d9939a3033e2316a2961c338440803a67482860b09a2a9943150bc5c0c15737",
+      "target_sha256": "42b07751205861081f1ceb0cfd3ee902a63dce7f9d63b65d52a49da92512b490"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-basic-exploitation/SKILL.md",
+      "target": "rt-basic-exploitation/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "stack and heap bounds",
+        "allocation lifetime",
+        "integer representation",
+        "literal formatting"
+      ],
+      "rationale": "Preserves foundational native-memory analysis using boundary fixtures and repairs; omits control-flow payloads and heap exploitation recipes. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "92508b7739895c04e4cdb9b671d6c06f678f9d490b2a1bb23fd1ee5dc14ad028",
+      "target_sha256": "ab7414fd13e18878370307a686811380a363db39d4093fc01a252175f4c2163c"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-crash-analysis/SKILL.md",
+      "target": "rt-crash-analysis/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "symbol identity",
+        "first corruption versus crash site",
+        "allocation history",
+        "root-cause deduplication",
+        "hang triage"
+      ],
+      "rationale": "Preserves dump and sanitizer diagnosis with fidelity controls; automated severity is not treated as exploitability. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "43212963900033f563cb23ad323d5a56d507142d2caeebba55b8c50605681a32",
+      "target_sha256": "1f4934f8048316494a81a472a3f8cade28f501ed3ec137649193804b2bb55fc3"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-exploit-dev-course/SKILL.md",
+      "target": "rt-exploit-dev-course/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "staged native research",
+        "oracle calibration",
+        "causal diagnosis",
+        "graduation evidence"
+      ],
+      "rationale": "Replaces offensive milestones with reproducible defensive labs and independent replay requirements. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "b3b87666645d63b80a5ba071dc1d7136b677073a40f5cabfd2fb578d2b0b7fa0",
+      "target_sha256": "922ef0da2ae080549fc855d349d2cb0737b9afe9ec281a5922c569ddc1629a89"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-exploit-development/SKILL.md",
+      "target": "rt-exploit-development/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "input reachability",
+        "narrowing conversions",
+        "allocation/copy consistency",
+        "bounded impact"
+      ],
+      "rationale": "Retains causal-chain analysis and remediation validation without weaponization, evasion or mitigation bypass. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "22ae77955883399b00bfd4b10909f403869efc4c4b49e81ba065f1e477b83cce",
+      "target_sha256": "6763ca4c8f795dff7395f8447105aea006e779785bed0ac5ba33bd33c643baa5"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-mitigations/SKILL.md",
+      "target": "rt-mitigations/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "configured versus effective protection",
+        "binary hardening metadata",
+        "runtime policy enforcement",
+        "coverage limits"
+      ],
+      "rationale": "Replaces bypass catalog with defense-specific evidence and harmless policy probes; does not inherit unverified platform defaults. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "cbd789c1bf8fd8110c511150169fc5b98e097a9419aa41647e35ced477b3a388",
+      "target_sha256": "48e5e479206610ffba18d24b19b83521d68e313d957f3c359b33f79324bb21c3"
+    },
+    {
+      "source": "Skills/exploit-dev/offensive-toctou/SKILL.md",
+      "target": "rt-toctou/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "checked/used identity",
+        "double-fetch snapshots",
+        "transaction atomicity",
+        "idempotency binding"
+      ],
+      "rationale": "Uses deterministic user-space schedules and test-owned objects instead of privileged races or timing-amplification recipes. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "8c7fb9790b1853ecf5dfa23fe85b8fa0d1967c20a7ffe04752a6ac4c2253636f",
+      "target_sha256": "da1bb868f7cf089b7d19c95e1abd8e5e404e4b1d0ff35a03ab9081238e6b69d9"
+    },
+    {
+      "source": "Skills/forensics/offensive-anti-forensics/SKILL.md",
+      "target": "rt-anti-forensics/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "event-gap and custody checks",
+        "cross-source timeline reconciliation",
+        "backup and retention recovery"
+      ],
+      "rationale": "Reverses evidence-destruction guidance into tamper detection and recovery testing, keeping filesystem and telemetry distinctions.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "000f9269cf32fde3032437dca969b2c7c545c6c5810482c3e6fa6a144da050a3",
+      "target_sha256": "32ece97050a1f86169e371a3026a808388ad119825c2747f301848661c123834"
+    },
+    {
+      "source": "Skills/forensics/offensive-c2-frameworks/SKILL.md",
+      "target": "rt-c2-frameworks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "heartbeat correlation and proxy attribution",
+        "transport visibility limits",
+        "operator-plane authorization"
+      ],
+      "rationale": "Retains framework architecture and telemetry interpretation while removing implant generation, covert profiles and operational command channels.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "dc1cfeee684e2a9569fb9260be7af48bf5315e54d193508ffc823795020bcd84",
+      "target_sha256": "c9da26b3e604134c3e95e3a911ae2cae9a1cca724dd1d9b3ec8ebe33c36f589d"
+    },
+    {
+      "source": "Skills/fuzzing/offensive-bug-identification/SKILL.md",
+      "target": "rt-bug-identification/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "entry-point mapping",
+        "patch comparison",
+        "size dataflow",
+        "caller-guard refutation"
+      ],
+      "rationale": "Preserves static/dynamic discovery while separating reachable target defects from internal-harness misuse. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "b80715679fc455a96585cbe25005b107963daa0c10e08df743b2ddbc017bc272",
+      "target_sha256": "3db2760359da03e24fd70ac30054c3fc71915c2c4999ef2d16e16ce2a24cabc0"
+    },
+    {
+      "source": "Skills/fuzzing/offensive-fuzzing-course/SKILL.md",
+      "target": "rt-fuzzing-course/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "graded fuzzing labs",
+        "semantic oracles",
+        "stateful harnesses",
+        "regression graduation"
+      ],
+      "rationale": "Preserves engine, corpus and triage learning through evidence gates rather than crash-count or exploitation milestones. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "1094410fb2a89843e9f8d8447d1d28602fc5fd36b29481cdd45b47b5c768acdd",
+      "target_sha256": "a930185be3cb0c51c5dd50804bd778e1c9734c631fd4780fee2be83492de6c61"
+    },
+    {
+      "source": "Skills/fuzzing/offensive-fuzzing/SKILL.md",
+      "target": "fuzz-campaign-design/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "oracle sensitivity",
+        "structured and malformed corpora",
+        "persistent-state isolation",
+        "coverage plateau diagnosis",
+        "minimized replay"
+      ],
+      "rationale": "Strengthens the existing skill by anchored insertion after a temporary backup, retaining existing content and adding discriminating experiments. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "fcd129b42cdf383cacd7852db336dc51e3e540d872ead9931c7acec30b4088c4",
+      "target_sha256": "d38bd3432ce2f6c492360e9b746b4c08197d2b7e7079cc36511d467e91d86f92"
+    },
+    {
+      "source": "Skills/fuzzing/offensive-vuln-classes/SKILL.md",
+      "target": "rt-vuln-classes/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "differential class diagnosis",
+        "spatial versus temporal safety",
+        "arithmetic root causes",
+        "parser and concurrency contracts"
+      ],
+      "rationale": "Replaces CVE-driven classification and inherited severity with mechanism-specific discriminators and bounded impact. Source commit: a8de813edc9f66f60d44cfe42d47750e89d9930b.",
+      "tool_verification": "not executed; domain tools, synthetic behavioral cases and independent forward tests were not run during authoring; installed version/help verification is required before use.",
+      "source_sha256": "85b7eeeded746de0962b27ed14984f483cb21d1444843e21bc531aba221985e0",
+      "target_sha256": "b879c534a48af38d7a17132672a3961d612c0de2a2d554077e1dd02ce384b55d"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-advanced-redteam/SKILL.md",
+      "target": "rt-advanced-redteam/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "objective-to-control dependency graph",
+        "deconfliction and abort handling",
+        "stage-specific evidence custody"
+      ],
+      "rationale": "Retains engagement engineering as a distinct scope; replaces covert infrastructure and chained compromise with observable, reversible exercises.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "d5e1d178728c68971727e3e64c774cbe3a4506c68c3d134ced4d1c891fc9a1f8",
+      "target_sha256": "d1c52c1b8910d6437f5212ee63c955a32c2e3094c338f85f32efddf23fe7723e"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-edr-evasion/SKILL.md",
+      "target": "rt-edr-evasion/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "sensor-to-collector continuity",
+        "process and image telemetry correlation",
+        "prevention versus alert latency"
+      ],
+      "rationale": "Transforms evasion recipes into endpoint visibility and health validation, retaining telemetry-layer distinctions.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "e0131dc7f57fc7bd93bf17ec9e0eac4a228b07cb7afff35a7c45abb8a4c2958c",
+      "target_sha256": "ac9b829ba00698f03dc85a8f854ddc78800e8609711d18d4ba175a8ee10b1928"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-initial-access/SKILL.md",
+      "target": "rt-initial-access/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "download-origin metadata propagation",
+        "attachment handling and application policy",
+        "remote-access authentication gates"
+      ],
+      "rationale": "Preserves ingress-chain reasoning while replacing infection chains, credential stuffing and weaponized documents with inert probes.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "f7752f0940b2f985aeb4a352f6a77d9ef8bc268fd22c1faa6b40e22ce00cf965",
+      "target_sha256": "05fe9c34bdeadb1ee12f7f69b450c857b1bb9908b439484f0536a0d3a3407680"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-keylogger-arch/SKILL.md",
+      "target": "rt-keylogger-arch/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "user-mode hook versus driver distinction",
+        "raw-input scope",
+        "desktop and session isolation"
+      ],
+      "rationale": "Corrects architectural conflation and retains input-boundary analysis without implementing capture, stealth or exfiltration.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "856f21f14f6645cd2c566f2504fe1ac42d23be51d21be80e966ed6b36509449c",
+      "target_sha256": "23b01269837bfcea85ddd44ec59658e3571a0aee19fd7334b59323df774d4dcb"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-shellcode/SKILL.md",
+      "target": "rt-shellcode/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "memory protection transitions",
+        "static versus dynamic code provenance",
+        "architecture and policy compatibility"
+      ],
+      "rationale": "Retains executable-memory mechanics and evidence interpretation while excluding payload construction, injection and stealth.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "3f6399baf95a1e41c6968ed8b69fcb0989019ae79420298058da48cab3e09a68",
+      "target_sha256": "f80f2dc1c19d383165ae85ae4b2a98543ec8dad4c6567b0b2ededeacd29fc09f"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-windows-boundaries/SKILL.md",
+      "target": "rt-windows-boundaries/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "token and mandatory integrity checks",
+        "AppContainer capabilities",
+        "broker authorization and effective DACLs"
+      ],
+      "rationale": "Separates security-boundary validation from exploit mitigation configuration; omits driver abuse and security-sensor tampering.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "a31cb44295c46284a3742f923f6a55175fb3d9a6f4f90e69fa3cab70bd4983c2",
+      "target_sha256": "5af3a64d50dfe38b8e8ee210467e7f64bcd22547ded07e6689bbb81130edef1d"
+    },
+    {
+      "source": "Skills/infrastructure/offensive-windows-mitigations/SKILL.md",
+      "target": "rt-windows-mitigations/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "DEP and ASLR applicability",
+        "CFG and shadow-stack enforcement",
+        "VBS and HVCI effective state"
+      ],
+      "rationale": "Retains mitigation interaction analysis as distinct from authorization boundaries; replaces bypass chains with configuration and diagnostic comparisons.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "de31c49a6ecaa77f9fb4c351aef94bf661de03a4cac24b58b63fb7c31cca3b8f",
+      "target_sha256": "773930cbc1e3347b5e6ff3832c81362e45cb210dd080e313469b8fa1bd573c4c"
+    },
+    {
+      "source": "Skills/iot/offensive-iot/SKILL.md",
+      "target": "rt-iot/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "Image signatures, secure boot and anti-rollback enforce different points in the boot/update chain; one enabled feature does not prove the others.",
+        "UART/JTAG/SWD accessibility depends on production lifecycle state and permissions; pad presence is not confirmed privileged access.",
+        "Firmware strings and component banners require reachability and configuration evidence before becoming vulnerability findings.",
+        "MQTT topic ACLs, CoAP resource authorization and cloud device ownership must be tested per principal, not inferred from network access."
+      ],
+      "rationale": "Preserves hardware, firmware, update and IoT service boundaries while replacing chip-off, fault injection, destructive flashing and pivot chains with recoverable validation.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "4f9e9df132f3b93ba79b7f25f1d76a6ac2ac384cd6e51412dda19b5242ee6ab6",
+      "target_sha256": "45a7e77cc067c0fdb61d67ae9977d7d86efc14c44e5d296c74db0b873e7837eb"
+    },
+    {
+      "source": "Skills/mobile/offensive-mobile/SKILL.md",
+      "target": "rt-mobile/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "Exported components and URL handlers are entry points; caller permission checks and server authorization determine actual impact.",
+        "Deep-link routing and WebView origin/bridge permissions must preserve the account and origin boundary.",
+        "Local biometric UI success is different from permission to use a protected key or complete a server-side operation.",
+        "Rooted, instrumented and repackaged builds alter trust assumptions; distinguish local owner control from a stock-device cross-app or remote boundary failure."
+      ],
+      "rationale": "Retains mobile IPC, storage, link, WebView and authentication depth while excluding stealth bypasses, credential extraction and automatic backend scope expansion.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "16efaba6203ac752b5d266534fa6a488d5b2c00f11f5a1ccd89fc75bead122c1",
+      "target_sha256": "9c9e0cc82c2b0e2b8c8b760be3687bbdac0a0c01adfa65603b9c48df80596561"
+    },
+    {
+      "source": "Skills/network/offensive-network-attacks/SKILL.md",
+      "target": "rt-network-attacks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "DHCP snooping trust, binding tables and Dynamic ARP Inspection work together; missing or static bindings affect interpretation.",
+        "IPv6 router advertisements and DHCPv6 are different control planes; RA Guard does not by itself validate DHCPv6 responses.",
+        "802.1X port authorization, per-host mode and MAC-based exceptions determine access; a port is not universally single-principal or multi-principal.",
+        "VLAN tagging, native VLAN handling and routed ACLs establish different boundaries; one-way receipt is not bidirectional access.",
+        "Name-resolution fallback and application authentication are separate; a canary resolution change does not establish credential relay or TLS compromise."
+      ],
+      "rationale": "Replaces poisoning, relay and network disruption chains with protocol-specific trust-control experiments, preserving VLAN, NAC, ARP and dual-stack distinctions.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "2053dfa11437d2b47d941eb3238025dc68ba3ce415d14ffb0ea3e545c32673d8",
+      "target_sha256": "e061095c95548cacfabdff81ec88fbb17639c92bdfcc371303820088baf5a224"
+    },
+    {
+      "source": "Skills/post-exploitation/offensive-data-exfiltration/SKILL.md",
+      "target": "rt-data-exfiltration/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "destination and tenant restrictions",
+        "content classification and encryption visibility",
+        "sender-receiver integrity reconciliation"
+      ],
+      "rationale": "Replaces covert channels and data staging recipes with bounded synthetic-data transfer and control measurement.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "ae48370b98336536e9012d7b3f16ffb8abf745fdd8da78213fa3fd065c9c0534",
+      "target_sha256": "ed5c767aa2e295d24d4a51e33e86221843e50f941c37396e785d4d74e2294a03"
+    },
+    {
+      "source": "Skills/post-exploitation/offensive-lateral-movement/SKILL.md",
+      "target": "rt-lateral-movement/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "network reachability versus service authorization",
+        "identity and protocol restrictions",
+        "cross-host telemetry correlation"
+      ],
+      "rationale": "Retains remote-service trust-boundary reasoning while removing credential extraction, relay, session hijacking and tunneling chains.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "dbb18f5cf8381a84afff58d9b196cdd50d9e5b86a0a2099ba41664c2f6a2a7f4",
+      "target_sha256": "70fa7075d24260259435511c1305fc5a65d4d615fbd131b59d8f3e4e3edd6297"
+    },
+    {
+      "source": "Skills/post-exploitation/offensive-persistence/SKILL.md",
+      "target": "rt-persistence/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "trigger-action-principal relationships",
+        "autostart change detection",
+        "post-removal trigger verification"
+      ],
+      "rationale": "Retains persistence lifecycle and recovery coverage without installing backdoors or modifying authentication mechanisms.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "9b571dd2288f56db193fea2d541053ec95f774375f73feba97f339102c282929",
+      "target_sha256": "141738e879d9c53c695a4b99993529d55f78118fd63bc05ac8d1a00081f319b7"
+    },
+    {
+      "source": "Skills/privesc/offensive-linux-privesc/SKILL.md",
+      "target": "rt-linux-privesc/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "sudo command and environment constraints",
+        "capability and namespace scope",
+        "privileged service dependency ownership"
+      ],
+      "rationale": "Retains Linux authority semantics while removing root-shell recipes, kernel exploits and credential harvesting.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "1007b1e3bbdab4d434a07c95d5a8edf8ef6d4cc1d8ef38a6f45ddbe01657a1ab",
+      "target_sha256": "bf317b1b37343c0230c2e0cb0087f8c5d3c8267b9ad1c882e3ce957c4e545c7a"
+    },
+    {
+      "source": "Skills/privesc/offensive-windows-privesc/SKILL.md",
+      "target": "rt-windows-privesc/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "service DACL and dependency permissions",
+        "privileged action reachability",
+        "token privilege preconditions"
+      ],
+      "rationale": "Preserves local privilege-path analysis while replacing exploit families and secret extraction with effective-access and controlled-service evidence.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "cfb83e47118ed95d406374a5894124a8b3d993da9ca65c0270576b9a32697efe",
+      "target_sha256": "8600160350816c4b5269e37a64f66cfc6950a05aae64b4bcd03fceb1d1d61933"
+    },
+    {
+      "source": "Skills/recon/offensive-osint-methodology/SKILL.md",
+      "target": "rt-osint-methodology/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "source lineage",
+        "chronology",
+        "relationship adjudication"
+      ],
+      "rationale": "Retains falsifiable media and transaction correlation while separating relationships from personal or actor attribution.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "f03929b1e6f39bae288afbb301fced0d596a9f96fdeb257dd7a990f6ec336c6c",
+      "target_sha256": "891d6eb1e8aa19f41eed4a14d0cb4354858c6cea4df80f389d2164976d61779e"
+    },
+    {
+      "source": "Skills/recon/offensive-osint/SKILL.md",
+      "target": "rt-osint/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "asset ownership",
+        "temporal DNS evidence",
+        "source dependence"
+      ],
+      "rationale": "Focuses organizational exposure and supplied inventories without promoting hosting associations to ownership.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "999f3e0bc7badfdbb35d3f7e6f149fe7c62384ab1e2972a0dcc289ca1f78adb2",
+      "target_sha256": "0f1e05abaed696819298b1d96275eac2d02cd1c12c25adfefad04c7922c79379"
+    },
+    {
+      "source": "Skills/social-engineering/offensive-phishing/SKILL.md",
+      "target": "rt-phishing/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "SPF DKIM and DMARC alignment",
+        "automated link inspection versus human interaction",
+        "report-to-response workflow"
+      ],
+      "rationale": "Retains email control and campaign measurement substance while excluding credential proxies, filter evasion and malicious attachments.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "cb07baa8b247b1759724283f1304f03aecf75fc329f93b38ed4823dec104cb78",
+      "target_sha256": "621759260c9e2da5816c4cdd7d862f55962691741e8d940bb68a19e939bd6978"
+    },
+    {
+      "source": "Skills/social-engineering/offensive-social-engineering/SKILL.md",
+      "target": "rt-social-engineering/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "independent-channel identity verification",
+        "approval provenance and separation of duties",
+        "device and visitor handling workflows"
+      ],
+      "rationale": "Retains human trust and procedural boundary analysis, replacing impersonation scripts, badge cloning and malicious devices with bounded role-play.",
+      "tool_verification": "not executed; content construction only; installed tool/version checks and bounded behavioral experiments are required before operational claims",
+      "source_sha256": "415cc4d61afb3e8581bb9066d80eb7ce99f72d9ea13ee7d6d6a040761ab17d75",
+      "target_sha256": "eae204c21d2fed6986aab433e6aa79044fddbc5c20276d4c5e35120d1a9ce50c"
+    },
+    {
+      "source": "Skills/supply-chain/offensive-dependency-confusion/SKILL.md",
+      "target": "rt-dependency-confusion/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "resolver source selection",
+        "cache controls",
+        "namespace mapping"
+      ],
+      "rationale": "Uses private fixture registries and ecosystem-specific source decisions rather than public namespace registration.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "e394e3eb2467b93d8cf65c3db1a2bc01d27c53c6d2ea704b18f6ef10bc3fcb8b",
+      "target_sha256": "557537cef52490faed7b3209c263622973914f075253d24d086d1e4488d4a784"
+    },
+    {
+      "source": "Skills/supply-chain/offensive-supply-chain/SKILL.md",
+      "target": "rt-supply-chain/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "artifact digest lineage",
+        "signer authorization",
+        "promotion policy"
+      ],
+      "rationale": "Tests inert substituted artifacts and wrong signers without publishing packages.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "5457988a8e2fd3d846e3ad62908957fb9f3eff877e393ad6cec8d9c7750a2a56",
+      "target_sha256": "e909cf3ae4606408aba5786663bc809ac57489353e50b95c52551c13b9e7ce4f"
+    },
+    {
+      "source": "Skills/utility/offensive-fast-checking/SKILL.md",
+      "target": "rt-fast-checking/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "budgeted triage",
+        "matched controls",
+        "coverage accounting"
+      ],
+      "rationale": "Retains fast prioritization while making untested boundaries and inconclusive evidence explicit.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "f25479fa99f60fa70471fedd40daad09be897b43b0ed6783c45327962bb32f12",
+      "target_sha256": "a5a05e2afe3b5ad645e65a6a541bbb2c4abd5cc4a3dc5b7761059682a016259d"
+    },
+    {
+      "source": "Skills/utility/offensive-reporting/SKILL.md",
+      "target": "rt-reporting/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "claim provenance",
+        "export integrity",
+        "retest status"
+      ],
+      "rationale": "Preserves evidence bounds across reports and separates severity, workflow state and confirmed remediation.",
+      "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use",
+      "source_sha256": "b9a8bf71828399c75c6c877e0768e4f916adbea352010e2fed06e57f06786200",
+      "target_sha256": "603e0e1965b60ad1e0a1a6145cb80dcce09bfabf835a0036c5e2e63d0241594c"
+    },
+    {
+      "source": "Skills/web/offensive-business-logic/SKILL.md",
+      "target": "workflow-abuse-assessment/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "state-machine invariants",
+        "price and currency authority",
+        "idempotency and reconciliation",
+        "entitlement transitions"
+      ],
+      "rationale": "Strengthens economic and lifecycle invariants using exact synthetic ledgers while excluding fraud evasion and speculative scaling; schedule mechanics remain in rt-race-condition.",
+      "tool_verification": "not executed; content authoring only; deployed consumer, transport and provider behavior must be verified before operational use.",
+      "source_sha256": "4bd5fbf6bf70f98d0b11583e41d4d778044212df63576b31212edf34542779aa",
+      "target_sha256": "1e0aa9447ee182f64f98e1a6a75280b0f72385ce2ea3400765766765e92caa25"
+    },
+    {
+      "source": "Skills/web/offensive-deserialization/SKILL.md",
+      "target": "rt-deserialization/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "type-controlled reconstruction",
+        "integrity-before-deserialization",
+        "queue and cache provenance"
+      ],
+      "rationale": "Preserves cross-runtime reconstruction and producer/consumer trust analysis while removing gadget generators, shell chains and version-independent PHAR assertions.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "2dfb6f4dfa3be8a5ff7a36593908f0f00f236ccc6f7f53f3e1ea33bfe47537e2",
+      "target_sha256": "b0a7708f297e01c99ff89557d80beb5aef42e3f0f85b5929a261e3321e047ace"
+    },
+    {
+      "source": "Skills/web/offensive-file-upload/SKILL.md",
+      "target": "rt-file-upload/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "quarantine-to-publication transition",
+        "storage namespace isolation",
+        "processor resource bounds",
+        "signed upload scope"
+      ],
+      "rationale": "Retains upload, object-storage, archive and converter boundaries while replacing web shells, polyglots and processing exploits with inert lifecycle tests.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "afd9029b2171fc5ffa70e2dc1deeab62ff362a0006f28ba98f2be475ca666b64",
+      "target_sha256": "021e9b3827d22ade0c99270defef3d3bbddfd7a7dba6c45b6002b6769edc9fec"
+    },
+    {
+      "source": "Skills/web/offensive-graphql/SKILL.md",
+      "target": "rt-graphql/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "resolver-level authorization",
+        "alias and batch work accounting",
+        "subscription revalidation",
+        "cursor context"
+      ],
+      "rationale": "Preserves resolver, Relay, batch and subscription mechanisms; removes blind schema harvesting, credential amplification and depth-bomb procedures.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "fb88732fb1cc0396df485f3616f237a9bf36a5473b19511ea178a06a5a4cec30",
+      "target_sha256": "8261838938e7846aec141f86ec66aa4fb551b58ad1f017c163991db9de6f2399"
+    },
+    {
+      "source": "Skills/web/offensive-idor/SKILL.md",
+      "target": "rt-idor/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "object ownership enforcement",
+        "parent-child authorization",
+        "export authorization",
+        "capability semantics"
+      ],
+      "rationale": "Keeps object, relationship, export and policy-engine depth distinct from broad API coverage without enumeration or mass extraction.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "03a3002dd293907c507c27107d44368668d26dcfccf6d9a25197b871f58f528e",
+      "target_sha256": "24cf39913f805d31a5d0a275687ae767fdfad5a16ee83fc2bb67ee470bdb9e44"
+    },
+    {
+      "source": "Skills/web/offensive-open-redirect/SKILL.md",
+      "target": "rt-open-redirect/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "URL parser agreement",
+        "destination allowlisting",
+        "navigation versus server fetch"
+      ],
+      "rationale": "Retains parser and authentication redirect analysis without domain spoofing catalogs, phishing construction or token interception chains.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "3d298ca267a20ad24e687ffc891fc0013bb0edffd223d5e92adb21637d814aeb",
+      "target_sha256": "9211cdf412416f7cdf960ccd1a75cc4888ecdfb8390dc1249ea707079f204a93"
+    },
+    {
+      "source": "Skills/web/offensive-parameter-pollution/SKILL.md",
+      "target": "rt-parameter-pollution/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "duplicate-key precedence",
+        "query-body source precedence",
+        "scalar-array coercion",
+        "validator-consumer mismatch"
+      ],
+      "rationale": "Retains parameter precedence and type-coercion mechanisms while replacing bypass payload catalogs with observable parser contracts.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "2e592bd02971ea873d74fbb980063ef6ae4e48aa8c10ca69af2b6f5386e318b7",
+      "target_sha256": "75d87d0d4dff3516835681a92fda243f4c717ebcca114650120526c8ee4a8051"
+    },
+    {
+      "source": "Skills/web/offensive-race-condition/SKILL.md",
+      "target": "rt-race-condition/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "check-use atomicity",
+        "idempotency key scope",
+        "write skew",
+        "lease expiry and redelivery"
+      ],
+      "rationale": "Replaces amplification and pool-exhaustion recipes with schedule-controlled atomicity, write-skew and redelivery analysis.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "802e2f87e90c0f43f910e3440c4e57fd732d3ac24622c9ca3211fea62d1c5d27",
+      "target_sha256": "21a638d58b88630ca1c0de5d0eebada0b9cb262495d36c5ba51ffa27e1b63cf5"
+    },
+    {
+      "source": "Skills/web/offensive-rce/SKILL.md",
+      "target": "rt-rce/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "argument versus command separation",
+        "dynamic evaluation reachability",
+        "processor execution context"
+      ],
+      "rationale": "Preserves command, evaluator and processor boundary analysis while removing command payloads, shell chains, secret access and persistence.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "0a4b1fb7c2ad469c56aa78ecd6ddc26dfd5c485666f31eb2b2db0153cda416ff",
+      "target_sha256": "31b54b1c2c44bec810782aef4be8f0c5f4a774389e3d9032472cf6a932827292"
+    },
+    {
+      "source": "Skills/web/offensive-request-smuggling/SKILL.md",
+      "target": "rt-request-smuggling/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "front-back framing disagreement",
+        "protocol translation",
+        "connection reuse and response association"
+      ],
+      "rationale": "Retains desynchronization, connection reuse and protocol translation analysis without smuggled payload construction, queue poisoning or bypass guidance.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "67c54307ca8760a7c3d270bc708a9675f2c8d474d3715b64567a2e9a32db1f9c",
+      "target_sha256": "f273dc8a127127183d680322012166fb8626b65275aee29c8c7741d39c45cf6f"
+    },
+    {
+      "source": "Skills/web/offensive-sqli/SKILL.md",
+      "target": "rt-sqli/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "code-data query separation",
+        "identifier allowlisting",
+        "second-order query construction",
+        "operator injection"
+      ],
+      "rationale": "Preserves SQL, ORM, second-order and operator-boundary reasoning while replacing extraction, privilege escalation and WAF bypass recipes.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "e9f37270d2cf9093ebec8cee29a12040133078aca7407570fd715f6e7649cb37",
+      "target_sha256": "bca65dd1e16290376afd949ab4f9e88416c501fce90d5a2063f3bbffc903935b"
+    },
+    {
+      "source": "Skills/web/offensive-ssrf/SKILL.md",
+      "target": "rt-ssrf/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "destination validation at connect time",
+        "redirect revalidation",
+        "resolver-connector agreement",
+        "response exposure"
+      ],
+      "rationale": "Retains fetch, DNS, redirect and egress mechanisms without metadata credential access, internal enumeration or protocol abuse chains.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "44c7b71e1b18a33b9d0f4695d44f8dfa43f1bd6e052116ccab928f6e546daeb5",
+      "target_sha256": "541c6c1a5cd84990b2efb7d4411280a407c4a6ee64f45d29cd48f5417d992db9"
+    },
+    {
+      "source": "Skills/web/offensive-ssti/SKILL.md",
+      "target": "rt-ssti/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "template source versus data binding",
+        "second-pass rendering",
+        "sandbox capability configuration"
+      ],
+      "rationale": "Preserves engine, context, second-pass and sandbox analysis without traversal payloads, file reads or template-to-shell chains.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "9d32478c4b80f3f9c78da1165e0c7523e2443b8f92ed0ae169860322537bf668",
+      "target_sha256": "999bdeaadc80e92a4de4131237d798a5046c8fdba84c3817327dbabd6be366c9"
+    },
+    {
+      "source": "Skills/web/offensive-waf-bypass/SKILL.md",
+      "target": "rt-waf-bypass/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "inspection coverage",
+        "normalization agreement",
+        "rule enforcement mode",
+        "body inspection limits"
+      ],
+      "rationale": "Reframes evasion into measurable inspection coverage, mode and parser validation; removes residential proxy, CAPTCHA, fingerprint and origin-bypass guidance.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "0485e6ebf76ff726a024b73c4d1059e2d692ac0d65ff78739101acc7b40a6712",
+      "target_sha256": "cd5d12553bf8a456c7edfe62cc87960abd80b0cf536b9dd4252f624d3f871180"
+    },
+    {
+      "source": "Skills/web/offensive-xss/SKILL.md",
+      "target": "rt-xss/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "context-sensitive output handling",
+        "DOM source-to-sink flow",
+        "sanitizer mutation",
+        "stored-content rendering"
+      ],
+      "rationale": "Retains reflected/stored/DOM, mutation and browser-policy mechanisms without payload catalogs, CSP evasion or session extraction.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "6c688051d7e82ebcf3da3ec53aa25f49bdb4e332895d49132e0117462fa3ffb4",
+      "target_sha256": "0d7fc9c747c60fc8613704b9b8cb00fc18db6fe07a1948ff32e3afe57e4cf624"
+    },
+    {
+      "source": "Skills/web/offensive-xxe/SKILL.md",
+      "target": "rt-xxe/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "external entity resolution",
+        "DTD and XInclude separation",
+        "schema fetch policy",
+        "expansion bounds"
+      ],
+      "rationale": "Preserves multi-parser, entity, include and schema resolution analysis without local-file extraction, metadata pivots or exponential-expansion recipes.",
+      "tool_verification": "not executed; content authoring only; installed tool, target and protocol behavior must be verified in the authorized laboratory before use.",
+      "source_sha256": "b56c15801faa3f3046d86071cab344fdda55dd97de266b06ed0bbaae54659685",
+      "target_sha256": "b2d681d7919b0634763f8534f03d4970018b1dc23552bda775ca34e6d3e25e95"
+    },
+    {
+      "source": "Skills/wireless/offensive-bluetooth-ble/SKILL.md",
+      "target": "rt-bluetooth-ble/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "GATT characteristic properties describe supported operations, not the complete authorization policy.",
+        "Link encryption, pairing authentication, bonding and application authorization are distinct states.",
+        "Just Works can provide encryption without authenticated peer confirmation; that alone does not prove application command acceptance.",
+        "A valid bond may outlive account logout or ownership transfer; application freshness and revocation need separate checks."
+      ],
+      "rationale": "Keeps GATT, pairing and ownership mechanics while replacing key recovery, relay and actuator abuse with inert authorization tests.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "46b1d69a6e6e578af1ee5d43a273a97250142d35ec7e08b30efe2badd2835ed6",
+      "target_sha256": "1328433c89e0f6c7b1c46f3ecc5107db481b254deb6f68447e771e6e5086837a"
+    },
+    {
+      "source": "Skills/wireless/offensive-bluetooth-classic/SKILL.md",
+      "target": "rt-bluetooth-classic/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "SDP service discovery indicates availability, not permission to use a profile.",
+        "BR/EDR remains relevant beyond Bluetooth 4.0; protocol role and enabled profiles matter more than marketing generation.",
+        "Pairing, bonding, encryption-key strength and profile-level authorization are separate controls.",
+        "SPP, OBEX, HID and audio profiles expose different operations; service success must be measured at its own endpoint."
+      ],
+      "rationale": "Preserves Classic profile and key-policy distinctions without HID injection, audio interception, address brute force or firmware weakening.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "0cb51a900fe75514531ad847ab7363a2c33a8cd47615087bc6c7b3290dc1da1a",
+      "target_sha256": "1d89380506dacef7e23632904d5cfa038e4d9ca7d308b2754c1d0fc7c864b861"
+    },
+    {
+      "source": "Skills/wireless/offensive-deauth-disassoc/SKILL.md",
+      "target": "rt-deauth-disassoc/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "PMF capability advertisement differs from negotiated protection for a particular association.",
+        "Protection of robust management frames is not a promise against all RF interference, authentication load or every action-frame class.",
+        "Disconnection can result from legitimate controller policy, inactivity, radio loss or client power management.",
+        "Recovery includes reassociation, service restoration and state continuity; a connected icon is not a service oracle."
+      ],
+      "rationale": "Preserves PMF, frame-class and recovery analysis while replacing coercion and denial-of-service recipes with bounded conformance validation.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "c29e7db48d4f646cdd3c9b79f16de80e6305147fde30e9e673da585617021f73",
+      "target_sha256": "aedf962436a379fa3b050662b3b6ebcf56b4141f2b11c3eb76b9aa09d3f61fb1"
+    },
+    {
+      "source": "Skills/wireless/offensive-evil-twin/SKILL.md",
+      "target": "rt-evil-twin/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "SSID equality is a discovery hint, not proof of AP identity; saved authentication profiles determine whether a client can join.",
+        "Joining an open network and trusting its application endpoints are separate security decisions.",
+        "Captive portal detection can legitimately request cleartext connectivity probes; this does not prove application TLS compromise.",
+        "User choice, automatic association and roaming are different triggers that need separate records."
+      ],
+      "rationale": "Recasts evil-twin and portal material as client selection and endpoint trust measurement, excluding credential harvesting, coercion and tracking.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "dec52fa1cc0b36eb9e322c93f8cb91093f68cc2ade8aaf3f8354ee4bf02f1974",
+      "target_sha256": "4bbe1fa75d829038b53b96d4f11546c8b63cb269841a24dbe391a1437dae2960"
+    },
+    {
+      "source": "Skills/wireless/offensive-krack-fragattacks/SKILL.md",
+      "target": "rt-krack-fragattacks/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "A retransmitted handshake message is legitimate; reinstalling the same key with reset nonce or replay state is the disputed behavior.",
+        "Packet-number reuse must be scoped to the same key and relevant traffic context; key rotation changes interpretation.",
+        "Fragment caches must preserve security context and avoid accepting fragments across incompatible key or association state.",
+        "Aggregation parsing and plaintext acceptance are distinct variants; one result does not confirm an entire CVE family."
+      ],
+      "rationale": "Retains two implementation defect families with per-variant proof and rejects blanket patch claims, password-recovery implications and crafted-frame chains.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "12dea4e775fa3f28d89ab1223bb4810bce21a5ac13cf300dbe54583abbd28316",
+      "target_sha256": "d3bff73256b7b768757972fa52ee0e534487d26d9229aa89648d81461d5101f9"
+    },
+    {
+      "source": "Skills/wireless/offensive-lorawan-sub-ghz/SKILL.md",
+      "target": "rt-lorawan-sub-ghz/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "LoRa is a physical modulation; LoRaWAN adds activation, integrity, counters and key roles. Proprietary LoRa framing need not implement LoRaWAN.",
+        "OTAA and ABP have different session lifecycles; nonce, frame-counter and key semantics depend on the protocol revision.",
+        "Repeated delivery across gateways or confirmed-message retries is not necessarily duplicate application processing.",
+        "For proprietary receivers, identical transmitted bits alone do not establish acceptance of a stale command; the receiver's freshness state is the oracle."
+      ],
+      "rationale": "Separates LoRaWAN session semantics from proprietary receiver freshness and removes key extraction, downlink injection and access-control replay recipes.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "566cd87eb0b630e62988db82003f5a1894eaf3747901d9d912edbd9a50dbb244",
+      "target_sha256": "c524d888a5756608a82ba13fe4a39bdc17bf8cb7c6026eb45ed4b6fca8d4a669"
+    },
+    {
+      "source": "Skills/wireless/offensive-wifi-recon/SKILL.md",
+      "target": "rt-wifi-recon/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "Beacon RSN capabilities describe advertised options; association records establish negotiated authentication and PMF.",
+        "Channel hopping trades breadth for dwell time and loses short exchanges; absence must be qualified by coverage.",
+        "Hidden SSIDs, multi-BSSID profiles and multiple links can make one physical AP appear as incomplete or multiple assets.",
+        "OUI, RSSI and probe patterns are weak identifiers; randomized addresses and shared chipsets defeat simple attribution."
+      ],
+      "rationale": "Separates observation reliability from active testing; removes tracking, coercive discovery and assumed adapter support.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "e9504bac7e1479593ca36674ae4807e8983bb744ac300840c9e07c0c599e5408",
+      "target_sha256": "ae00336a70cb013f394171939d10d867f138bfed264c5c354d1324c3b3f4af51"
+    },
+    {
+      "source": "Skills/wireless/offensive-wifi/SKILL.md",
+      "target": "rt-wifi/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "SSID-to-VLAN mapping and controller tunnel placement determine the actual forwarding boundary; an SSID name is not an isolation control.",
+        "Client isolation may differ for same-AP, cross-AP, wired-to-wireless and multicast paths; enumerate each separately.",
+        "Roaming, cached authorization and dynamic VLAN assignment can retain stale access after a role change.",
+        "Multi-band and multi-link configurations can expose different authentication or forwarding policies despite a shared profile name."
+      ],
+      "rationale": "Retains the broad Wi-Fi source as an estate forwarding and roaming assessment; delegates protocol-specific authentication claims to distinct skills.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "49a0bdc0e0dc208ce71ae5bf2180e160ba08077df494e53c5568c600a235dfaa",
+      "target_sha256": "7f6dd2047ac2107dbcc434a70ba5560025655dc5c95eab36a4bab24069a00ca6"
+    },
+    {
+      "source": "Skills/wireless/offensive-wpa-enterprise/SKILL.md",
+      "target": "rt-wpa-enterprise/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "Server trust requires the configured trust anchor and server identity policy; outer identity traffic does not reveal every inner EAP method.",
+        "PEAP/TTLS tunnel establishment and inner authentication are distinct events; test whether sensitive inner authentication begins before required trust checks pass.",
+        "EAP-TLS client certificate acceptance depends on issuer, usage, identity mapping and status policy, not possession of any certificate.",
+        "Authentication success and authorization role assignment are separate boundaries; a valid test identity must receive only its mapped access."
+      ],
+      "rationale": "Preserves EAP method, PKI and network-role boundaries while removing credential capture, certificate theft and domain pivots.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "a744c80d312a30fc7040f73e782cda3d171dce68767e74630ac8f1a8b3320dba",
+      "target_sha256": "27ac3b814b36fa2ad51e32e30b322f2de0bbd3e382f96353b7a33996fd8c330f"
+    },
+    {
+      "source": "Skills/wireless/offensive-wpa2-psk/SKILL.md",
+      "target": "rt-wpa2-psk/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "PSK provisioning quality is distinct from four-way-handshake correctness; a transcript alone does not prove a weak secret.",
+        "A valid EAPOL verification fixture binds the SSID, peer addresses, nonces and integrity check to one known lab secret.",
+        "PMKID availability depends on implementation and negotiation; an empty conversion can mean missing capture data.",
+        "Fast-transition and caching paths require separate evidence; do not infer recoverable master-key material from roaming."
+      ],
+      "rationale": "Preserves PSK, EAPOL, PMKID and roaming distinctions while replacing password recovery with synthetic provisioning and parser validation.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "27fdd98164101ed4f46b7ef1b89ead36ab1b08a3b0ac1c5aa66f2b6fcb835c6d",
+      "target_sha256": "30873b8572358117a0c9b440b9e57b4be6aaf61d7e7dcd97ea1530620ca94ea5"
+    },
+    {
+      "source": "Skills/wireless/offensive-wpa3-sae/SKILL.md",
+      "target": "rt-wpa3-sae/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "SAE authenticates before the subsequent key handshake; do not describe it as removing every four-way exchange.",
+        "Transition advertisement permits multiple AKMs, but acceptance depends on the saved client profile and negotiated state.",
+        "H2E advertisement is not proof that every implementation path is constant-time or that legacy fallback is disabled.",
+        "Anti-clogging behavior, authentication quotas and scheduling affect legitimate association availability under bounded load."
+      ],
+      "rationale": "Replaces downgrade and flooding chains with negotiation-policy discriminators and measured resource controls; rejects universal patch and H2E claims.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "7c42c538cd6609fc8b9e431c9383346fad3e1539e1f58dd8f9f6fba14f42d4e7",
+      "target_sha256": "d07300a7910ec2541701006e2d91b9965b2f18578e379a59596d7fbe0c8cee49"
+    },
+    {
+      "source": "Skills/wireless/offensive-wps/SKILL.md",
+      "target": "rt-wps/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "PIN enrollment and push-button enrollment are different state machines with distinct authorization windows.",
+        "A WPS information element or locked flag is an advertisement; prove actual enrollment acceptance or refusal.",
+        "Rate control requires server-side failure counters and a defined unlock policy; silence may instead be packet loss.",
+        "Historical weak-nonce families require implementation-specific evidence; chipset branding cannot establish predictable randomness."
+      ],
+      "rationale": "Transforms PIN recovery and lockout evasion into bounded enrollment-state and attempt-policy validation.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "4cc089a78b4793a15d9b5bcce4916840db48480dc8eb88c057d6ebd1555501dc",
+      "target_sha256": "77d8893ccb0da9daf59cda3c5af3d9d65e11e7a530b1b3e107eb3942b0f4a597"
+    },
+    {
+      "source": "Skills/wireless/offensive-z-wave/SKILL.md",
+      "target": "rt-z-wave/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "S0 bootstrap exposure and operational network keys are distinct; do not describe all S0 keys as a single fixed derived network key.",
+        "S2 security classes have different authentication properties; recording only 'S2' hides the actual granted class.",
+        "Controller inclusion policy and device-specific verification determine whether a reduced class is accepted.",
+        "Home ID and node ID are routing identifiers, not authentication secrets; command-class enforcement must be checked at the receiving node."
+      ],
+      "rationale": "Replaces S0 key recovery and hub pivots with inclusion policy and receiver enforcement, correcting routing-ID and key-role confusion.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "e99dc89ed0345f87860355f47c731d9b0b292ef9829d774793e8e05c4d1fe0e1",
+      "target_sha256": "6213bfb2787b0faf18586991455e6ab1cf6773b4cc6a9e20b2f0f5dad9f91d33"
+    },
+    {
+      "source": "Skills/wireless/offensive-zigbee-thread-matter/SKILL.md",
+      "target": "rt-zigbee-thread-matter/SKILL.md",
+      "disposition": "rewritten",
+      "mechanisms": [
+        "Zigbee network admission, link/application keys and ZCL command authorization are related but distinct controls.",
+        "Thread network credentials, commissioner authorization and application authorization are not interchangeable; PSKc is not the entire operational dataset.",
+        "Matter runs over IP transports including Thread and Wi-Fi; it is not a universal Zigbee commissioning layer.",
+        "Matter commissioning sessions, operational certificates, fabrics and access-control entries must be evaluated separately; possession of a setup code alone does not prove access."
+      ],
+      "rationale": "Corrects conflated protocol layers and key roles while preserving commissioning, mesh membership and application authority as distinct experiments.",
+      "tool_verification": "not executed; content authoring only. Domain tools, radio hardware, protocol behavior and laboratory experiments require version-specific validation before use.",
+      "source_sha256": "89809281dd4b1e86e619297e990a10fd5c0c153d88721b476f7c875d823607e2",
+      "target_sha256": "58806854fbf5b9a386d08191e6d9d205f2997c1cc881ea367eefd9e436a28878"
+    }
+  ]
+}

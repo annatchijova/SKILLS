@@ -10,6 +10,12 @@ Estas skills forman un sistema coherente construido sobre la semiótica triádic
 
 ---
 
+## Colección de evaluación Red Team
+
+La colección separada [`red-team/`](red-team/README.es.md) reúne 79 skills de evaluación de seguridad reescritas con metodología y 28 copias de skills existentes. Sirve para revisiones autorizadas de repositorios, trabajo en laboratorios controlados y validación de detecciones. Leé la [guía en español](red-team/README.es.md), la [versión en inglés](red-team/README.md), el [mapa de cobertura de las fuentes](red-team/COVERAGE.md) y el [registro de validación](red-team/VALIDATION.md).
+
+Elegí un solo alcance de descubrimiento por vez: `python3 -B red-team/catalog.py general` selecciona las 92 skills listadas acá; `python3 -B red-team/catalog.py red-team` selecciona la colección separada de 107. La carpeta por sí sola no configura el descubrimiento automático de un agente.
+
 ## Skills
 
 | # | Skill | Categoría | Se activa cuando |

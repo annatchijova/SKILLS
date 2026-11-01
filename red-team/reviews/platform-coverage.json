@@ -1,0 +1,170 @@
+[
+  {
+    "source": "Skills/cloud/offensive-cloud/SKILL.md",
+    "target": "cloud-identity-assessment/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "effective IAM graph",
+      "delegation preconditions",
+      "audit-correlated marker access"
+    ],
+    "rationale": "Preserves provider-specific identity edges and separates policy simulation from demonstrated runtime authority.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/cicd/offensive-cicd-pipeline/SKILL.md",
+    "target": "pipeline-boundary-assessment/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "event eligibility",
+      "interpreter boundary",
+      "artifact handoff"
+    ],
+    "rationale": "Uses inert fixtures to distinguish untrusted data interpretation from mere token availability.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/cicd/offensive-cicd-secrets/SKILL.md",
+    "target": "rt-cicd-secrets/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "secret residue",
+      "lease lifetime",
+      "federation claims"
+    ],
+    "rationale": "Tests synthetic credential delivery and retention separately from pipeline execution control.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/container/offensive-container-escape/SKILL.md",
+    "target": "rt-container-escape/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "mount identity",
+      "namespace isolation",
+      "runtime socket authority"
+    ],
+    "rationale": "Replaces host takeover recipes with host-observed canary boundary experiments.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/container/offensive-k8s-attacks/SKILL.md",
+    "target": "rt-k8s-attacks/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "RBAC and admission",
+      "operator deputy authority",
+      "CNI isolation"
+    ],
+    "rationale": "Separates authorization reviews, admission decisions and actual resource or traffic outcomes.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/supply-chain/offensive-supply-chain/SKILL.md",
+    "target": "rt-supply-chain/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "artifact digest lineage",
+      "signer authorization",
+      "promotion policy"
+    ],
+    "rationale": "Tests inert substituted artifacts and wrong signers without publishing packages.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/supply-chain/offensive-dependency-confusion/SKILL.md",
+    "target": "rt-dependency-confusion/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "resolver source selection",
+      "cache controls",
+      "namespace mapping"
+    ],
+    "rationale": "Uses private fixture registries and ecosystem-specific source decisions rather than public namespace registration.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/crypto/offensive-crypto-attacks/SKILL.md",
+    "target": "rt-crypto-attacks/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "nonce lifecycle",
+      "authentication ordering",
+      "error distinguishability"
+    ],
+    "rationale": "Preserves cryptographic misuse preconditions and bounded measurements without key recovery.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/crypto/offensive-tls-attacks/SKILL.md",
+    "target": "rt-tls-attacks/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "peer identity",
+      "early-data semantics",
+      "compression preconditions"
+    ],
+    "rationale": "Distinguishes negotiation and client validation from application replay or leakage impact.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/ai/offensive-ai-security/SKILL.md",
+    "target": "rt-ai-security/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "tool authority",
+      "retrieval isolation",
+      "artifact trust"
+    ],
+    "rationale": "Uses deterministic effect observations and synthetic data rather than model self-assessed success.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/utility/offensive-fast-checking/SKILL.md",
+    "target": "rt-fast-checking/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "budgeted triage",
+      "matched controls",
+      "coverage accounting"
+    ],
+    "rationale": "Retains fast prioritization while making untested boundaries and inconclusive evidence explicit.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/utility/offensive-reporting/SKILL.md",
+    "target": "rt-reporting/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "claim provenance",
+      "export integrity",
+      "retest status"
+    ],
+    "rationale": "Preserves evidence bounds across reports and separates severity, workflow state and confirmed remediation.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/recon/offensive-osint/SKILL.md",
+    "target": "rt-osint/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "asset ownership",
+      "temporal DNS evidence",
+      "source dependence"
+    ],
+    "rationale": "Focuses organizational exposure and supplied inventories without promoting hosting associations to ownership.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  },
+  {
+    "source": "Skills/recon/offensive-osint-methodology/SKILL.md",
+    "target": "rt-osint-methodology/SKILL.md",
+    "disposition": "rewritten",
+    "mechanisms": [
+      "source lineage",
+      "chronology",
+      "relationship adjudication"
+    ],
+    "rationale": "Retains falsifiable media and transaction correlation while separating relationships from personal or actor attribution.",
+    "tool_verification": "not executed; content authoring only; inspect installed versions and authoritative documentation before operational use"
+  }
+]
