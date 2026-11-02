@@ -1,99 +1,94 @@
 ---
 name: rt-deserialization
-description: "Review and safely instrument object reconstruction boundaries in serialized inputs, queues and caches without constructing gadget chains."
+description: "Red-team assessment of insecure-deserialization boundaries across Java (ObjectInputStream, XMLDecoder, Jackson/JNDI), PHP (serialize, phar), .NET (BinaryFormatter, Json.NET TypeNameHandling, ViewState), Python (pickle, unsafe YAML), Node (node-serialize) and Ruby (Marshal). Covers format recognition signatures and gadget-chain reasoning, re-expressed as owned-fixture experiments using detection-only gadgets (URLDNS/owned-callback) and negative controls instead of RCE payloads."
 ---
 
-# Deserialization Boundary Validation
+# Insecure Deserialization Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's deserialization craft as scoped experiments: it names the formats, sinks and gadget families, and proves reachability with detection-only gadgets (a DNS lookup to an owned collector) rather than shipping RCE gadget chains against a target.
 
 ## Scope and prerequisites
 
-Determine whether untrusted input can choose executable reconstruction behavior. Format recognition alone is inventory; it does not establish code execution.
+Find every sink that deserializes untrusted bytes: cookies, POST bodies, hidden fields, caches (Redis/Memcached), queues (Celery/RabbitMQ), session stores, ViewState, JMX/RMI. Use an owned instance with the same library versions; confirm reachability with a safe gadget that only makes an owned DNS/HTTP callback (e.g. URLDNS-style), never an RCE chain.
 
-Use a disposable runtime with synthetic data, denied outbound network and no production secrets. Obtain the actual serializer settings, dependency graph, class allowlist and input provenance.
+Declare target, language/library and exact versions (gadget availability is version- and classpath-bound), attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED. RCE via gadget chain is an impact class to demonstrate on an owned lab, bounded, not run live.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and recognition signatures
+
+Recognize the format first (leads):
+- Java `ObjectInputStream`: hex `ac ed 00 05`, Base64 `rO0AB`. XMLDecoder: `<java>`/`<object class=`.
+- PHP serialize: `O:<len>:"Class":` / `a:<count>:{`, often Base64 in cookies. phar: polyglot disguised as an image.
+- .NET BinaryFormatter: Base64 `AAEAAAD/////`; Json.NET: `"$type":`; ViewState blobs.
+- Python pickle: opcodes `\x80\x04\x95` (v4+) / `(dp0`; found in Redis, Celery, ML pipelines.
+- Ruby Marshal: `\x04\x08`. Jackson polymorphic: `["class.name", {`.
 
 ## Mechanism and observation
 
-Trace decoding and decompression, signature verification, type resolution, object construction and post-load validation. Include queue consumers, uploaded archives and cache values only when an actual call path reaches a serializer.
+Trace untrusted bytes to the deserializer and its type controls (filters, allowlists, `enableDefaultTyping`).
 
-**Firstness:** Record the exact loader and resolved type, plus whether integrity validation preceded object reconstruction. Compare with the intended data-only schema.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record whether a detection gadget triggered (owned DNS/HTTP callback) and the deserializer's errors. **Secondness:** State the secure baseline (type-restricted or signed/opaque data only) and the deviation. **Thirdness:** Infer the defect class only after a controlled gadget resolves.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** An untrusted type discriminator selects a reconstruction hook before the trust or type check.
+**Mechanism hypothesis:** The sink reconstructs attacker-chosen types from untrusted bytes with no type restriction, so a gadget present on the classpath executes during deserialization.
 
-**Competing benign explanation:** A format signature may belong to an opaque signed blob rejected before loading, or a serializer may use only explicit data-transfer types. A listed dependency need not be reachable from the entrypoint.
+**Competing benign explanation:** The blob is HMAC-signed and tampering is rejected before deserialization; an `ObjectInputFilter`/allowlist blocks the type; the required gadget is not on the classpath; the data is opaque/encrypted; the value is parsed by a safe format, not deserialized.
 
 ## Deduction and controls
 
-An approved inert sentinel type with only an in-memory event recorder is instantiated through the real loader only when the type boundary is permissive; the same input must be rejected by the restricted configuration.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A valid signed/typed object deserializes (positive control); an attacker-typed object must be rejected if controls hold. A confirmed finding fires the owned callback via a detection gadget where the control object does not. Predeclare the callback. A signature check or type filter rejecting the object is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Load a normal data-only fixture through the deployed loader configuration and capture type resolution events.
+Owned instance, version-matched; detection-only gadgets.
 
-2. Use an owner-provided inert type-selection fixture that records construction without file, network or process effects; do not generate gadgets.
+1. **Baseline.** Capture a legitimate serialized object; confirm the sink deserializes it and note any signature/MAC.
+2. **Signature check.** Flip a byte; if it is rejected intact, a MAC likely gates the sink — record as a control.
+3. **Detection gadget (owned).** Submit a gadget that only performs a DNS/HTTP lookup to your collector (Java URLDNS, equivalent benign chains elsewhere). A callback proves the bytes were deserialized into attacker-chosen behavior — without RCE.
+4. **Classpath/type mapping.** From source or errors, enumerate available gadget libraries (Commons-Collections, Spring, Hibernate, BeanUtils; phpggc chains; ysoserial.net families) — knowledge, not execution.
+5. **Impact bound (owned lab).** If demonstrating RCE reachability is in scope, do it once on the owned lab with a benign marker, then stop.
+6. **Control.** Confirm the signed/typed control path rejects the attacker object.
 
-3. Compare allowed and disallowed type identifiers with the same serializer, verifying whether rejection happens before any hook.
+Record results including refutations. Keep finding and control status separate.
 
-4. Corrupt a synthetic integrity tag and confirm that the loader is not invoked; restore a valid tag as the harness control.
+## Gadget-family craft (leads; impact classes to bound)
 
-5. Repeat the minimal case at the actual queue or cache adapter when in scope, then discard the disposable runtime while retaining logs.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+- **Java** — ysoserial families (CommonsCollections 1-7 by JDK/version, Spring, Hibernate, BeanUtils), JRMPClient/JNDI redirect, Jackson polymorphic + JNDI, XMLDecoder. Use URLDNS for safe confirmation first.
+- **PHP** — phpggc (Laravel, Symfony, Monolog, Guzzle, WordPress), phar:// triggering via file-ops functions.
+- **.NET** — ysoserial.net (TypeConfuseDelegate, WindowsIdentity, TextFormattingRunProperties, PSObject), ViewState when machine key is disclosed, Json.NET `TypeNameHandling`.
+- **Python** — pickle `__reduce__`, unsafe `yaml.load`.
+- **Node** — `node-serialize` IIFE, `funcster`. **Ruby** — Marshal gadget chains.
 
 ## Domain-specific failure modes
 
-Instrumenting a synthetic type can establish loader ordering but cannot establish availability of a dangerous production gadget. Autoloaders, finalizers and nested objects may resolve after the top-level type check. Do not use DNS callbacks as a synonym for safe deserialization.
+A signed blob makes the sink unexploitable without the key — report that as a control, not a bypass. Gadget availability is classpath- and version-specific; absence of a chain is not absence of the flaw (and vice versa). A callback proves deserialization reachability; RCE still depends on an available gadget. Modern filters (`ObjectInputFilter`, `TypeNameHandling=None`) change the verdict — verify them.
 
 ## Evidence and deliverable
 
-Provide loader/configuration locations, dependency versions, provenance of bytes, ordered integrity/type/hook events and the inert fixture definition. Label instrumentation-only results and untested production reachability explicitly.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the sink, the format signature, the detection-gadget callback record, the library/versions and classpath evidence, and any signature/type control. Keep host output out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered sinks.
 
 ## Versions and tool limitations
 
-PHP archive metadata behavior, YAML loader defaults, Java object filters and .NET serializer availability vary by version. Check installed APIs and runtime behavior instead of inheriting upstream historical claims.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin library and runtime versions and the classpath — gadget chains are version-bound. ysoserial/phpggc/ysoserial.net default to RCE payloads; use detection-only gadgets for confirmation and bound any RCE demo to an owned lab. No chain was verified by this content; confirm versions first.
 
 ## Remediation and detection
 
-Replace executable object formats at trust boundaries with schema-validated data; validate integrity before reconstruction where appropriate. Use explicit type admission and bounded graph depth as defense in depth, not a promise that untrusted native serialization is safe.
-
-Monitor unexpected type-resolution attempts and integrity failures before load. Validate telemetry with inert rejected fixtures; preserve dependency and consumer identity in the event.
+Do not deserialize untrusted data; prefer data-only formats (JSON without polymorphic typing); if unavoidable, HMAC-sign blobs, apply strict type allowlists (`ObjectInputFilter`, `TypeNameHandling=None`), and isolate the process. Add a regression asserting the detection gadget is rejected. Detect unexpected class loads and outbound callbacks during deserialization correlated to the request ID.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | The actual input path instantiates a disallowed inert type before validation: CONFIRMED for type-boundary failure; FAIL; arbitrary code execution remains unproven. |
-| Benign refutation | A tampered opaque blob is rejected before the loader and a valid fixture still loads: REFUTED for that untrusted reconstruction path; PASS. |
-| Insufficient evidence | Only serialization magic bytes and an old CVE match are available: CANDIDATE; WARN. |
+| Supported finding | A detection gadget fires the owned callback where the control object is rejected: CONFIRMED for deserialization reachability; FAIL (RCE only if an available gadget is shown). |
+| Benign refutation | A signature check or type filter rejects the attacker object: REFUTED for the tested sink; PASS for the control. |
+| Insufficient evidence | Format recognized but no callback and no type-control visibility: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-deserialization/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-deserialization/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves cross-runtime reconstruction and producer/consumer trust analysis while removing gadget generators, shell chains and version-independent PHAR assertions.
-
+This revision restores the upstream's format-recognition signatures and cross-language gadget-family knowledge, re-expressed as owned-fixture experiments using detection-only gadgets and signature/type controls, replacing RCE gadget chains with bounded reachability proof.

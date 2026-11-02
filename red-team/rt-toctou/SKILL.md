@@ -1,101 +1,88 @@
 ---
 name: rt-toctou
-description: Test check/use identity and snapshot consistency with deterministic synthetic schedules across files, shared buffers and transactional services.
+description: "Red-team / research assessment of time-of-check-to-time-of-use boundaries: filesystem races (symlink/hardlink swaps between access() and open()), kernel double-fetch of user pointers, temp-file predictability, and check-then-act windows in privileged programs. Re-expressed as scoped experiments on an owned SUID/privileged binary that prove the window with a planted swap and a widened-window control instead of live privilege theft."
 ---
 
-# Check/use consistency assessment
+# TOCTOU Race Boundary Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before using this skill.
-Work on test-owned files, memory and service fixtures without privileges.
-Use explicit synchronization hooks in fixtures instead of timing-amplification techniques.
-Do not race privileged programs, mounts, procfs targets or live payment operations.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's TOCTOU craft as scoped experiments: it names the filesystem and kernel race classes, proving the window on an owned privileged binary with a planted target rather than stealing real privilege. Compose with `invariant-hunting` (check-at-T0, use-at-Tn) and `concurrency-reasoning`.
 
-## Inputs and required invariant
+## Scope and prerequisites
 
-Obtain the check site, use site, protected property and mutable object identity.
-Record who may change each field and which lock, snapshot or transaction spans the interval.
-For a file, distinguish path text, directory handle, open handle and inode identity.
-For memory, distinguish pointer equality from allocation generation and field values.
-For an API, distinguish authentication time from authorization policy at commit.
-Define whether the contract requires current policy or permits a documented snapshot.
-Do not label every stale read a security defect.
+TOCTOU exploits the gap between a check (access/stat/validation) and the use (open/exec/write) of the same resource. Work on an owned SUID/privileged binary or kernel module in a lab; prove the race against a planted file/target you own. Do not race a production privileged program.
 
-## Mechanisms
+Declare the target, the check/use pair, attempt budget, stop condition. Source-only review yields a hypothesis marked NOT TESTED.
 
-A TOCTOU defect requires a checked fact to become invalid before a dependent action.
-A double-fetch uses mutable input twice while assuming the validated values stayed fixed.
-A descriptor can pin file identity while contents or permissions remain mutable.
-A lock helps only when all relevant mutators participate in the same exclusion rule.
-An idempotency key prevents duplicates only if key, request identity and commit are bound.
-A data-race-free transaction can still violate an application-level check/use invariant.
+## Attack surface and classes
 
-## Abduction and strongest benign explanation
+- **Filesystem races** — swap a path between `access()`/`stat()` and `open()`/`exec()` via symlink/hardlink/rename; the check sees a benign file, the use acts on a sensitive one.
+- **Kernel double-fetch** — a syscall reads a user pointer twice (check then use); a concurrent thread changes it between fetches.
+- **Temp-file predictability** — predictable names in a shared dir let an attacker pre-create/symlink.
+- **Check-then-act** — any privileged validate-then-operate without holding a lock/handle.
 
-Hypothesis: a path is validated as object A and later resolved again to object B.
-Benign rival: the code opens once, validates the same handle and uses that handle.
-Another rival: the policy intentionally authorizes a versioned snapshot.
-Deduction: changing only the test path binding after check changes the used identity
-in the faulty fixture, while the handle-bound control continues to use A.
-Refute the path-reresolution claim if the used handle demonstrably remains A.
+## Mechanism and observation
 
-## Controlled filesystem experiment
+Trace the resource from the check to the use and whether the identity is re-validated at use.
 
-1. Create a private test directory containing inert files A and B with distinct markers.
-2. Define the fixture contract as reading only the identity accepted at check time.
-3. Add a test-only barrier immediately after the check; record the checked identity.
-4. Through the fixture's test controller, change the path binding from A to B.
-5. Resume the fixture and record the identity actually opened and the returned marker.
-6. Compare with a no-change schedule and a handle-bound repaired implementation.
-7. Assert equality of checked and used identities; compare markers as corroboration.
-8. Preserve event order and object metadata, then remove only test-owned state.
+**Firstness:** Record that the use acted on the swapped (planted) target rather than the checked one. **Secondness:** State the invariant (the thing used is the thing checked) and the deviation. **Thirdness:** Infer the TOCTOU class only after a controlled swap makes check and use diverge.
 
-The barrier establishes possible ordering in the model, not frequency in production.
-An instrumentation hook inserted in a real target must be disclosed as an accommodation.
-Do not claim deployment reachability without tracing the actual mutation authority.
+## Abduction and refutation
 
-## Shared-buffer and service variants
+**Mechanism hypothesis:** The program re-resolves the resource by name at use, so a concurrent swap makes it use a different object than it checked.
 
-For double-fetch, model a descriptor containing length and data in ordinary user memory.
-Pause after validation, update the model field, then compare used versus validated length.
-Use a local immutable copy as control; assert the same snapshot feeds validation and use.
-Do not infer kernel behavior from a user-space model.
-For quota checks, use two fixture transactions and a one-unit synthetic resource.
-Record both reads, reservations, commits and final count under a defined schedule.
-Compare with a serializable reservation or atomic conditional update.
-For idempotency, reuse a test key with a different inert body and assert conflict.
-Do not mistake two successful responses for two committed mutations.
+**Competing benign explanation:** The program opens once and operates on the file descriptor (handle), so the name swap is inert; it uses `O_NOFOLLOW`/`openat` + `fstat` on the fd; the directory is not attacker-writable; the double-fetch copies once; the window is too small to win without widening and never wins.
 
-## Reproducibility and tool limits
+## Deduction and controls
 
-Save schedule, event sequence, fixture revision, filesystem and isolation settings.
-Use explicit barriers and bounded waits; record deadlock or timeout separately.
-TSan can expose unsynchronized memory access but cannot prove filesystem atomicity.
-Tracing adds latency and may hide races; record whether the trigger depends on it.
-Verify platform-specific handle and path-resolution semantics before choosing APIs.
-A no-follow flag on the final component does not constrain every parent component.
-A final-component symlink restriction alone is not a complete confinement proof.
+Normal operation acts on the checked resource (positive control). A confirmed TOCTOU has the use act on the planted swapped target where a handle-based (fd) implementation would not. Predeclare the swapped-target effect. fd-based operation / `O_NOFOLLOW` / single-fetch / non-writable dir are PASS controls.
 
-## Detection and remediation
+## Induction: bounded laboratory procedure
 
-Log checked/used object IDs or policy versions with operation correlation IDs.
-Detect reservation conflicts and body/key mismatches without logging sensitive contents.
-Prefer validating an opened object and using that same handle within the required scope.
-For mutable fields, validate a stable copy or hold the appropriate ownership/lock.
-For business state, bind predicate and mutation in one atomic commit.
-Replay the offending schedule and a permitted schedule after the repair.
+Owned privileged binary; planted target; lab dir.
 
-## Behavioral cases and expected verdicts
+1. **Baseline.** Run normally; confirm it acts on the checked resource and identify the check/use pair.
+2. **Window widening.** To make the race observable, widen the window (filesystem pressure, large file, scheduler hints, `inotify`-timed swap) — this is a lab aid, not a requirement of the bug.
+3. **Swap.** Between check and use, swap the path to a planted sensitive target (symlink) you own; loop until the use acts on it.
+4. **Confirm.** Show the privileged use operated on the planted target (e.g. wrote to / read the planted file) — proof of the window; stop before escalating to real privilege.
+5. **Kernel double-fetch.** If applicable, flip the user pointer's contents between fetches from a second thread and observe the divergence.
+6. **Control.** Re-run against an fd-based / `O_NOFOLLOW` build and confirm the swap is inert.
 
-- Confirmed synthetic defect: check records A, controlled rebinding yields B at use;
-  unchanged and handle-bound controls yield A. CONFIRMED identity TOCTOU in the fixture.
-- Benign refutation: renamed path still yields A through the validated open handle;
-  the identity invariant holds. REFUTED path-substitution claim, control PASS.
-- Insufficient evidence: intermittent failure lacks checked/used IDs and schedule;
-  CANDIDATE with control WARN; no privilege-escalation conclusion.
+Record results including refutations. Keep finding and control status separate. A race won even once (with the window widened) demonstrates the flaw, but note the natural-window reliability honestly.
 
-## Output and provenance
+## Craft notes (leads)
 
-Deliver an event table, identity invariant, minimal schedule, controls and remediation scope.
-Source: `Skills/exploit-dev/offensive-toctou/SKILL.md`.
-Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Rewritten from research data; race weaponization and platform claims are not adopted.
+The canonical bug is `access()` then `open()` on a path in an attacker-writable dir. The fix pattern is `open` once + operate on the fd (`fstat`, `openat`, `O_NOFOLLOW`). Double-fetch is the kernel analogue: copy-from-user twice. Predictable temp names (`/tmp/foo.PID`) enable pre-creation. Widening the window makes an otherwise-tight race reproducible in the lab.
+
+## Domain-specific failure modes
+
+Handle-based (fd) operation makes name swaps inert — the primary refutation. A non-attacker-writable directory removes the swap primitive. A tight window that never wins even widened is CANDIDATE, not CONFIRMED. Winning once in the lab proves the flaw but may be low-reliability in the wild — state it.
+
+## Evidence and deliverable
+
+Provide the check/use pair, the swap mechanism, the planted-target effect at use, whether the window was widened, and the fd-based control result. Keep to owned targets. Attach minimal replay, expected/observed, rival explanation (fd-based), falsifier, untested paths.
+
+## Versions and tool limitations
+
+Pin the OS/kernel and the program version — syscall sequences and fixes are version-specific. No program behavior was verified by this content; confirm on the owned binary first.
+
+## Remediation and detection
+
+Open once and operate on the file descriptor (`openat`, `O_NOFOLLOW`, `fstat` on the fd), avoid path re-resolution, use `mkstemp`/unpredictable temp names in non-shared dirs, copy user data once in kernel code, and hold locks across check-and-act. Add a regression swapping the path and asserting the use is inert. Detect symlink swaps on sensitive paths.
+
+## Behavioral acceptance cases
+
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A privileged use acts on the planted swapped target (window widened as needed) where an fd-based build is inert: CONFIRMED; FAIL (note reliability). |
+| Benign refutation | fd-based operation / `O_NOFOLLOW` / non-writable dir makes the swap inert: REFUTED; PASS for the control. |
+| Insufficient evidence | A plausible window that never wins even widened: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
+
+## Provenance and treatment
+
+Upstream research: `Skills/exploit-dev/offensive-toctou/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's filesystem-race, double-fetch and temp-file craft, re-expressed as owned-binary experiments with a planted swap, window-widening and fd-based controls, replacing live privilege theft with bounded window proof. Composes with `invariant-hunting`, `concurrency-reasoning`, `rt-linux-privesc`.

@@ -1,103 +1,63 @@
 ---
 name: rt-reporting
-description: Assemble assessment reports with evidence-bound findings, reproducible severity reasoning, intact provenance and explicit retest status across exports.
+description: "Write red-team / penetration-test findings that survive scrutiny: a reproducible finding structure (what, where, impact bound, evidence, falsifier), severity derived from demonstrated reachability and impact rather than scanner labels, remediation by root cause and detection guidance, and an executive summary that does not overclaim. Re-expressed as a reporting contract aligned with the assessment methodology's evidence labels."
 ---
 
-# Assessment Report Integrity
+# Red-Team Findings Reporting
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before promoting observations into findings.
-Use this skill to package a completed or partial assessment for review and remediation.
-It does not authorize external submission, evidence deletion or additional target testing.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the report below.
+This revision restores the upstream's reporting material as a defensible reporting contract: each finding is reproducible, impact is derived from demonstrated reachability, and the writing does not overclaim. Compose with `remediation-driven-reporting` and `daubert-defensible-writing`.
 
-## Mechanisms of reporting failure
+## Scope and purpose
 
-- Summaries can promote hypotheses by dropping conditions, versions or failed controls.
-- Several instances of one root cause can inflate counts unless grouping is explicit.
-- A chain is only as demonstrated as its missing edges; severity does not add arithmetically.
-- Cropped screenshots and rewritten requests can lose the facts needed to reproduce a claim.
-- Export pipelines can drop labels, links, tables or redactions present in the source document.
-- A closure label can confuse risk acceptance, fix deployment and verified remediation.
+A report's job is to let the reader reproduce the finding, understand its real impact, and fix it — and to withstand a skeptical reviewer. It is the deliverable of every rt- skill. Write from the evidence actually gathered, with limitations stated, not from what the finding "probably" means.
 
-## Observation and baseline
+## Finding structure
 
-Inventory finding IDs, original observations, controls, artifact identifiers and target revisions.
-For each claim identify actor, resource, action, preconditions and demonstrated effect.
-Keep CANDIDATE/CONFIRMED/REFUTED/NOT TESTED separate from PASS/WARN/FAIL control status.
-Store remediation workflow state separately: open, deployed, verified or accepted risk.
-Define intended readers, required format and authorized evidence retention before exporting.
+Each finding carries:
 
-## Abduction and deduction
+- **Title & class** — concise, with the vulnerability class.
+- **Status** — CONFIRMED / CANDIDATE / REFUTED / NOT TESTED (from the assessment), and for controls PASS / WARN / FAIL. Never present a CANDIDATE as CONFIRMED.
+- **Location** — exact endpoint/host/file/parameter.
+- **What & mechanism** — the source→sink path and the broken invariant.
+- **Reproduction** — minimal steps/inputs; the benign marker used; the negative control result.
+- **Impact (bounded)** — derived from demonstrated reachability and effect, scoped to what was shown; state the preconditions.
+- **Evidence** — artifacts by identifier/digest; keep secrets/PII out of the portable report.
+- **Rival explanation & falsifier** — the benign explanation considered and what would disprove the finding.
+- **Remediation** — the root-cause fix (class-level), not just the instance.
+- **Detection** — the telemetry/signature that would catch it.
 
-Hypothesis: an executive summary overstates a finding by removing its authorization precondition.
-Benign rival: the body contains an independent executed test that supports the stronger wording.
-Prediction: tracing the summary sentence to its run reveals either the missing prerequisite
-or additional evidence; a faithful rewrite preserves the strongest supported scope.
-Never repair a report by inventing an experiment or reconstructing absent terminal output.
+## Severity discipline
 
-## Bounded document-review procedure
+- Derive severity from demonstrated reachability × impact, not from scanner CVSS defaults or tool labels.
+- State preconditions explicitly; a finding requiring a precondition that already implies compromise is lower (precondition dominance).
+- If a numeric score is required, state the exact rubric and inputs; otherwise give qualitative, evidence-bound severity. Do not invent precision.
+- Scope the claim to what was tested; "no tested case failed" is not "universally safe".
 
-1. Work from a copy of supplied artifacts; retain immutable originals in the evidence store.
-2. Draft each finding as impact, minimal fixture replay, expected/actual result and control.
-3. Explain the violated invariant, affected versions and exact reachability conditions.
-4. Label each chain edge as observed, code-supported or untested; do not inherit confirmation.
-5. Assign severity only from supported metrics. If CVSS is required, record its version,
-   full vector, metric rationale and verified calculator implementation/output.
-6. Keep organizational impact judgment distinct from the technical score and uncertainty.
-7. Write the summary from the completed evidence table; reconcile counts by status and class.
-8. Generate requested formats from one source and compare rendered findings with that source.
-9. Test redaction with synthetic secret fixtures in an export copy; inspect text extraction,
-   image layers, attachments and metadata rather than trusting a black rectangle.
-10. Stop when every claim has evidence or an explicit gap; do not perform new target actions
-    merely to make the report look complete. Preserve the gap and the proposed experiment.
+## Writing discipline (compose with daubert-defensible-writing)
 
-## Compact finding record
+- Separate fact (what was observed) from inference (what it implies).
+- Admit uncertainty without weakening a sound conclusion; a documented limitation is an asset.
+- No overclaiming under persuasion pressure ("make it sound solid") — that is exactly where inflation enters.
+- The executive summary states the business risk honestly, mapped to the findings, without sensationalizing.
 
-| Field | Required content |
-|---|---|
-| Identity | Stable finding ID, component/version and assessment window |
-| Claim | Actor, boundary, effect and status with bounded scope |
-| Proof | Artifact IDs/digests, controlled input, expected/observed result, negative control |
-| Rival | Strongest benign explanation and evidence that refuted or retained it |
-| Impact | Demonstrated consequence and separately labeled untested chain edges |
-| Repair | Structural fix, owner, interim control and detection requirement |
-| Retest | Original case, legitimate control, class variant and evidence needed for closure |
+## Remediation and detection (compose with remediation-driven-reporting)
 
-## Domain failure modes
+- Fix the root cause and the class, not only the reproduced instance; give the specific change.
+- Provide detection guidance per finding so the defender gains coverage, not just a patch.
+- Prioritize remediation by the bounded severity and the attack-path position (for engagements, which edges enabled the objective).
 
-Hashing personal data does not automatically anonymize it, especially low-entropy identifiers.
-Redact derivatives, retain authorized originals, and use stable nonsecret evidence references.
-Screenshot timestamps may reflect capture rather than event time; retain both when relevant.
-A fixed release announcement is not a successful retest of the assessed deployment.
-A higher business priority does not justify changing unsupported CVSS metric values.
-Removing sensitive metadata from a distributed copy is not permission to destroy audit evidence.
-Retest failures must remain visible even if other findings are resolved.
+## Domain-specific failure modes
 
-## Detection and remediation delivery
+The dominant reporting errors: presenting a CANDIDATE as CONFIRMED, severity from scanner labels instead of demonstrated impact, impact unscoped (claiming more than was shown), missing reproduction/negative-control, and an executive summary that overstates. A report a reviewer can refute on a single unsupported claim loses credibility for the whole engagement.
 
-For each actionable finding name the event that should have recorded the demonstrated effect,
-the responsible identity, correlation keys and a benign control for the proposed detection.
-Report missing telemetry as a separate gap rather than claiming the test was undetected.
-Specify the invariant the fix must enforce across sibling routes or consumers.
-Closure requires actual retest artifacts and remaining limitations, not a uniform green label.
+## Deliverable
 
-## Versions and tool limits
+A report whose every finding is reproducible, status-labeled, impact-bounded, and fix-and-detection-ready, with an honest executive summary. It reads as defensible under cross-examination, not as a scanner dump or a sales pitch.
 
-Record converter/template versions, report source digest and any scoring implementation.
-Verify supported schema when exporting to a tracker; imports can silently map statuses wrongly.
-Inspect generated artifacts without sending evidence to public converters or outside services.
-No external report submission, scoring tool or retest was executed during authorship.
+## Provenance and treatment
 
-## Behavioral acceptance
+Upstream research: `Skills/utility/offensive-reporting/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-| Case | Expected verdict |
-|---|---|
-| Summary asserts anonymous access but trace requires privileged fixture identity | CONFIRMED report overstatement; FAIL until corrected |
-| Summary's stronger wording traces to a separate controlled anonymous test | REFUTED overstatement allegation; PASS for that claim |
-| Vendor says fixed but no tested version or retest artifact is supplied | NOT TESTED remediation; WARN, retain open verification |
-
-## Provenance
-
-Rewritten from `Skills/utility/offensive-reporting/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain finding structure, scoring rationale, evidence and retest workflows;
-replace canned severity assumptions and automatic evidence wiping with traceable review.
+This revision restores the upstream's reporting material as a defensible reporting contract with evidence-labeled, impact-bounded findings and honest severity, replacing scanner-driven, overclaiming write-ups with cross-examination-ready reports. Composes with `remediation-driven-reporting`, `daubert-defensible-writing`, `finding-custody`.

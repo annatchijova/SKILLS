@@ -1,111 +1,88 @@
 ---
 name: rt-shellcode
-description: "Analyze executable-memory transitions and validate memory policy with harmless diagnostic fixtures, without constructing shellcode or loaders."
+description: "Red-team / research assessment of shellcode and position-independent-payload constraints in CTF/authorized exploitation: encoding and bad-char handling, PIC/egg-hunting, size limits, syscall vs library calling, and detection surface. Re-expressed as scoped experiments on an owned target using a benign marker payload (print/callback) with detection awareness instead of weaponized shellcode for live use."
 ---
 
-# Executable Memory Policy Assessment
+# Shellcode and Payload-Constraint Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiments below.
+This revision restores the upstream's shellcode craft as scoped CTF/research experiments: it names the payload constraints and construction concepts, proving delivery with a benign marker on an owned target and noting detection surface, rather than shipping weaponized shellcode.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Assess whether a process follows its declared executable-memory policy. Inspect supplied samples
-statically or use an owner-reviewed diagnostic program that never executes supplied bytes.
+Shellcode here is the final stage of an authorized exploitation exercise (CTF, research VM, owned target with a confirmed control primitive). The payload is benign — it prints a unique marker or calls an owned-collector stub — never a reverse shell or destructive action against a live system.
 
-- memory protection transitions.
-- static versus dynamic code provenance.
-- architecture and policy compatibility.
+Declare the target, architecture, delivery context (buffer size, allowed bytes), attempt budget, stop condition. Analysis-only yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Constraint classes (what shapes a payload)
 
-Identify architecture, process policy, intended dynamic-code use and the distinction between
-image-backed and private memory.
+- **Bad characters** — bytes the delivery path mangles (NUL, newline, slash); drive encoding/alternate-instruction choices.
+- **Size limits** — small buffers force staging (egg-hunting) or minimal payloads.
+- **Position independence** — PIC requirements when the load address is unknown.
+- **Calling convention** — direct syscalls vs library calls; architecture-specific registers.
+- **Detection surface** — the payload's telemetry (process/thread/syscall patterns) as a detection target.
 
-Define the expected outcome for a diagnostic allocation/protection request. Separate policy denial
-from subsequent execution behavior.
+## Mechanism and observation
 
-Use a disposable process with no network access, no remote-process handles and no ability to read
-other processes.
+Trace the marker payload from delivery through the constraints to execution.
 
-## Discriminating laboratory procedure
+**Firstness:** Record whether the benign marker executed given the constraints (bad chars survived, fit the size, ran position-independently). **Secondness:** State the delivery constraints and whether the payload satisfied them. **Thirdness:** Infer "constraint satisfied / delivery viable" only after the marker runs under control.
 
-Abduction: the process accepts a forbidden executable-memory transition. Rival: dynamic code is
-explicitly allowed for a JIT, or the reported mapping belongs to a normal image.
+## Abduction and refutation
 
-Deduction: a reviewed fixture requesting the same transition under an enforced restrictive policy
-should receive the documented denial; a data-only allocation should succeed.
+**Hypothesis:** A constraint-satisfying payload reaches execution in the delivery context.
 
-Induction: run the vendor-supported policy diagnostic in a disposable VM and capture the API result,
-effective policy and memory-map type.
+**Competing benign explanation:** A bad char corrupts the payload (it never runs); the buffer is too small and staging was not set up; the payload assumes a fixed address that ASLR randomizes; NX prevents executing the buffer (requiring ROP, not shellcode); the marker's "run" was actually the harness.
 
-Compare a documented permissive fixture process to the restrictive process with all other build
-settings held constant. Do not place shellcode in either allocation.
+## Deduction and controls
 
-For supplied binaries, correlate disassembly, imports and memory-region observations; static
-loader-like structure remains a candidate capability until observed.
+A correctly-constrained marker runs (positive control in the lab); a constraint-violating one does not. A confirmed result runs the benign marker in the delivery context where a violating payload fails. Predeclare the marker and the constraint set. NX / bad-char mangling / size limit defeating the payload are controls to record.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded laboratory procedure
 
-## Domain failure modes
+Owned target; benign marker payload.
 
-- RW-to-RX transitions are legitimate in some runtimes. Their presence alone is not maliciousness or a
-  security-boundary failure.
-- A failed request can reflect architecture mismatch, size constraints or resource exhaustion; the
-  data-only control helps distinguish these.
-- Absence of RWX regions does not prove absence of dynamically generated code, and a memory snapshot
-  may miss transient states.
+1. **Characterize constraints.** Identify bad chars (send a byte-array, see what survives), the available size, and the execution context (NX? known address?).
+2. **Construct the marker.** Assemble a minimal benign payload (print/callback) satisfying the constraints; encode/avoid bad chars; make it PIC if needed.
+3. **Stage if needed.** For tiny buffers, use an egg-hunter to locate a larger second-stage marker.
+4. **Deliver & confirm.** Run via the exploit primitive; confirm the marker executed once; stop.
+5. **Detection note.** Record the telemetry the payload would generate (for the defender).
 
-## Evidence and verdict
+Record results including refutations. Keep delivery-viability status separate from any mitigation control.
 
-Retain architecture, compiler/runtime versions, allocation request parameters, status values, policy
-state and region provenance. Bound the claim to acceptance or rejection of the tested transition.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+Bad-char discovery via a full byte-array comparison is the standard first step. Encoders (and alternate instruction sequences) avoid mangled bytes; note that polymorphic encoding is also an evasion concern — here it is about surviving the delivery path, not defeating detection. Egg-hunters bridge small buffers to a staged marker. NX moves the problem to code reuse (ROP) — see `rt-exploit-development`. Architecture (x86/x64/ARM) dictates syscall numbers and registers.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Specify telemetry for unexpected executable private mappings in processes that prohibit dynamic
-code. Remediate policy assignment and unnecessary dynamic-code exceptions without breaking required
-runtimes.
+A bad char silently corrupts the payload — always characterize first. NX makes shellcode-in-buffer non-executable (the finding is ROP, not shellcode). An address-dependent payload breaks under ASLR without a leak. A marker that "ran" in the harness, not the target, is a false positive. Keep the payload benign; a live reverse shell is out of scope.
 
-## Recovery
+## Evidence and deliverable
 
-Exit the disposable process and confirm its handles and allocations are released. Preserve test logs
-before reverting the VM snapshot.
+Provide the constraint set (bad chars, size, context), the benign marker payload, its execution confirmation, and the detection telemetry note. Keep to the owned target. Attach minimal replay, expected/observed, rival explanation, falsifier, constraints not handled.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Verify OS policy API support and runtime behavior for the tested build. Do not carry forward PEB
-offsets, syscall numbers, loader conventions or historical cross-platform claims.
+Pin architecture, OS and mitigation state — payloads are arch- and context-specific. No target behavior was verified by this content; confirm on the owned target first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Enable NX/DEP (shellcode-in-buffer non-executable), ASLR, and CFI; monitor for anomalous syscall sequences and RWX memory allocation. Add a regression asserting the buffer is non-executable. Detect staging/egg-hunter memory-scan patterns.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Forbidden transition succeeds under verified enforced policy; data-only control succeeds | CONFIRMED policy violation; FAIL |
-| Transition is permitted by a documented JIT exception | REFUTED prohibited-transition claim; PASS for stated policy |
-| Static imports suggest allocation and execution but no runtime policy evidence exists | CANDIDATE capability; WARN |
+| Supported finding | A constraint-satisfying benign marker executes in the delivery context where a violating payload fails: CONFIRMED delivery-viable (benign). |
+| Benign refutation | A bad char/size/NX/ASLR prevents execution: REFUTED for this payload; record the control. |
+| Insufficient evidence | Constraints characterized but no confirmed marker execution: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-shellcode/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-shellcode/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains executable-memory mechanics and evidence interpretation while excluding payload
-construction, injection and stealth.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's bad-char/size/PIC/staging craft, re-expressed as owned-target experiments with a benign marker and detection awareness, replacing weaponized shellcode with bounded delivery proof. Composes with `rt-basic-exploitation`, `rt-exploit-development`, `rt-mitigations`.

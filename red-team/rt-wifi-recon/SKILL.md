@@ -1,117 +1,87 @@
 ---
 name: rt-wifi-recon
-description: Build an evidence-bounded Wi-Fi inventory from authorized captures and controller records, measuring channel coverage and sensor blind spots.
+description: "Red-team reconnaissance of an authorized 802.11 environment: monitor-mode capture, AP and client enumeration, SSID/BSSID/channel/cipher mapping, hidden-SSID and probe-request analysis, and client-AP association mapping. Re-expressed as scoped passive observation of an owned/authorized WLAN in a controlled RF setting that builds a network map with negative controls, not interception of third-party traffic."
 ---
 
-# Wi-Fi observation coverage
+# 802.11 Reconnaissance Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the observation below.
+This revision restores the upstream's Wi-Fi recon craft as scoped passive observation of an authorized WLAN: it maps APs, clients and ciphers from monitor-mode capture, bounded by authorization and spectrum law, rather than capturing third-party traffic.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use supplied captures or a receive-only sensor on approved channels, plus an owned reference AP and controller inventory. Record dwell schedule, time synchronization and retention limits.
+Wi-Fi recon maps the authorized wireless environment before any active test. Observe only the owned/in-scope WLAN; passive capture in a controlled RF setting; do not capture or decode third-party networks' traffic, and respect local spectrum/monitoring law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the scoped SSIDs/BSSIDs, the RF environment, the passive/active boundary. Active probing beyond scope is out of scope. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Observation surface
 
-- Beacon RSN capabilities describe advertised options; association records establish negotiated authentication and PMF.
+- **APs** — BSSID, SSID (including hidden via probe/association), channel, band, cipher/auth (WPA2/WPA3/Enterprise/open), signal.
+- **Clients** — associated stations, probe requests (preferred-network leakage), MAC/OUI.
+- **Associations** — which clients are on which AP; roaming behavior.
+- **Posture** — management-frame protection (802.11w), PMF, WPS presence.
 
-- Channel hopping trades breadth for dwell time and loses short exchanges; absence must be qualified by coverage.
+## Mechanism and observation
 
-- Hidden SSIDs, multi-BSSID profiles and multiple links can make one physical AP appear as incomplete or multiple assets.
+Put the adapter in monitor mode and capture/beacon-parse within scope.
 
-- OUI, RSSI and probe patterns are weak identifiers; randomized addresses and shared chipsets defeat simple attribution.
+**Firstness:** Record the observed APs/clients/ciphers and associations. **Secondness:** State the expected inventory (known in-scope APs, expected ciphers) and the deviation (rogue AP, weak cipher, hidden SSID revealed, PMF off). **Thirdness:** Infer a posture finding only after corroborated observation.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record which frame and information element support each inventory field. Compare observed APs against the configured reference radio and coverage window.
+**Hypothesis:** The environment exposes a weakness (rogue/unknown AP, weak/open cipher, no PMF, WPS enabled, probe-leaked preferred networks).
 
-**Abduction:** An in-scope AP advertises a weaker security policy than its controller inventory declares.
+**Competing benign explanation:** The "rogue" AP is a sanctioned device; the open SSID is an intentional guest network; the weak cipher is a legacy IoT VLAN by design; PMF is actually enabled; the probe requests are from out-of-scope clients.
 
-**Competing benign explanation:** The sensor decoded a different BSSID profile, cached an old beacon or never observed the intended band.
+## Deduction and controls
 
-**Deduction:** A pinned-channel capture repeatedly shows the mismatch on the owned AP identity while controller timestamps and a known reference profile establish freshness and correct decoding.
+A known in-scope AP shows the expected posture (positive control). A finding is a corroborated deviation (unknown BSSID on the corporate SSID, PMF off where required, WPS on). Predeclare the expected inventory/posture. Matching the sanctioned inventory is a PASS.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Authorized WLAN; passive-first.
 
-1. Import inventory and mark ownership before collecting; omit unrelated device identifiers from exported results.
+1. **Monitor mode.** Configure the adapter; confirm capture on the in-scope channels.
+2. **Enumerate.** Collect APs (airodump-class), ciphers, clients, and associations within scope.
+3. **Hidden SSID / probes.** Reveal hidden SSIDs via observed association; analyze probe requests for preferred-network leakage (own clients only).
+4. **Posture.** Note PMF/802.11w, WPS, open/weak ciphers, and any unknown BSSID on a corporate SSID.
+5. **Corroborate.** Confirm deviations against the sanctioned inventory before flagging.
 
-2. Verify reception of a known reference beacon on every band included in the claim; record unsupported channels as gaps.
+Record results including refutations (sanctioned devices, intentional guest nets). Keep confirmed deviations separate from expected posture.
 
-3. Perform a bounded passive observation with fixed duration and packet budget; do not turn adapter validation into an injection test.
+## Craft notes (leads)
 
-4. For a discrepancy, compare fresh pinned-channel frames with controller BSSID/profile mapping and a second supported decoder.
-
-5. Produce an inventory with evidence pointers per field and explicit unobserved intervals; restore any test sensor configuration.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+airodump-ng/kismet for discovery; monitor mode + channel hopping to cover bands. Hidden SSIDs leak on client association. Probe requests reveal clients' preferred networks (a privacy/evil-twin precursor — feeds `rt-evil-twin`). An unknown BSSID advertising a corporate SSID is a rogue-AP signal. PMF/802.11w status gates deauth and some downgrade attacks.
 
 ## Domain-specific failure modes
 
-- A monitor interface can coexist with software that transmits probes; verify receive-only behavior through configuration and bench observation.
+A sanctioned AP/guest network is not a rogue finding — corroborate against inventory. Capturing or decoding third-party networks is out of scope and may be illegal. Probe requests from out-of-scope clients are not your data. Monitor-mode capture must stay within the authorized RF environment. Recon observes; it does not transmit (that is the active skills).
 
-- RSSI cannot establish distance or actor identity without a propagation model.
+## Evidence and deliverable
 
-- A missing handshake does not prove no clients were connected; missed bands and channel dwell are alternate causes.
+Provide the AP/client/cipher map, the corroborated deviations (rogue AP, weak cipher, PMF off, WPS on), and the sanctioned-inventory comparison. Keep to in-scope networks. Attach the capture scope, expected/observed, rival explanation, falsifier, areas not covered.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide per-BSSID profile, channel, advertised and negotiated fields separately, capture packet numbers, sensor version, drop counts and coverage map.
+Pin the adapter/driver (monitor-mode and band support vary) and tooling. Spectrum coverage is hardware-limited. No network behavior was verified by this content; capture within the authorized environment to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Compare authorized inventory with observed security-profile drift; evaluate monitoring coverage using the known reference AP rather than claims of passive-sensor invisibility.
-
-Correct inventory drift, unsupported sensors or controller profiles. Preserve unknown values rather than filling them from vendor guesses.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Check installed capture tool help and driver support before naming band flags. Do not reuse upstream adapter compatibility tables or regulatory channel lists as current facts.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Maintain an AP inventory and detect rogue BSSIDs, enforce PMF/802.11w, disable WPS, retire open/weak ciphers (WPA2→WPA3), and segment guest/IoT. Minimize probe-request leakage (client-side MAC randomization, network cleanup). Deploy a WIDS to detect rogue APs and recon.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A corroborated deviation (rogue BSSID on the corporate SSID, PMF off where required, WPS enabled): CONFIRMED; FAIL for that control. |
+| Benign refutation | The AP/cipher is sanctioned/intentional (guest net, legacy VLAN): REFUTED; PASS. |
+| Insufficient evidence | A single-capture anomaly not corroborated against inventory: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh frames tied to the managed BSSID repeatedly advertise the disallowed AKM and the reference profile decodes correctly. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The frames belong to a documented neighboring profile; the scoped BSSID matches its approved configuration. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | The sensor cannot receive the target band and the inventory entry was never observed. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-wifi-recon/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Separates observation reliability from active testing; removes tracking, coercive discovery and assumed adapter support.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-wifi-recon/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's monitor-mode/enumeration/hidden-SSID/probe craft, re-expressed as scoped passive observation of an authorized WLAN with inventory controls, replacing third-party capture with a bounded network map. Composes with `rt-wifi`, `rt-evil-twin`, `rt-deauth-disassoc`.

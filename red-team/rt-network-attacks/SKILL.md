@@ -1,119 +1,89 @@
 ---
 name: rt-network-attacks
-description: Validate address assignment, neighbor trust, VLAN and NAC boundaries on isolated network fixtures without credential interception or relay.
+description: "Red-team assessment of Layer 2/3 network trust boundaries in an authorized lab: ARP spoofing, LLMNR/NBT-NS/mDNS poisoning, rogue DHCP/DNS and DNS rebinding, MITM/SSL-strip/HSTS-bypass, VLAN hopping (switch-spoofing, double-tagging) and 802.1X bypass. Re-expressed as scoped isolated-segment experiments with a defined victim fixture, control traffic and strong detection focus instead of live interception of third-party traffic."
 ---
 
-# Layer 2 and Layer 3 control validation
+# Layer 2/3 Network Trust-Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's L2/L3 craft as scoped experiments on an isolated authorized segment: it names the attacks and their detection signatures, confirming interception/redirect against a designated fixture rather than capturing real users' traffic.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a disconnected virtual switch or spare isolated switch, owned clients, a legitimate address server and inert canary endpoints. Export bindings, VLANs, host modes and intended trust-port roles.
+These attacks abuse implicit trust in L2/L3 protocols (ARP, LLMNR, DHCP, DNS, 802.1Q, 802.1X). Run only on an isolated lab segment with a designated victim fixture you own; never intercept third-party traffic on a shared/production network. Capture only the fixture's traffic.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the segment, the fixture, attempt budget, stop condition. Config/topology-only authorization yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- DHCP snooping trust, binding tables and Dynamic ARP Inspection work together; missing or static bindings affect interpretation.
+- **ARP spoofing** — poison the fixture/gateway mapping to MITM.
+- **Name poisoning** — LLMNR/NBT-NS/mDNS answer broadcast lookups → capture NetNTLMv2 (relay → see `rt-active-directory`).
+- **DHCP/DNS** — rogue DHCP (option 3/6 gateway/DNS redirect), DHCP starvation, rogue DNS, DNS cache poisoning, DNS rebinding.
+- **MITM** — HTTP proxy, SSL-strip, HSTS bypass (`sslstrip+`/`dns2proxy`).
+- **VLAN hopping** — switch spoofing (DTP), double tagging (802.1Q).
+- **802.1X bypass**, IPv6 SLAAC/DHCPv6 RA attacks.
 
-- IPv6 router advertisements and DHCPv6 are different control planes; RA Guard does not by itself validate DHCPv6 responses.
+## Mechanism and observation
 
-- 802.1X port authorization, per-host mode and MAC-based exceptions determine access; a port is not universally single-principal or multi-principal.
+Pick one attack; trace the trust it abuses to the redirect/interception it achieves against the fixture.
 
-- VLAN tagging, native VLAN handling and routed ACLs establish different boundaries; one-way receipt is not bidirectional access.
+**Firstness:** Record the fixture's traffic reaching your controlled node (captured ARP redirect, poisoned response, VLAN frame delivered). **Secondness:** State the protocol's intended behavior and the deviation. **Thirdness:** Infer the trust-boundary class only after the fixture is controlled-redirected.
 
-- Name-resolution fallback and application authentication are separate; a canary resolution change does not establish credential relay or TLS compromise.
+## Abduction and refutation
 
-## Observation and competing explanations
+**Mechanism hypothesis:** A protocol accepts unauthenticated assertions (ARP replies, name responses, DHCP offers, DTP/802.1Q tags), letting a rogue node redirect or impersonate.
 
-**Firstness / Secondness:** Record ingress port, protocol, switch decision and client route/address/neighbor state. Compare with the explicitly configured trust boundary.
+**Competing benign explanation:** Dynamic ARP Inspection / DHCP snooping / RA Guard / port security block it; LLMNR/NBT-NS are disabled; the switch denies DTP and tagged frames on access ports; HSTS preload defeats SSL-strip; the "capture" is the fixture's own loopback.
 
-**Abduction:** An untrusted access port can supply an address-service response that changes a client resolver contrary to the configured DHCP trust policy.
+## Deduction and controls
 
-**Competing benign explanation:** The observed response entered a deliberately trusted uplink or the client retained a legitimate prior lease.
+On an unhardened segment the redirect succeeds (demonstration); on a hardened one it must fail. A confirmed finding delivers the fixture's traffic to your node where the hardened control blocks it. Predeclare the captured artifact. DAI/snooping/RA-Guard/port-security/HSTS defeating the attack are PASS controls.
 
-**Deduction:** The reviewed fixture from the untrusted port changes the fresh client's resolver; the trusted server succeeds and the same fixture is blocked when the specified control is enabled.
+## Induction: bounded laboratory procedure
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+Isolated segment; designated fixture; capture only the fixture.
 
-## Bounded laboratory procedure
+1. **Baseline.** Record normal L2/L3 behavior and the fixture's path.
+2. **Run one attack.** e.g. ARP-spoof the fixture↔gateway; or stand up name poisoning; or a rogue DHCP offer with option 6; or DTP/double-tag into a target VLAN.
+3. **Confirm redirect/interception** of the fixture's traffic at your node (one artifact), then stop.
+4. **Controls.** Enable the corresponding hardening (DAI, snooping, RA Guard, port security, HSTS) and confirm the attack now fails.
+5. **Detection.** Record the signatures each attack produced.
 
-1. Snapshot switch and client state and verify a normal lease, resolver query and harmless canary connection.
+Record results including refutations. Keep finding and control status separate.
 
-2. Clear only test-owned lease state through supported client controls and confirm the actual ingress-port trust configuration.
+## Craft notes (leads)
 
-3. Run one finite vendor conformance case for the selected protocol inside the disconnected lab, then inspect switch counters and client state; do not run poisoning or starvation chains.
-
-4. Repeat with only the relevant control changed. For RA, DHCPv6, ARP, VLAN or NAC cases, build separate matrices with their own receipt and identity oracles.
-
-5. Restore bindings, routes, trust roles and leases; verify ordinary connectivity and denied-zone isolation with both address families.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+Tooling: bettercap/arpspoof/Ettercap (ARP), Responder/Inveigh (name poisoning, hashes in `/opt/Responder/logs`), ntlmrelayx (relay), dnsmasq (rogue DHCP/DNS), Scapy (custom ARP/DNS/gratuitous), Yersinia (L2), singularity (rebinding). DNS cache poisoning must match in-flight txid and source port. Double-tagging: outer=native VLAN, inner=target. These are lab primitives, not a license to run them on shared infrastructure.
 
 ## Domain-specific failure modes
 
-- A mirrored packet proves observation, not forwarding or acceptance; inspect the client and destination.
+A hardened switch (DAI, DHCP snooping, port security, RA Guard) defeats most of these — that is a PASS, report it. HSTS preload defeats SSL-strip. Capturing your own fixture's loopback is not interception. Running any of these on a production/shared segment is out of scope and can disrupt or surveil third parties.
 
-- RA Guard success says nothing about DHCPv6, and DHCP snooping without the appropriate rate policy does not prove starvation resistance.
+## Evidence and deliverable
 
-- Double-tagged one-way delivery is not a completed session; NAC behavior depends on actual host mode and exception policy.
+Provide the attack, the isolated segment/fixture, the captured redirect artifact, the hardening control result, and the detection signatures. Keep captures limited to the fixture. Attach minimal replay, expected/observed, rival explanation, falsifier, untested attacks.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide port/VLAN/topology map, protocol-specific control configuration, client before/after state, switch counters and destination receipts. Never retain real authentication exchanges for this test.
+Pin switch/OS and tool versions — mitigations and behaviors vary. Tools transmit real L2/L3 frames; keep to the isolated segment. No network behavior was verified by this content; reproduce the lab first.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate alerts for untrusted address servers, neighbor-binding violations, unexpected router advertisements and unauthorized host admission using separate protocol cases.
-
-Constrain trusted ports, maintain correct bindings, enforce IPv6-specific controls and explicit VLAN/NAC host policy. Validate legitimate renewal and roaming after hardening.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record switch OS/ASIC, virtual-switch implementation, host networking stack and conformance-harness version. Packet offload or SPAN behavior can hide tags; document capture limitations.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enable DAI, DHCP snooping on trusted ports, port security, RA Guard/DHCPv6 guard, disable DTP (set access ports), disable LLMNR/NBT-NS, enforce HSTS preload and DNSSEC, and 802.1X with sticky MAC. Detect: duplicate gateway MAC, multicast name responses, multiple DHCP offers, DTP/double-tagged frames, MAC flapping (per the upstream detection table). Add a regression that the hardened control blocks the attack.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The fixture's traffic is redirected/intercepted at the test node on the unhardened segment where the hardened control blocks it: CONFIRMED; FAIL. |
+| Benign refutation | DAI/snooping/RA-Guard/port-security/HSTS defeats the attack: REFUTED; PASS for the control. |
+| Insufficient evidence | A protocol anomaly without confirmed fixture redirect: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Untrusted-port fixture changes a fresh client's resolver, while trusted-server and enabled-control comparisons isolate the missing enforcement. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The response entered a documented trusted uplink; the same fixture is dropped on the untrusted port and client state remains unchanged. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A SPAN capture shows a DHCP response but no ingress trust mapping or client acceptance evidence exists. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/network/offensive-network-attacks/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Replaces poisoning, relay and network disruption chains with protocol-specific trust-control experiments, preserving VLAN, NAC, ARP and dual-stack distinctions.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/network/offensive-network-attacks/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's ARP/name-poisoning/DHCP-DNS/MITM/VLAN/802.1X craft and its detection table, re-expressed as isolated-segment experiments against a designated fixture with hardening controls, replacing live third-party interception with bounded redirect proof.

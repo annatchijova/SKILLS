@@ -1,99 +1,90 @@
 ---
 name: rt-file-upload
-description: "Validate upload admission, asynchronous processing, storage isolation and download authorization with inert files and bounded archive fixtures."
+description: "Red-team assessment of file-upload boundaries: extension/content-type/magic-byte validation bypass, polyglots, and upload-to-processing chains reaching RCE, LFI, XSS, SSRF, XXE or command injection via filename. Covers the extension-impact matrix and cloud/object-storage and image-pipeline paths, re-expressed as owned-fixture experiments with benign marker files and negative controls instead of live web-shell deployment."
 ---
 
-# Upload Processing and Publication Boundaries
+# File Upload Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's upload craft as scoped experiments: it names the validation bypasses and processing-chain impacts, proving each with a benign marker file on an owned instance rather than deploying a live web shell.
 
 ## Scope and prerequisites
 
-Assess the full upload lifecycle, including presigned storage operations, chunk assembly, conversion and retrieval. A successful upload is not proof of executable content.
+Map every upload sink and what happens to the file afterward (stored where, served how, processed by what). Use an owned instance; prove impact with an inert marker (a file that, if executed, only calls an owned collector or echoes a unique string), never a working web shell on a reachable host.
 
-Prepare tiny inert files with known digests, a bounded archive fixture and two test tenants. Use a storage namespace isolated from application code and suppress external notifications.
+Declare target, stack, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED. RCE via uploaded handler is an impact class to demonstrate on an owned lab, bounded.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+The flaw is rarely the upload alone — it is upload + how the file is later used:
+- **Execution** — uploaded file lands in an interpreter-served path (PHP/JSP/ASPX) → RCE.
+- **Inclusion** — upload becomes an include target → LFI/RFI.
+- **Client execution** — HTML/SVG/JS served inline → stored XSS.
+- **Server fetch/parse** — SVG/XML/image parse → SSRF/XXE; filename reaches shell/SQL → command/SQL injection.
+- **Resource** — decompression bombs, pixel-flood → DoS (respect scope).
 
 ## Mechanism and observation
 
-Trace upload capability issuance, key selection, content validation, quarantine, processing, scanner result, publication and download authorization. Capture whether validation applies to original bytes, transformed bytes or both.
+Trace the file through validation (extension, `Content-Type`, magic bytes, size) to storage and to its eventual consumer.
 
-**Firstness:** Record stored object key/version, detected media type, processing state and retrieval headers. Compare them with the promised quarantine and tenant ownership policy.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record what validation accepted and what the consumer did with the marker. **Secondness:** State the intended policy (allowlisted types, stored outside web root, re-encoded) and the deviation. **Thirdness:** Infer the defect class only after a controlled marker is accepted and reaches an impactful consumer.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** Publication happens before validation completes, or a storage capability permits replacing another tenant's object or trusted application content.
+**Mechanism hypothesis:** Validation checks one property (extension or declared type) while the consumer acts on another (actual content or stored path), so a file that is two things at once reaches an interpreter or parser.
 
-**Competing benign explanation:** An accepted upload may remain inaccessible in quarantine; a client-provided media type may be ignored by a safe decoder. A signed download URL may intentionally delegate time-limited access.
+**Competing benign explanation:** The server re-encodes images (stripping payloads); files are stored outside the web root with a random name and `Content-Disposition: attachment`; the extension allowlist is enforced server-side; the "accepted" upload is never served or executed.
 
 ## Deduction and controls
 
-A pending or rejected fixture must remain inaccessible on every publication path; a capability scoped to one fixture must not write a second tenant's fixture key.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A legitimate file uploads and is served inertly (positive control). A confirmed finding has the marker accepted and executed/parsed by the consumer where a correct policy would neutralize it. Predeclare the marker's effect (owned callback / echoed string). Re-encoding or out-of-web-root storage neutralizing the marker is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Upload a normal small file and verify its final digest, tenant ownership and successful intended retrieval.
+Owned instance; inert markers only.
 
-2. Pause the lab scanner or conversion worker at its documented test hook; request the pending object through both application and storage publication paths.
+1. **Baseline.** Upload a legitimate file; note validation and how/where it is served.
+2. **Validation bypass (filter-vs-consumer differential).** Test double extensions (`.php.jpg`), case, trailing dot/space/null, `Content-Type` spoof, magic-byte prefix + real payload, polyglot (valid image header + script body).
+3. **Reach the consumer.** Determine if the stored file is served from an executable path, included, served inline, or parsed; place the marker accordingly.
+4. **Inert proof.** If execution is reachable, the marker calls an owned collector or echoes a unique string once — not a persistent shell.
+5. **Adjacent chains.** SVG→XSS/SSRF/XXE, filename→command/SQL injection, image pipeline→processing bug; each proven with a benign marker.
+6. **Control.** Confirm the legitimate file is served inertly and re-encoding/storage controls hold.
 
-3. Use a harmless media-type mismatch fixture and inspect decoder output and publication decision without introducing executable content.
+Record results including refutations. Keep finding and control status separate.
 
-4. Check capability expiry and key binding using two owned objects; test incomplete multipart assembly and failed conversion recovery separately.
+## Craft notes (leads)
 
-5. Use only an owner-supplied tiny archive containment fixture; assert extraction stays within the scratch root and stop on any out-of-root attempt.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Extension-impact depends on the serving runtime (`.php`/`.phtml`, `.jsp`, `.aspx`, `.svg`, `.htaccess`/`web.config` to re-map handlers). Magic bytes + comment fields let a file be a valid image and a valid script. Cloud/object-storage uploads can be served from a CDN with the wrong `Content-Type`, or allow path traversal in the object key; presigned-URL misuse is its own class. Image libraries (ImageMagick/`convert`, `ffmpeg`) have historical parse-RCE CVEs.
 
 ## Domain-specific failure modes
 
-CDN caches can serve an earlier clean version while a new version is quarantined. Filename sanitization does not establish extraction containment. Presigned URLs may bind a key but not a digest; record what the application actually promises.
+Accepted is not exploitable — the file must reach an impactful consumer. Image re-encoding strips most payloads; report residual impact. A random filename outside the web root blocks execution even if validation is weak. Client-side validation only is trivially bypassed and is not itself the finding; the server behavior is.
 
 ## Evidence and deliverable
 
-Deliver object/version IDs, fixture hashes, admission and scan decisions, worker timeline, storage policy and retrieval headers. Record archive entry limits and processor CPU/memory/time budgets.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the upload endpoint, the bypass used, where the file was stored and served, the consumer that acted on the marker, and the control result. Keep any uploaded artifacts benign and owned. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered consumers.
 
 ## Versions and tool limitations
 
-Pin storage SDK, decoder, image/PDF converter and scanner versions. Historical extension tricks and old null-byte behavior are not current findings. Browser rendering behavior depends on content type, disposition and origin.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the serving runtime and any image/processing library and version. Tools may deploy real shells; use inert markers only. No consumer behavior was verified by this content; confirm the live serving/processing path first.
 
 ## Remediation and detection
 
-Use immutable tenant-scoped keys, isolated quarantine, atomic publication after successful processing and separate untrusted download origins. Bound expanded size and processing time, and deny writes to executable/configuration locations.
-
-Correlate upload IDs across scan failures, conversion errors and publication events; alert when publication precedes approval or a capability targets a mismatched namespace.
+Allowlist by validated content type and re-encode, store outside the web root with a generated name and `attachment` disposition, serve from a sandboxed/no-exec domain, sanitize filenames, and cap size/decompression. Add a regression asserting a disguised executable is neutralized. Detect executable content types in upload stores and requests to served upload paths correlated to the uploader.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A rejected fixture is retrievable from the public object endpoint despite a quarantine guarantee: CONFIRMED; FAIL. |
-| Benign refutation | A mismatched extension is accepted into quarantine, decoded safely and served only as an attachment after approval: REFUTED for the alleged executable upload; PASS for tested controls. |
-| Insufficient evidence | Only the upload response is visible and storage/publication state is unknown: CANDIDATE; WARN. |
+| Supported finding | A disguised marker is accepted and executed/parsed by the consumer on an owned instance where the control is inert: CONFIRMED; FAIL (scope to the chain shown). |
+| Benign refutation | Re-encoding or out-of-web-root storage neutralizes the marker: REFUTED for the tested chain; PASS for the control. |
+| Insufficient evidence | The file is accepted but never shown to reach an impactful consumer: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-file-upload/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-file-upload/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains upload, object-storage, archive and converter boundaries while replacing web shells, polyglots and processing exploits with inert lifecycle tests.
-
+This revision restores the upstream's validation-bypass families, extension-impact matrix and processing-chain craft, re-expressed as owned-fixture experiments with benign markers and neutralization controls, replacing live web-shell deployment with bounded chain proof.

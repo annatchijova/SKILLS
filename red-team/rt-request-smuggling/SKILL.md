@@ -1,99 +1,89 @@
 ---
 name: rt-request-smuggling
-description: "Measure request-boundary agreement across isolated HTTP proxies and backends with inert conformance fixtures and connection-level traces."
+description: "Red-team assessment of HTTP request-smuggling / desync boundaries: CL.TE, TE.CL and TE.TE between front-end and back-end, plus HTTP/2 downgrade desync, client-side desync, pause-based, CONNECT tunneling, WebSocket desync and header oversizing. A parser-differential problem between proxy and origin, re-expressed as owned two-tier lab experiments with timing/response discriminators and negative controls instead of live queue poisoning."
 ---
 
-# HTTP Framing Agreement
+# HTTP Request Smuggling Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's desync craft as scoped experiments against an owned front-end/back-end lab: it names the desync variants and their discriminators while keeping confirmation to timing/self-observed effects rather than poisoning other users' responses.
 
 ## Scope and prerequisites
 
-Assess parser agreement in an isolated chain. Never test ambiguous framing on shared production connections or supply a queued request targeting another user.
+Smuggling is a parser differential (compose with `parser-differential-hunting`): the front-end and back-end disagree on where one request ends. Reproduce the real two-tier topology (proxy/CDN/load-balancer in front of an origin) in an owned lab. Confirm with timing and self-targeted effects; do not poison a shared queue or capture other users' requests on a live system.
 
-Clone the relevant proxy/backend configuration into a dedicated lab with no real traffic. Obtain owner-approved inert framing fixtures, per-hop captures and a strict connection/time budget.
+Declare target topology, attempt budget and a stop on first confirmation. Source-only / single-tier setups yield a hypothesis marked NOT TESTED.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+- **CL.TE** — front-end uses `Content-Length`, back-end uses `Transfer-Encoding`.
+- **TE.CL** — the reverse.
+- **TE.TE** — both support TE but one is tricked by an obfuscated header into ignoring it.
+- **HTTP/2 desync** — H2 downgraded to H1 at the back-end with mismatched length semantics; H2.CL / H2.TE.
+- **Client-side desync (CSD)**, **pause-based**, **CONNECT tunneling**, **WebSocket desync**, **header oversizing** — modern variants.
 
 ## Mechanism and observation
 
-Record each protocol hop, TLS termination, HTTP version translation, buffering policy, upgrade path and backend connection reuse. An advertised HTTP/3 endpoint does not imply backend desynchronization.
+Trace how each tier computes message length (CL vs TE vs H2 frame).
 
-**Firstness:** Count parsed request boundaries and associate each response with a fixture request ID on each hop. Compare with the expectation that both endpoints agree on message completion.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the timing/response anomaly (a delayed response indicating a back-end wait for bytes that never come, or a smuggled prefix affecting your own next request). **Secondness:** State the correct behavior (both tiers agree on message boundaries) and the deviation. **Thirdness:** Infer a desync only after a controlled, self-observed effect reproduces.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** The front and back parsers disagree about message length or completion and associate subsequent inert messages with different boundaries.
+**Mechanism hypothesis:** Front-end and back-end parse length differently, so a crafted request leaves a prefix in the back-end's buffer that prepends to the next request on that connection.
 
-**Competing benign explanation:** A timeout may be expected rejection, buffering, connection closure or an incomplete fixture. A client may normalize ambiguity before transmission.
+**Competing benign explanation:** Both tiers normalize headers identically (no differential); the delay is network jitter; the connection is not reused between requests (no shared buffer); the front-end rejects ambiguous CL+TE outright.
 
 ## Deduction and controls
 
-A conformance case yields a reproducible parser-boundary difference on the same bytes; an ordinary request sequence preserves one-to-one association. Rejection that closes the connection must not be called smuggling.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A well-formed request pair behaves normally (positive control). A true desync produces the time-based signature (the back-end stalls waiting for the declared body) and then a self-observed prefix effect on your own follow-up request. Predeclare the exact timing threshold and the self-targeted marker. A front-end that rejects ambiguous length framing is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Run two ordinary inert requests over the lab connection and establish matching request/response IDs at both hops.
+Owned two-tier lab; self-targeted confirmation; single-packet where applicable.
 
-2. Replay one approved non-destructive framing conformance fixture and capture bytes before normalization and after each protocol translation.
+1. **Baseline.** Send normal requests; confirm connection reuse and capture normal timing.
+2. **Time-based probe.** Send a CL.TE / TE.CL probe whose framing makes the back-end wait for more bytes; a reproducible delay (vs the baseline, repeated) indicates a differential. This is the safe first discriminator.
+3. **Confirm self-effect.** Smuggle a prefix that affects only your own next request (e.g. changes your own response), proving the buffer carried over — without targeting another user.
+4. **TE.TE obfuscation.** Test header obfuscations (spacing, casing, duplicate TE, line folding) to see which tier is fooled.
+5. **HTTP/2 downgrade.** If the front-end speaks H2 to an H1 back-end, test H2.CL/H2.TE and CRLF-in-H2-header injection.
+6. **Control.** Confirm the well-formed pair stays in sync.
 
-3. Compare parser events and connection closure; do not infer disagreement solely from timing or status.
+Record results including refutations. Keep finding and control status separate. Stop at the self-observed confirmation; do not escalate to live victim capture.
 
-4. Test a second inert fixture message on the same dedicated connection only when allowed by the lab harness; observe response association.
+## Craft notes (leads)
 
-5. Repeat with connection reuse disabled as a diagnostic control, then close lab connections and verify no queued fixture work remains.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Classic obfuscations: `Transfer-Encoding: chunked` with trailing space/tab, duplicate TE headers, `Transfer-Encoding:\nchunked`, `Content-Length` + `Transfer-Encoding` together. H2 desync exploits the length ambiguity introduced at downgrade; check `Alt-Svc`/H2/H3 support. Pause-based desync sends headers slowly then a smuggled request. Impact classes to bound: security-control bypass, cache/response-queue poisoning, request capture — demonstrate the mechanism, not the live population.
 
 ## Domain-specific failure modes
 
-A proxy may rewrite length metadata safely. Different HTTP versions require different framing rules; do not transpose HTTP/1 assumptions onto HTTP/2 or HTTP/3. Scanner heuristics can confuse slow backends with disagreement.
+A single slow response is jitter until repeated. No connection reuse means no shared buffer, so no classic smuggling. A front-end that fully normalizes removes the differential even if the back-end is lenient. Timing signatures prove a differential but not yet a usable prefix — show the self-effect to confirm.
 
 ## Evidence and deliverable
 
-Deliver topology/configuration digest, protocol versions, byte captures, parser boundary events, connection IDs and response association. Treat captures as evidence and omit operational malicious framing recipes from reports.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the topology, the framing probe, the reproducible timing delta, the self-observed prefix effect, and which tier was fooled. Keep any captured data to your own requests. Attach minimal replay, expected/observed, rival explanation (jitter/no-reuse), falsifier, uncovered variants.
 
 ## Versions and tool limitations
 
-Pin proxy, backend and client builds plus buffering/translation settings. Inspect replay-tool normalization and protocol support. Historical server/version tables are leads, not current proof.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin front-end and back-end server/versions — desync is implementation- and version-specific (track real CVEs). Burp's HTTP Request Smuggler and the single-packet attack are the standard tools; keep probes self-targeted. No topology behavior was verified by this content; reproduce the live stack first.
 
 ## Remediation and detection
 
-Reject ambiguous framing consistently, align front/back parser policy and close unsafe connections. Verify translation behavior and regression-test the exact failed inert case across supported hops.
-
-Correlate framing rejections, unexpected backend request counts, response association errors and connection resets. Validate signals against the baseline to avoid alerting on ordinary timeouts.
+Make both tiers agree: reject ambiguous CL+TE, normalize/strip TE before the back-end, prefer HTTP/2 end-to-end without downgrade, disable connection reuse to untrusted back-ends, and cap header sizes. Add a regression asserting ambiguous framing is rejected. Detect anomalous response/queue behavior and malformed length headers at the front-end.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | Identical captured bytes produce different request boundaries and misassociate two inert lab responses: CONFIRMED; FAIL. |
-| Benign refutation | Both parsers reject the ambiguous fixture and close the connection with no queued message: REFUTED; PASS. |
-| Insufficient evidence | A scanner reports only a timeout without per-hop bytes or parser events: CANDIDATE; WARN. |
+| Supported finding | A reproducible timing signature plus a self-observed smuggled prefix on an owned two-tier lab: CONFIRMED; FAIL. |
+| Benign refutation | Both tiers normalize identically / no connection reuse / front-end rejects ambiguity: REFUTED; PASS for the control. |
+| Insufficient evidence | A single unrepeated delay, no self-effect: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-request-smuggling/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-request-smuggling/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains desynchronization, connection reuse and protocol translation analysis without smuggled payload construction, queue poisoning or bypass guidance.
-
+This revision restores the upstream's CL.TE/TE.CL/TE.TE and modern H2/CSD/pause-based desync craft, re-expressed as owned two-tier lab experiments with timing and self-observed discriminators, replacing live queue/response poisoning with bounded mechanism proof.

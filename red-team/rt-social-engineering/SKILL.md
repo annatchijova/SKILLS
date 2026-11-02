@@ -1,111 +1,87 @@
 ---
 name: rt-social-engineering
-description: "Evaluate helpdesk, visitor and messaging verification procedures with synthetic identities and approved role-play, without collecting secrets or bypassing physical access."
+description: "Red-team assessment of human-layer susceptibility via authorized, consented social-engineering simulation: pretext design and plausibility, vishing/smishing, physical-access and tailgating tests, and MFA-fatigue/help-desk-impersonation scenarios. Re-expressed as a sanctioned, ethically-bounded exercise against consented targets that measures susceptibility and process controls with a debrief, not real manipulation of uninformed people."
 ---
 
-# Human Verification Workflow Assessment
+# Social-Engineering Simulation Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the simulation below.
+This revision restores the upstream's social-engineering craft as a sanctioned, ethically-bounded simulation: it designs pretexts to measure human-layer susceptibility and process controls against consented targets, with a debrief, rather than manipulating uninformed people.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Assess whether a defined workflow requires independent verification before a consequential action.
-Use consented role-play or synthetic tickets; do not initiate calls, messages or visits without
-explicit execution authorization.
+Social engineering tests the human layer and the processes meant to protect it (verification procedures, help-desk authentication, visitor control). Run only under explicit authorization with a defined scope, a safety/abort protocol, and a debrief. The goal is to measure susceptibility and improve process — not to harm, coerce, or deceive beyond the sanctioned scenario.
 
-- independent-channel identity verification.
-- approval provenance and separation of duties.
-- device and visitor handling workflows.
+Declare the scenarios, the target scope, the abort/safety protocol, and the debrief plan. Design-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Choose one transaction: dummy account recovery, test visitor admission or handling a labeled inert
-device. Define the expected verification and approval steps.
+- **Pretext/vishing/smishing** — a plausible scenario (help-desk, vendor, IT) to elicit an action or information (compose with `social-engineering-plausibility`).
+- **Help-desk / account-recovery impersonation** — testing identity-verification procedures.
+- **MFA fatigue / push-bombing** — testing whether users approve unexpected prompts.
+- **Physical** — tailgating, visitor-badge, drop-media (benign) — testing physical access controls.
 
-Use synthetic identities, dummy assets and approved participants. No real credentials, MFA codes,
-badges, personal information or working device implants are involved.
+## Mechanism and observation
 
-Separate the simulated requester's evidence from trusted evidence already held by the organization;
-caller-provided contact details cannot serve as independent confirmation.
+Run one sanctioned scenario; measure whether the human/process control held.
 
-## Discriminating laboratory procedure
+**Firstness:** Record what the target did (disclosed info, performed an action, approved an MFA push, allowed physical entry) and the process step involved. **Secondness:** State the intended control (verify identity before acting; do not approve unexpected MFA; challenge unbadged visitors) and the deviation. **Thirdness:** Infer a susceptibility/process gap only after the sanctioned scenario confirms it.
 
-Abduction: the workflow accepts requester-controlled evidence as independent identity verification.
-Rival: the operator used an existing trusted record or an approved low-risk exception.
+## Abduction and refutation
 
-Deduction: a synthetic request lacking independent verification should remain pending, while a
-matched request with an existing trusted-channel confirmation may proceed.
+**Hypothesis:** A plausible pretext bypasses a human/process control (verification is skipped, MFA approved, entry allowed).
 
-Induction: run the paired role-play transactions within the approved window and record state
-transitions, verification source and decision authority.
+**Competing benign explanation:** The help-desk followed verification and refused; the user declined the MFA push and reported it; the employee challenged the visitor; the target recognized and reported the pretext; the scenario was unrealistic.
 
-For physical workflows, use a tabletop or staffed test checkpoint and a dummy visitor record;
-measure escort and approval behavior without defeating locks or cloning badges.
+## Deduction and controls
 
-For device handling, use an inert labeled object and observe quarantine/reporting workflow. Do not
-connect a device capable of injecting input or changing network configuration.
+A legitimate request follows the process correctly (baseline). A confirmed gap has the sanctioned pretext succeed where the verification/physical process should stop it. Predeclare the success signal and the process control. Verification-followed / MFA-declined-and-reported / visitor-challenged are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded, ethical procedure
 
-## Domain failure modes
+Consented scope; abort protocol; debrief.
 
-- A courteous conversation or acceptance of a ticket does not establish that a consequential action
-  was authorized.
-- A callback to a number supplied in the request is not independent verification; provenance must be
-  captured.
-- Small cohorts, coaching and prior notice affect generalization. Report the process observation
-  rather than labeling people susceptible.
+1. **Design.** Build a plausible, authorized pretext and a clear objective (an information or action test); set safety limits (no real harm, no coercion, defined stop).
+2. **Execute one scenario** within scope (a vishing call to a consented line, a help-desk verification test, a sanctioned tailgating attempt).
+3. **Measure.** Did the process control hold? Capture the decision point, not personal fault.
+4. **Abort if needed.** On distress, out-of-scope involvement, or safety risk, stop immediately.
+5. **Debrief.** Provide constructive feedback to the team and process owners; never single out or penalize individuals.
 
-## Evidence and verdict
+Record results including refutations. Keep the susceptibility finding separate from the process-control score.
 
-Deliver a redacted transition ledger with requested action, verification source, approver, final
-state and matched control. Record consent and scope without unnecessary personal data.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The durable findings are process gaps: help-desk resetting credentials/MFA without strong verification, employees approving unexpected MFA pushes, and visitor controls not challenging tailgaters. Pretext plausibility (authority, urgency, familiarity) is the lever; realism must be authorized and bounded. The measurement target is the process and the report behavior, not an individual's "failure".
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require consequential account or visitor actions to link to independently sourced verification and a
-reviewable approval record. Fix process design, escalation channels and exception handling.
+A target who verifies, declines, or reports is a PASS — the process worked. An unrealistic pretext under-measures. Pushing a scenario past distress or into non-consented people is an ethics breach and out of scope. Framing results as individual blame instead of process improvement undermines the exercise. Real manipulation of uninformed people outside the sanctioned scope is never appropriate.
 
-## Recovery
+## Evidence and deliverable
 
-Cancel synthetic tickets, revoke dummy access and debrief participants through the authorized
-coordinator. Preserve only the agreed evidence and aggregate observations.
+Provide the scenario, the decision point reached, whether the process control held, and the process-improvement recommendations. Anonymize individuals; report at the process level. Attach the consent/scope basis, the safety protocol honored, expected/observed, rival explanation, falsifier, scenarios not run.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record workflow revision, ticketing configuration and identity-verification product version. Tool or
-script availability does not establish permission to contact people.
+Human/process behavior varies by training and context; one exercise is a sample, not a universal verdict. No process behavior was verified by this content; run the sanctioned scenario to measure.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Strengthen identity verification for help-desk/account recovery (callback, secondary factor), train and measure MFA-push hygiene (deny + report unexpected prompts, number matching), enforce visitor/badge controls, and make reporting easy and blameless. Add a recurring exercise cadence and track report rates. Detect help-desk verification bypass and anomalous MFA-approval patterns.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Dummy recovery action completes using only requester-supplied verification; trusted-channel control isolates the difference | CONFIRMED verification workflow failure; FAIL |
-| Operator obtains confirmation through an existing trusted record before the dummy action | REFUTED verification-bypass claim; PASS |
-| Participant was polite but no completed action or verification record exists | CANDIDATE social hypothesis; WARN |
+| Supported finding | A sanctioned pretext bypasses a verification/physical control where the process should stop it: CONFIRMED process gap; FAIL. |
+| Benign refutation | The target verifies/declines/reports, or the control holds: REFUTED; PASS for the control. |
+| Insufficient evidence | An unrealistic scenario or an inconclusive single interaction: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/social-engineering/offensive-social-engineering/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/social-engineering/offensive-social-engineering/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains human trust and procedural boundary analysis, replacing impersonation scripts, badge cloning
-and malicious devices with bounded role-play.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's pretext/vishing/physical craft as a sanctioned, ethically-bounded, consented simulation measuring process controls with a blameless debrief, replacing manipulation of uninformed people with bounded, process-focused measurement. Composes with `social-engineering-plausibility`, `rt-phishing`, `rt-initial-access`.

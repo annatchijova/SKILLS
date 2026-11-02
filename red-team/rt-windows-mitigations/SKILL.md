@@ -1,109 +1,90 @@
 ---
 name: rt-windows-mitigations
-description: "Assess effective Windows exploit-mitigation configuration and harmless diagnostic outcomes across binaries, processes and hardware."
+description: "Red-team / research assessment of Windows exploit-mitigation effectiveness: Control Flow Guard (CFG), xFG, CET/shadow stack, Arbitrary Code Guard (ACG), Code Integrity Guard (CIG), DEP/ASLR/high-entropy ASLR, CFG-aware heap, EAF/IAF and HVCI/Credential Guard, including the precondition each needs to be bypassed. Re-expressed as scoped experiments on an owned Windows target that score whether a mitigation holds against a given primitive (PASS/WARN/FAIL) rather than delivering bypasses."
 ---
 
-# Windows Mitigation Effectiveness
+# Windows Exploit-Mitigation Effectiveness Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiments below.
+This revision restores the upstream's Windows-mitigation craft as effectiveness measurement: it explains each mitigation and the precondition under which it is bypassable, scoring whether it holds against a given primitive on an owned target rather than shipping a bypass. This is the Windows counterpart to `rt-mitigations`.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Evaluate a specific mitigation promise for a named application and Windows build. Do not equate a PE
-flag, policy setting or hardware feature with runtime enforcement.
+As with all mitigations, a Windows mitigation raises a specific precondition for bypass (an indirect-call gadget for CFG, a shadow-stack gap for CET, a data-only path for ACG). The question is: against this primitive on this build, does the mitigation hold? Work on an owned Windows target with a known primitive. Deliverable: per-mitigation PASS/WARN/FAIL with the precondition.
 
-- DEP and ASLR applicability.
-- CFG and shadow-stack enforcement.
-- VBS and HVCI effective state.
+Declare the Windows build, the enabled mitigations, the primitive, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Mitigation surface (and bypass precondition)
 
-Inventory PE architecture and mitigation metadata, process policy overrides, compiler/linker
-settings and loaded module compatibility.
+- **DEP/ASLR/HEASLR** — code reuse + an info leak needed (as elsewhere).
+- **CFG / xFG** — guards indirect calls; bypass needs a CFG-valid target, a non-guarded call site, or a data-only/return-based path (CFG does not protect returns — hence CET).
+- **CET / shadow stack** — protects returns; bypass needs a shadow-stack gap or a non-CET module.
+- **ACG (Arbitrary Code Guard)** — no new executable memory; forces data-only/ROP (no dynamic codegen).
+- **CIG (Code Integrity Guard)** — only signed images load; bypass needs a signed-but-vulnerable module or a non-image path.
+- **EAF/IAF** — export/import address filtering (EMET-lineage); complicates address resolution.
+- **CFG-aware heap, HVCI, Credential Guard** — structure/credential protections; bypass needs a primitive outside the protected set.
 
-For VBS, HVCI or hardware shadow stacks, distinguish supported, configured and running states.
-Record virtualization and firmware prerequisites.
+## Mechanism and observation
 
-Use signed or owner-reviewed harmless diagnostic fixtures in a disposable VM. Kernel exploitation
-and intentional corruption of production processes are excluded.
+Pair the primitive with the mitigation and test whether the bypass precondition is reachable.
 
-## Discriminating laboratory procedure
+**Firstness:** Record whether the mitigation stopped the step (guard check failure, non-execution) or the precondition was met (CFG-valid chain ran, leak obtained). **Secondness:** State what the mitigation prevents and the deviation. **Thirdness:** Infer "ineffective against this primitive" only after the precondition is met, under control.
 
-Abduction: a mitigation exception leaves the target process unprotected. Rival: the static scanner
-cannot recognize the binary's metadata or the application requires a documented exception.
+## Abduction and refutation
 
-Deduction: the same diagnostic should show enforcement in a matched protected fixture and absence in
-the exempt process, while a valid operation succeeds in both.
+**Hypothesis:** The available primitive satisfies the precondition that bypasses the Windows mitigation.
 
-Induction: inspect static flags and effective process state, then run a vendor-supported diagnostic
-for one selected mitigation. Record the exact termination/status evidence.
+**Competing benign explanation:** CFG/xFG rejects the indirect call; CET catches the return; ACG blocks new code so shellcode cannot run; CIG blocks the unsigned module; no info leak so ASLR holds; the primitive is outside HVCI/Credential-Guard's protected set so those are irrelevant (and the relevant mitigation is effective).
 
-For ASLR, compare mappings across fresh processes and relevant restarts; a few differing addresses
-do not establish entropy or universal coverage.
+## Deduction and controls
 
-For CFG or shadow stacks, verify instrumentation and hardware prerequisites before attributing a
-diagnostic failure to the mitigation. Keep data-only behavior outside the claimed coverage.
+With the precondition met the step succeeds; without it the mitigation holds. A confirmed "ineffective" result meets the precondition on the owned target where a config lacking it blocks the step. Predeclare the precondition and the success signal (benign marker). The mitigation blocking the step is a PASS/WARN.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded laboratory procedure
 
-## Domain failure modes
+Owned Windows target; benign marker.
 
-- DEP, CFG, ASLR and shadow stacks address different primitives; one does not substitute for the
-  others.
-- A configured VBS feature may not be running after an unsupported boot or hardware configuration.
-- Diagnostic crashes may reflect a harness defect; require a normal-operation control and the
-  documented mitigation-specific signal.
+1. **Inventory.** Enumerate enabled mitigations (process mitigation policy) and the primitive.
+2. **Pair & hypothesize.** For each relevant mitigation, state the precondition a bypass needs.
+3. **Test the precondition.** Attempt only to meet it (obtain a leak, find a CFG-valid/non-guarded call site, a data-only path) and reach a benign marker; stop.
+4. **Score.** PASS (precondition unreachable), WARN (partial/unverified), FAIL (precondition met, mitigation bypassed for this primitive).
+5. **Control.** Compare against a build where the precondition is removed.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from the per-mitigation control score.
 
-Provide configured/effective/observed columns per mitigation, binary hashes, module coverage,
-hardware prerequisites, diagnostic results and explicit exceptions.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+CFG protects forward-edge (indirect calls) but not returns — CET/shadow stack covers returns; together they constrain ROP/JOP heavily. ACG forbids dynamic codegen, pushing toward data-only exploitation. CIG requires signed modules — a signed-but-vulnerable module is the usual precondition. The recurring theme: each mitigation converts "bug" into "bug + required precondition"; document the precondition.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Monitor policy exceptions and unexpected loss of running protection. Remove unnecessary per-image
-overrides, rebuild unsupported modules and retest the original application workflow.
+Claiming a Windows mitigation is "bypassed" in general is wrong — bypass is relative to a primitive and precondition. A mitigation irrelevant to the primitive (HVCI when the target is user-mode data-only) is neither PASS nor FAIL for it. Reaching the benign marker proves the precondition; going further is out of scope.
 
-## Recovery
+## Evidence and deliverable
 
-Restore test-only policy overrides and verify effective state after any required restart. Preserve
-diagnostic logs before reverting the snapshot.
+Provide the primitive, each mitigation, its bypass precondition, whether it was met, and the PASS/WARN/FAIL. Keep to the owned target. Attach minimal replay, expected/observed, rival explanation, falsifier, mitigations not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record Windows build, CPU features, firmware, hypervisor, compiler and diagnostic version.
-Historical Windows release defaults are research leads, not current evidence.
+Pin the Windows build and per-process mitigation policy — availability (CET, HVCI) and behavior are version- and hardware-specific. No Windows behavior was verified by this content; confirm the live config first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Enable the full policy (CFG + xFG, CET/shadow stack, ACG, CIG, HEASLR, EAF/IAF, HVCI, Credential Guard) per process where supported, and eliminate info leaks that unlock bypasses. Add a regression asserting the precondition stays unreachable. Detect leak primitives and code-reuse/data-only execution patterns.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Effective process policy excludes required protection and the controlled diagnostic corroborates the gap | CONFIRMED configuration gap; FAIL |
-| PE scanner misses metadata but runtime state and diagnostic demonstrate enforcement | REFUTED missing-mitigation claim; PASS |
-| Hardware support is reported but running state was not collected | CANDIDATE protection claim; WARN |
+| Supported finding | A bypass precondition is met on the owned target (benign marker reached) where removing it blocks the step: CONFIRMED mitigation-ineffective-for-this-primitive; control FAIL. |
+| Benign refutation | CFG/CET/ACG/CIG/no-leak prevents the step: REFUTED; control PASS. |
+| Insufficient evidence | Precondition partially reachable, not demonstrated: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-windows-mitigations/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-windows-mitigations/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains mitigation interaction analysis as distinct from authorization boundaries; replaces bypass
-chains with configuration and diagnostic comparisons.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's CFG/CET/ACG/CIG/HVCI catalog and bypass-precondition knowledge, re-expressed as owned-target effectiveness measurement scored PASS/WARN/FAIL per primitive, replacing bypass weaponization with precondition-reachability assessment. Composes with `rt-mitigations`, `rt-exploit-development`, `rt-windows-boundaries`, `control-effectiveness-vs-existence`.

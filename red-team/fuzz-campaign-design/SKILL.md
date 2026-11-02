@@ -1,102 +1,90 @@
 ---
 name: fuzz-campaign-design
-description: Design bounded reproducible fuzz campaigns with meaningful oracles. Use when selecting harnesses, corpora, instrumentation or crash-triage procedures for owned parsers and services.
+description: "Design and run a fuzzing campaign with discipline: harness construction, seed-corpus curation, coverage and sanitizer instrumentation, oracle/invariant selection, mutation vs grammar/structure-aware strategy, and a stop/triage criterion. Re-expressed as a scoped engineering experiment on an owned target that states the oracle and coverage goal up front and routes findings to triage, not a point-and-shoot crash hunt."
 ---
 
-# Fuzz Campaign Design
+# Fuzzing Campaign Design
 
-Use within the user's authorized scope. Carry existing authorization forward; a skill does not expand it. Record observation, expected behavior, hypothesis, falsifier and actual result. Distinguish CANDIDATE, CONFIRMED, REFUTED and NOT TESTED.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the campaign design below.
+This revision restores the upstream's fuzzing craft as a designed experiment: harness, corpus, coverage, oracle and stop criterion stated before running, with crashes routed to disciplined triage rather than treated as finished findings. Compose with `oracle-driven-fuzzing`.
 
-## Choose the observable failure
-Write the invariant before selecting a fuzzer. Use sanitizers for memory safety, round-trip properties for lossless codecs, metamorphic properties for normalization, and differential comparison only when implementations promise equivalent semantics.
-Prove oracle sensitivity with a deliberately faulty local fixture; do not mutate production code.
+## Scope and prerequisites
 
-## Harness and budget
-Call the narrowest production entry point that preserves the relevant boundary. Record what authentication, parsing or network behavior the harness bypasses.
-Reset persistent state between inputs. Fix or capture time, randomness, seed, build flags and dependency versions. Avoid uncontrolled network access.
-Start from valid synthetic fixtures plus prior minimized failures; reserve malformed cases for error paths. Set wall-time, memory, input-size and execution budgets before running.
-Use structure-aware generation when validation blocks deeper paths. For stateful APIs generate transitions and assert invariants after each step.
+A fuzzing campaign is an experiment: what are you feeding, what are you measuring, and what counts as a bug? Fuzz an owned target or an in-scope component you may instrument. State the oracle up front — a crash is one oracle, but differential/metamorphic/assertion oracles find logic bugs a crash never will.
 
-## Interpret results
-A coverage plateau can mean unreachable code, weak seeds or an insufficient oracle; inspect which before extending the budget.
-Minimize failures, replay in a fresh process, deduplicate by cause and separate harness defects from target defects. Differential disagreement is a lead until the contract determines which behavior is wrong.
-Retain minimized input, seed, corpus identity and replay command. An unexplained crash is not demonstrated code execution.
+Declare the target, the harnessed entry point, the budget (CPU-hours), and the stop/triage criterion. Instrument-free black-box fuzzing yields weaker evidence — mark coverage NOT MEASURED.
 
-## Output
-Report harness boundaries, oracle sensitivity, budgets used, coverage limits, reproducible failures and unresolved cases. Turn confirmed failures into regressions. A clean campaign only bounds the inputs and properties actually exercised.
+## Design dimensions
 
-## Experimental contract and controls
+- **Harness** — the smallest, fastest entry point that reaches the target logic deterministically; strip nondeterminism (time, RNG, network) or seed it.
+- **Seed corpus** — minimal, diverse, valid inputs covering distinct code paths; minimize/`cmin` to remove redundancy.
+- **Coverage** — compile with coverage instrumentation (SanitizerCoverage/`-fsanitize-coverage`); measure edges, not just lines.
+- **Sanitizers** — ASan/UBSan/MSan/TSan as crash oracles that surface silent corruption.
+- **Oracle** — crash (sanitizer), differential (two implementations disagree), metamorphic (a transform should not change output), assertion/invariant (an internal property must hold).
+- **Strategy** — coverage-guided mutation (libFuzzer/AFL++) vs grammar/structure-aware (for structured inputs) vs generation-based.
 
-Read [the assessment contract](../METHODOLOGY.md) before running the campaign.
-Input: target/build identity, entry-point contract, owned corpus and permitted configurations.
-Define one concrete invariant and its falsifier before choosing mutation strategy.
-Record actor-controlled fields and any validation deliberately skipped by an internal harness.
-An internal parser finding does not establish external reachability.
-Use inert fixtures; do not construct exploit payloads or bypass mitigation mechanisms.
+## Mechanism and observation
 
-## Mechanism-specific instrumentation
+Design so that a failing input is attributable to a stated oracle violation.
 
-- ASan: selected spatial and lifetime errors in instrumented native paths.
-- UBSan: selected undefined behavior; ordinary unsigned wrap is not universally covered.
-- MSan: uninitialized-value use, subject to compatible dependency instrumentation.
-- TSan: observed data races, not filesystem or transactional check/use atomicity.
-- Semantic assertions: truncation, inconsistent state, unauthorized output and wrong results.
-- Differential oracles: disagreements only within explicitly equivalent modes and contracts.
+**Firstness:** Record coverage growth, the oracle that fired, and the input that caused it. **Secondness:** State the expected behavior (no sanitizer fault, implementations agree, invariant holds) and the deviation. **Thirdness:** Infer a bug class only after triage confirms the oracle violation is a real defect (route to `rt-bug-identification`/`rt-crash-analysis`).
 
-Inspect installed compiler/engine versions and help before selecting instrumentation.
-Run incompatible sanitizer configurations separately and retain each build identity.
-A crash classifier can prioritize triage; it cannot establish exploitability.
-Use an actual input reducer for minimization; symbolizers only interpret diagnostic names.
+## Abduction and refutation
 
-## Discriminating campaign experiment
+**Hypothesis:** The target has reachable states violating the stated oracle that the current corpus/strategy has not yet reached.
 
-Abduction: a length-prefixed fixture accepts a body shorter than its declared length.
-Strongest benign explanation: the format intentionally permits partial streaming frames.
-Another rival is a harness that strips bytes or supplies an incorrect buffer size.
-Deduction: under a complete-frame contract, truncation must reject without reading past input;
-under an incremental contract, it must return a documented need-more-data result.
+**Competing benign explanation:** Coverage is plateaued because the harness cannot reach deeper code (harness defect, not target robustness); the "crash" is a harness/oracle bug; the differential is an intended behavioral difference; the input is invalid in a way the real caller prevents.
 
-1. Freeze complete-frame mode and record its exact rejection contract.
-2. Use a valid two-byte body with declared length two as the negative control.
-3. Use a one-byte body with declared length two as the discriminating input.
-4. Confirm input bytes and lengths at the target entry point.
-5. Run a deliberately faulty local fixture to verify oracle sensitivity.
-6. Compare with the guarded fixture under identical resource limits.
-7. Replay the minimized failure outside persistent mode in a fresh process.
-8. Record observed output and first invalid access, not just the engine's crash count.
+## Deduction and controls
 
-Refute the truncation claim if the contract permits streaming and returns need-more-data.
-Do not refute a candidate when instrumentation failed or the target path was never reached.
+A valid corpus runs clean under the oracle (positive control). A productive campaign grows coverage and surfaces oracle violations that triage confirms. Predeclare the coverage target and the oracle. A plateau with a harness that demonstrably cannot reach the target is a harness-effectiveness WARN, not target assurance.
 
-## Corpus, state and plateau diagnosis
+## Induction: bounded campaign procedure
 
-Keep valid structured seeds and malformed error-path seeds as identifiable partitions.
-Preserve seed origin and hashes; minimize corpus coverage separately from individual failures.
-For persistent execution, compare repeated input orderings with fresh-process results.
-Reset globals, descriptors, callbacks and input ownership; record state that cannot be reset.
-Snapshot fuzzing must restore external state as well as guest memory or disclose the gap.
-Compare coverage only within compatible instrumentation maps and builds.
-At a plateau, check parsing gates, feature configuration, stability and oracle sensitivity.
-Stop or change one search axis when the budget expires; do not silently extend the campaign.
+Owned/instrumented target.
 
-## Detection, remediation and behavioral cases
+1. **Harness.** Build the minimal deterministic entry point; verify it executes a known input and reaches the target code.
+2. **Corpus.** Gather and minimize diverse valid seeds; confirm baseline coverage.
+3. **Instrument.** Enable coverage + sanitizers; pick the oracle(s).
+4. **Run to the budget.** Track coverage over time; save every oracle-violating input; deduplicate by coverage/stack.
+5. **Triage.** Route unique findings to `rt-bug-identification` and `rt-crash-analysis` — a crash is a CANDIDATE until triaged.
+6. **Assess coverage honestly.** Report what the campaign did and did not reach; a clean run over low coverage is WARN, not PASS.
 
-Retain first-cause signatures and minimized cases in bounded CI regression replay.
-Repair the input boundary or ownership rule; suppressing a sanitizer report is not a repair.
-Replay valid neighboring inputs to detect fixes that merely reject everything.
+Record results including refutations. Keep finding status separate from coverage/harness-effectiveness status.
 
-- Confirmed synthetic defect: complete-frame fixture reads beyond a truncated body;
-  valid and repaired controls pass. CONFIRMED bounds defect in that fixture.
-- Benign refutation: incremental mode returns its documented need-more-data status
-  without invalid access. REFUTED complete-frame defect claim for that mode.
-- Insufficient evidence: the harness never reaches the body parser or calibration fails;
-  the claimed resistance is NOT TESTED, control WARN, even with zero recorded crashes.
+## Craft notes (leads)
 
-Deliver corpus/build hashes, budgets, oracle calibration, replay artifacts and uncovered paths.
-Report discovery nondeterminism separately from deterministic replay of a saved input.
-Source path: `Skills/fuzzing/offensive-fuzzing/SKILL.md`.
+libFuzzer/AFL++ for coverage-guided mutation; grammar/structure-aware fuzzers for structured formats; differential fuzzing for parsers/implementations; property-based testing for logic invariants. The oracle choice determines what you can find — a crash-only campaign is blind to logic bugs. Corpus minimization and dictionary tokens accelerate reach. Determinism in the harness is essential for reproducibility.
 
-## Provenance
+## Domain-specific failure modes
 
-Methodology adapted from Claude-Red `offensive-fuzzing` at commit `a8de813edc9f66f60d44cfe42d47750e89d9930b`. See [collection provenance](../PROVENANCE.md). This is a rewritten assessment workflow, not a verbatim upstream skill.
+"No crashes" over low coverage proves nothing — report coverage. A plateau is often a harness limitation, not target robustness. Sanitizer findings can be harness/oracle bugs; triage before claiming. Differential "bugs" can be intended differences. A crash is not a vulnerability until triaged (see `rt-crash-analysis`).
 
+## Evidence and deliverable
+
+Provide the harness, corpus, coverage achieved (edges), the oracle(s), the unique oracle-violating inputs, and their triage disposition. Attach minimal reproducers, expected/observed, rival explanation (harness/oracle bug), falsifier, code not reached.
+
+## Versions and tool limitations
+
+Pin the fuzzer, sanitizer and compiler versions. Coverage and sanitizer semantics are toolchain-specific. No target behavior was verified by this content beyond the instrumented run; reproduce findings independently.
+
+## Remediation and detection
+
+Fix root-cause defects, add the reproducing inputs as regression/corpus seeds, and run the campaign continuously in CI with a coverage floor. Treat coverage regressions as build failures. Report the guarantee level honestly (coverage reached), never a blanket "fuzzed, therefore safe".
+
+## Behavioral acceptance cases
+
+| Case | Expected verdict |
+|---|---|
+| Supported finding | An oracle-violating input, triaged to a real defect, over meaningful coverage: CONFIRMED (bug class per triage). |
+| Benign refutation | The crash is a harness/oracle bug or an intended differential: REFUTED. |
+| Insufficient evidence | Clean run but low/uncertain coverage: NOT TESTED for the unreached code; WARN on coverage. |
+
+These are authoring acceptance scenarios, not executed target tests.
+
+## Provenance and treatment
+
+Upstream research: `Skills/fuzzing/offensive-fuzzing/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's harness/corpus/coverage/oracle/strategy craft, re-expressed as a designed experiment with a stated oracle, coverage honesty and triage routing, replacing point-and-shoot crash hunting with a measured campaign. Composes with `oracle-driven-fuzzing`, `rt-bug-identification`, `rt-crash-analysis`, `rt-vuln-classes`.

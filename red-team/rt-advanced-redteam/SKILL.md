@@ -1,113 +1,71 @@
 ---
 name: rt-advanced-redteam
-description: "Design bounded adversary-emulation exercises with evidence-linked objectives, deconfliction, stage gates and verified restoration."
+description: "Methodology for running a full-scope, authorized red-team engagement: rules of engagement and scoping, objective-based operation planning across the kill chain, deconfliction and safety, evidence and chain-of-custody, purple-team collaboration, and reporting. Re-expressed as an engagement orchestration contract that sequences the domain rt- skills under explicit authorization, safety and detection-measurement constraints rather than an attack playbook."
 ---
 
-# Adversary Exercise Coordination
+# Red-Team Engagement Methodology
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract across the engagement below.
+This revision restores the upstream's advanced-red-team material as an engagement orchestration contract: it sequences the domain skills under explicit rules of engagement, safety, deconfliction and reporting, rather than presenting a flat attack chain.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Coordinate a multi-stage exercise whose result is measured control behavior. Domain-specific
-execution belongs to separate skills; this skill establishes whether the combined exercise can
-support its conclusions.
+A red-team engagement is objective-based and authorized: defined scope, rules of engagement (ROE), a signed authorization, deconfliction contacts, and a stop condition. Every operation carries the engagement's authorization forward; a skill or source never grants additional authority. Prefer the least action that proves the objective.
 
-- objective-to-control dependency graph.
-- deconfliction and abort handling.
-- stage-specific evidence custody.
+Declare the objectives, scope, ROE, deconfliction channel, and stop/abort conditions before any operation. Planning-only engagements yield a plan marked NOT TESTED.
 
-## Preconditions and baseline
+## Engagement phases (orchestration)
 
-Name the protected business operation and the smallest synthetic outcome that represents failure,
-such as a dummy invoice crossing a test approval boundary.
+Each phase names its objective, the skills that carry the depth, and the safety constraint.
 
-Build a dependency graph of identity, ingress, endpoint, egress and response stages. Mark each edge
-as observed, assumed or untested.
+1. **Scoping & ROE.** Define objectives, in/out-of-scope assets, allowed techniques, timing, deconfliction, and abort criteria. Deliverable: signed ROE.
+2. **Recon.** Map external and organizational exposure. Depth: `rt-osint`, `rt-osint-methodology`. Constraint: passive/authorized sources.
+3. **Initial access.** Gain a foothold. Depth: `rt-initial-access`, `rt-phishing`. Constraint: consented recipients, benign markers.
+4. **Execution/privilege.** Establish and elevate within scope. Depth: `rt-linux-privesc`, `rt-windows-privesc`, `rt-active-directory`. Constraint: prove the edge, do not sprawl.
+5. **Lateral movement/persistence.** Reach the objective. Depth: `rt-lateral-movement`, `rt-persistence`. Constraint: reversible, logged, deconflicted.
+6. **Objective & impact.** Demonstrate the objective (access to the crown jewel) with a benign marker. Constraint: no real data exfiltration or destruction.
+7. **Purple-team & detection.** Measure what the blue team saw at each step. Depth: `purple-team-exercise`, `detection-engineering`.
+8. **Reporting.** Deliver the attack path, evidence, detection gaps and remediation. Depth: `remediation-driven-reporting`, `daubert-defensible-writing`.
 
-Separate exercise administrators from simulated actors. Emergency access is available for recovery
-but cannot count as evidence of an attacker capability.
+## Method and safety
 
-## Discriminating laboratory procedure
+Run each phase through the methodology (observe, contrast, infer; abduce, deduce, induce; refute the benign explanation before claiming an edge). Carry safety as a first-class constraint: reversible actions, deconfliction before anything risky, abort on out-of-scope impact or loss of control, and no production disruption. Record evidence with chain of custody (`finding-custody`, `tamper-evident-audit-chain`). Keep operator actions logged for blue-team replay.
 
-Abduction: a response handoff fails because the receiving team cannot correlate an endpoint event to
-the business operation. Rival: delivery delay or an incorrect exercise identifier explains the
-missing response.
+## Deconfliction and stop conditions
 
-Deduction: the same marked event, with and without the required correlation field, should differ in
-case linkage while remaining visible in the source collector.
+- Deconflict before coercion, mass actions, or anything that could disrupt production.
+- Stop on: out-of-scope asset reached, unexpected real impact, loss of control of a tool/foothold, or a blue-team incident triggered without the agreed notification.
+- An available pivot is not a reason to continue past the objective.
 
-Induction: replay one benign stage event into the lab incident workflow; capture source receipt,
-alert creation, case assignment and acknowledgment timestamps.
+## Domain-specific failure modes
 
-Run a positive harness control with a previously validated event. Stop at the first failed
-dependency; do not label downstream stages tested.
+Scope creep is the dominant failure — an available pivot is not authorization. Skipping deconfliction risks real incidents. Treating the engagement as "get domain admin" instead of "prove the objective with minimal impact" causes unnecessary risk. Not measuring detection wastes the engagement's defensive value. Real data exfiltration/destruction to "prove impact" is never appropriate — use a benign marker.
 
-Exercise the stop channel once before execution. The owner must demonstrate cancellation of queued
-test work without deleting the evidence ledger.
+## Evidence and deliverable
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+Provide the objective-based attack path (phase by phase), the benign markers proving each edge, the detection measurement per step, the evidence with custody, and prioritized remediation. Keep real data out of the report. Attach the ROE, timeline, deconfliction log, and scope boundaries honored.
 
-## Domain failure modes
+## Versions and tool limitations
 
-- A successful final marker does not validate intermediate detection stages; administrative fixture
-  setup can accidentally grant the simulated actor additional rights.
-- Preannounced tests and unannounced tests measure different response conditions. Keep them in
-  separate cohorts.
-- A containment action that disrupts an unrelated service exceeds the experiment; stop and preserve
-  the partial record.
+Techniques and tools are environment- and version-specific; confirm each at use. The engagement proves specific objectives under specific authorization — it does not establish general security. No target behavior was verified by this content.
 
-## Evidence and verdict
+## Remediation and detection
 
-Deliver the dependency graph, action ledger, stage markers, actual response timestamps,
-authorization boundary, restoration inventory and unresolved edges. Report coverage by stage,
-without a blended success score.
-
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
-
-## Detection and remediation
-
-Require marker-to-case correlation across the relevant collectors and a response owner for each
-stage. Fix missing routing or context propagation before increasing exercise complexity.
-
-## Recovery
-
-Revoke only exercise identities, cancel only test jobs and compare the fixture inventory with its
-baseline. Preserve the ledger outside the disposable environment.
-
-## Versions and tool limits
-
-Record orchestrator, SIEM connector and endpoint-agent builds; event schemas and automation behavior
-vary by integration version.
-
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+Report remediation by attack-path edge (close the specific edges that enabled the path) and detection gaps by step, prioritized by the objective reached. Deliver the purple-team detection improvements as first-class outputs. Recommend re-test after remediation.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| A known-good event arrives, but the same event without a required join key never reaches its assigned queue | CONFIRMED routing gap; FAIL |
-| Both variants are correlated after the documented ingestion interval | REFUTED routing-gap hypothesis; PASS for tested routing |
-| Only the final dummy invoice exists; intermediate actions have no ledger | CANDIDATE chain explanation; WARN |
+| Supported finding | The objective is reached via a documented path under ROE, each edge proven with a benign marker and its detection measured: CONFIRMED path; FAIL on the edges that enabled it. |
+| Benign refutation | A planned path is blocked by a control at some phase: REFUTED for that path; PASS for the blocking control. |
+| Insufficient evidence | The engagement ran out of budget before proving the objective: NOT TESTED for the unreached objective; report progress honestly. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-advanced-redteam/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-advanced-redteam/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains engagement engineering as a distinct scope; replaces covert infrastructure and chained
-compromise with observable, reversible exercises.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's full-scope engagement material as an orchestration contract sequencing the domain skills under ROE, safety, deconfliction and detection-measurement constraints, replacing a flat attack chain with an objective-based, auditable engagement method. Composes with every rt- domain skill and with `purple-team-exercise`, `remediation-driven-reporting`, `finding-custody`.

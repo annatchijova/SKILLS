@@ -1,117 +1,89 @@
 ---
 name: rt-mobile
-description: Assess Android and iOS IPC, links, storage, WebView and server authorization using owned app builds and synthetic accounts.
+description: "Red-team assessment of mobile-app (Android/iOS) boundaries: insecure local storage, weak IPC / exported components and deeplinks, TLS/cert-pinning and traffic interception, authentication and session handling, and client-side trust (rooting/jailbreak, tampering, secrets in the binary). Re-expressed as scoped experiments on an owned app and test device with planted test data and negative controls instead of attacks on other users' devices or accounts."
 ---
 
-# Mobile application trust boundaries
+# Mobile Application Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's mobile craft as scoped experiments on an owned app and test device: it names the storage, IPC, transport and client-trust boundaries, proving one with planted test data rather than attacking other users.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use supplied app artifacts, two synthetic accounts, an unprivileged caller app and a local backend fixture. Record signing identity and stock versus diagnostic device state.
+Mobile testing spans the app binary, on-device storage, inter-process surfaces, and the network. Use an owned app build and a test device/emulator with owned test accounts and planted data. Prove a weakness against your own data/account; do not target other users' devices or accounts.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the platform (Android/iOS), app version, device/root state, attempt budget, stop condition. Static-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- Exported components and URL handlers are entry points; caller permission checks and server authorization determine actual impact.
+- **Local storage** — secrets/tokens/PII in SharedPreferences/plist/SQLite/files/keychain-keystore misuse; backups.
+- **IPC / components** — Android exported activities/services/receivers/content-providers, intent handling, deeplink/universal-link validation; iOS URL schemes.
+- **Transport** — TLS, certificate pinning (and pinning bypass on an owned device), cleartext traffic.
+- **Auth/session** — token storage/lifecycle, biometric/local-auth bypass on the client.
+- **Client-side trust** — root/jailbreak detection, tampering/repackaging, secrets/keys in the binary, obfuscation reliance.
 
-- Deep-link routing and WebView origin/bridge permissions must preserve the account and origin boundary.
+## Mechanism and observation
 
-- Local biometric UI success is different from permission to use a protected key or complete a server-side operation.
+Trace sensitive data/action from the app through the boundary.
 
-- Rooted, instrumented and repackaged builds alter trust assumptions; distinguish local owner control from a stock-device cross-app or remote boundary failure.
+**Firstness:** Record what was exposed/reached (a planted token read from storage, an exported component invoked without auth, intercepted traffic after pinning bypass on the owned device). **Secondness:** State the intended protection (keystore-backed secrets, non-exported/permission-gated components, pinning, server-side auth) and the deviation. **Thirdness:** Infer the class only after a controlled test confirms it on the owned app.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record the entry point, caller UID/entitlements, account state and actual backend or protected-key effect. Compare with the operation's declared authorization rule.
+**Hypothesis:** A boundary leaks data or exposes an action — storage in the clear, an unprotected component, interceptable traffic, or client-side-only trust.
 
-**Abduction:** An unprivileged caller can trigger a protected action through an exported component or deep link without the required account authorization.
+**Competing benign explanation:** Secrets are in the Keystore/Keychain (not extractable without device compromise); components are non-exported or permission-gated; pinning holds (and the "bypass" required rooting the owned device, which a real attacker on a non-rooted device cannot do); auth is enforced server-side so client bypass is moot; the binary secret is a public key.
 
-**Competing benign explanation:** The component merely opens a login screen, or privileged instrumentation granted access that ordinary apps lack.
+## Deduction and controls
 
-**Deduction:** On an unmodified build, a fresh unprivileged caller causes the synthetic protected operation; the legitimate owner succeeds and a mismatched account is denied through the ordinary UI.
+Normal app use protects data/actions (positive control). A confirmed finding exposes planted data or reaches an action via the boundary where a hardened app would not. Predeclare the exposed artifact. Keystore-backed secrets / non-exported components / pinning / server-side auth are PASS controls — and note whether the attack needed device root (which changes the threat model).
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Owned app; test device; planted data.
 
-1. Inspect manifest/entitlements, link handling, storage classes and network policy; tie each candidate to a reachable code path.
+1. **Baseline & recon.** Install the owned build; decompile (apktool/jadx / class-dump) for components, endpoints, secrets.
+2. **Storage.** Log in with a test account; inspect on-device storage and backups for the planted token/PII in the clear.
+3. **IPC/components.** Enumerate exported components/deeplinks; invoke them without the expected auth from a test app.
+4. **Transport.** Proxy traffic; test pinning (bypass on the owned rooted device) and cleartext.
+5. **Client trust.** Test root/jailbreak detection and repackaging; check for used secrets in the binary.
+6. **Control.** Confirm server-side auth holds and note which attacks required device root.
 
-2. Establish the normal owner flow and record backend receipts or protected-key use rather than screen appearance.
+Record results including refutations. Keep finding and control status separate, and record the device-trust assumption (rooted vs not).
 
-3. Invoke a documented benign test link or IPC operation from the unprivileged fixture with the account signed out; inspect the authoritative effect.
+## Craft notes (leads)
 
-4. For storage or WebView candidates, use canary records and a controlled origin, varying only app identity or origin; diagnostic hooks are observations, not stock-device proof.
-
-5. Remove test apps, profiles, certificates and canary data through supported controls; verify normal sign-in and account isolation.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+Android exported components and lax deeplink/`intent://` validation are recurring IPC findings. Tokens/PII in SharedPreferences/plist/SQLite in the clear is the classic storage finding; Keystore/Keychain is the control. Pinning bypass usually needs a rooted/jailbroken device — a real non-rooted-attacker caveat to state. Root detection and obfuscation are speed bumps, not boundaries; server-side enforcement is the real control (see `client-side-trust-boundary`).
 
 ## Domain-specific failure modes
 
-- An embedded public API identifier is not automatically a secret; backend permissions determine impact.
+A pinning bypass on a rooted device does not threaten non-rooted users — state the device-trust assumption. Keystore-backed secrets are not "in the clear". A client-side auth bypass is moot if the server re-checks. Root detection being bypassed is expected (not a finding by itself). A binary secret that is a public key is not a leak.
 
-- A TLS bypass installed by the assessor cannot prove the release app accepts invalid certificates.
+## Evidence and deliverable
 
-- Backup, external-storage and WebView defaults vary by OS and target SDK; historical snippets cannot establish current behavior.
+Provide the boundary, the exposed planted artifact/action, the app version and platform, the device-trust assumption, and the control (keystore/server-auth) result. Use planted data/owned accounts. Attach minimal replay, expected/observed, rival explanation, falsifier, boundaries not assessed.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide app digest, signing/entitlement metadata, OS and target SDK, entry-point trace, caller identity, backend receipt and instrumentation deviations.
+Pin the OS version, app version and device root state — behavior is platform- and version-specific. Tools (frida/objection/apktool/jadx) operate on the owned app only. No app behavior was verified by this content; confirm on the owned build first.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Log sensitive link/IPC outcomes and backend principal mismatches without secrets; test whether denied actions are distinguishable from client errors.
-
-Authorize at the receiving component and server, restrict WebView origins/bridges, use suitable key/storage protection and cryptographically bind sensitive authentication where required.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Pin app build, OS, SDK, WebView and analysis tool versions. Decompiler output can be incomplete; reconcile with runtime or supplied source before confirming.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Store secrets in Keystore/Keychain, never tokens/PII in the clear or in backups; make components non-exported or permission-gated and validate deeplinks; enforce TLS + pinning; enforce all authorization server-side; and treat client-side trust checks as non-authoritative. Add regressions asserting storage is protected and components are gated. Detect rooted/tampered clients server-side as signal, not as the control.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | Planted data/action is exposed via a boundary where a hardened app protects it (state device-trust assumption): CONFIRMED; FAIL. |
+| Benign refutation | Keystore / non-exported components / server-side auth protects it, or the attack required device root a real user lacks: REFUTED or scoped-down; PASS for the control. |
+| Insufficient evidence | A decompiled string without a confirmed exposure path: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh unprivileged caller on the release build completes the protected synthetic operation while owner and account-deny controls work. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The link only opens authentication; the backend rejects the action until the owner signs in. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A patched instrumented app displays success but no protected-key or backend effect is recorded. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/mobile/offensive-mobile/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Retains mobile IPC, storage, link, WebView and authentication depth while excluding stealth bypasses, credential extraction and automatic backend scope expansion.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/mobile/offensive-mobile/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's storage/IPC/transport/auth/client-trust craft, re-expressed as owned-app experiments with planted data, explicit device-trust assumptions and server-side-auth controls, replacing attacks on other users with bounded boundary proof. Composes with `client-side-trust-boundary`, `token-trust-assessment`, `rt-ssrf`.

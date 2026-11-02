@@ -1,109 +1,88 @@
 ---
 name: rt-windows-privesc
-description: "Assess Windows service, task and installer privilege paths with effective permissions and benign fixtures, without token theft or exploit payloads."
+description: "Red-team assessment of Windows local privilege-escalation boundaries: weak service permissions and unquoted service paths, token-privilege abuse (SeImpersonate/SeBackup/SeDebug), AlwaysInstallElevated, DLL search-order and COM hijack, scheduled-task and autorun misconfigurations, and credential harvesting. Re-expressed as scoped experiments on an owned host that prove one SYSTEM-reaching vector against a planted fixture with hardened-config controls and servicing-status awareness instead of live escalation."
 ---
 
-# Windows Privilege Configuration Assessment
+# Windows Privilege-Escalation Boundary Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's Windows-privesc craft as scoped experiments on an owned host: it names the SYSTEM-reaching vectors, proving one against a planted fixture while noting which crossings Microsoft services as boundaries (see `rt-windows-boundaries`).
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Establish whether a standard test user controls input consumed by a higher-privilege component.
-Separate configuration exposure from demonstrated privileged effects.
+Local privesc moves from a standard/service account to SYSTEM via a misconfiguration. Work on an owned host; prove against a planted fixture (a lab weak-permission service, a lab writable autorun) where possible, with a benign marker (a SYSTEM-owned marker file). Note whether each vector is a serviced boundary or a by-design/non-boundary case.
 
-- service DACL and dependency permissions.
-- privileged action reachability.
-- token privilege preconditions.
+Declare the Windows build, attempt budget, stop condition. Enumeration-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Capture user token, enabled privileges, group attributes and integrity level. A privilege name alone
-does not establish a usable impersonation path.
+- **Service misconfig** — weak service DACL (reconfigure binPath), weak binary/dir permissions, unquoted service path with a writable intermediate dir.
+- **Token privileges** — SeImpersonate (Potato-class to SYSTEM, often by-design for service accounts), SeBackup/SeRestore, SeDebug, SeTakeOwnership.
+- **AlwaysInstallElevated** — MSI installs as SYSTEM.
+- **Hijacks** — DLL search-order, COM, scheduled-task/autorun writable targets.
+- **Credentials** — cached creds, SAM/LSASS (on owned host), unattend/GPP passwords.
 
-Inventory service/task principal, configuration permissions, executable path, directory ACLs and
-restart/trigger permissions.
+## Mechanism and observation
 
-Use an isolated service fixture whose only privileged action records a fixed public marker. Do not
-replace production binaries, inspect credential stores or load exploit drivers.
+Pick one vector; trace the misconfiguration/privilege to SYSTEM execution.
 
-## Discriminating laboratory procedure
+**Firstness:** Record the SYSTEM capability against the planted fixture (reconfigured a lab service to run a marker as SYSTEM, impersonated a planted SYSTEM token). **Secondness:** State the intended boundary and the deviation. **Thirdness:** Infer the vector only after SYSTEM execution is exercised under control — and classify whether it is a serviced boundary.
 
-Abduction: a standard user can modify a dependency that a privileged service consumes. Rival: the
-apparent writable path is not the resolved executable or the service cannot be triggered.
+## Abduction and refutation
 
-Deduction: the standard actor should be unable to modify the protected fixture dependency, while an
-authorized maintenance actor can do so.
+**Hypothesis:** A specific misconfiguration or over-granted privilege lets a low-trust principal run as SYSTEM.
 
-Induction: inspect effective ACLs for the actual resolved path and test a harmless configuration
-field on the owned fixture. Record the exact denied or allowed operation.
+**Competing benign explanation:** The service DACL does not allow reconfigure; the unquoted path has no writable intermediate; SeImpersonate on a service account is by design (the finding is the account placement, not the technique); AlwaysInstallElevated is off; the DLL/COM path is not writable/hijackable; credentials are not exposed.
 
-Trigger the fixture through its approved lifecycle and record executing identity with its fixed
-marker. A writable file without consumption remains a candidate path.
+## Deduction and controls
 
-For unquoted paths or DLL search observations, establish actual resolution order and writable
-location first. Do not plant executables or substitute libraries.
+A standard user cannot reach SYSTEM on a hardened host (positive control). A confirmed finding reaches SYSTEM via the vector against the planted fixture where hardening refuses. Predeclare the SYSTEM marker. Restrictive service DACLs / quoted paths / no AlwaysInstallElevated / non-writable hijack paths / least-privilege tokens are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded procedure
 
-## Domain failure modes
+Owned host; planted fixture where possible.
 
-- A NAME NOT FOUND library probe does not prove a writable location will be loaded.
-- An administrator using a filtered token differs from a standard user acquiring new authority; report
-  the starting privilege accurately.
-- Installer policy, token privileges and historical CVE names require their additional preconditions;
-  scanner labels are not proof.
+1. **Enumerate.** Service permissions/paths, token privileges (`whoami /priv`), AlwaysInstallElevated, writable autoruns/tasks, hijackable DLL/COM, exposed creds (WinPEAS/PowerUp as aids).
+2. **Pick one vector.** Choose the clearest against a planted fixture.
+3. **Exercise once.** e.g. reconfigure a planted weak-DACL service to run a marker as SYSTEM; or SeImpersonate → planted SYSTEM token; confirm SYSTEM; stop.
+4. **Classify.** Is it a serviced boundary (weak DACL = yes) or by-design (SeImpersonate on a service account)?
+5. **Controls.** Harden the fixture and confirm the vector fails.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from control and servicing status.
 
-Deliver the actor-to-input-to-consumer graph, effective permission results, resolved dependency
-identities, trigger evidence and observed executing principal.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+Weak service DACLs (reconfigure binPath) and unquoted paths with writable intermediate dirs are classic serviced findings. SeImpersonate→SYSTEM (Potato family) is frequently by-design for service accounts — the finding is the account's placement/over-privilege, not the technique (see `rt-windows-boundaries`). AlwaysInstallElevated is a pure misconfiguration. GPP passwords and unattend files are credential findings. DLL search-order/COM hijacks need a writable path in the search order.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require changes to privileged service/task configuration and dependencies to be attributable to an
-actor. Fix ownership, narrow modification rights and remove unnecessary service-account privileges.
+A by-design SeImpersonate on a service account is a configuration note unless the principal should not hold it. An unquoted path with no writable intermediate is not exploitable. A service the user cannot reconfigure is safe. UAC-only "escalation" is not a serviced boundary. Classify before scoring; prove against a planted fixture.
 
-## Recovery
+## Evidence and deliverable
 
-Restore only test fixture configuration and remove its marker. Verify service health and compare
-pre/post ACLs; preserve audit events.
+Provide the vector, its servicing status, the SYSTEM marker against the planted fixture, and the hardened-config control result. Keep to the owned host; keep credentials out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, vectors not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record Windows build, service binary digest, tool version and policy revision. Check package
-remediation rather than assuming vulnerability from OS marketing version.
+Pin the Windows build — vectors and servicing stance are version-specific. Enumeration tools are aids, not verdicts. No host behavior was verified by this content; confirm on the owned host first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Restrictive service DACLs and quoted paths, least-privilege tokens (remove SeImpersonate/SeDebug from low-trust accounts), disable AlwaysInstallElevated, fix writable autorun/DLL/COM paths, and remove credential artifacts (GPP/unattend). Add a regression that the vector fails. Detect service reconfiguration, token impersonation to SYSTEM, and MSI-as-SYSTEM.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Standard actor modifies an owned fixture dependency consumed under SYSTEM and controls demonstrate the path | CONFIRMED privilege configuration failure; FAIL |
-| Reported writable directory is not in the actual service resolution path | REFUTED candidate path; PASS for that path |
-| SeImpersonate is listed but no reachable privileged interaction is established | CANDIDATE escalation hypothesis; WARN |
+| Supported finding | A vector reaches SYSTEM against a planted fixture over a serviced boundary where hardening refuses: CONFIRMED; FAIL. |
+| Benign refutation | Non-reconfigurable service / no writable intermediate / by-design privilege / UAC-only: REFUTED (or note as config); PASS for serviced controls. |
+| Insufficient evidence | A suspicious config without confirmed SYSTEM: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/privesc/offensive-windows-privesc/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/privesc/offensive-windows-privesc/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves local privilege-path analysis while replacing exploit families and secret extraction with
-effective-access and controlled-service evidence.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's service/token/MSI/hijack/credential craft, re-expressed as owned-host experiments against planted fixtures with hardened controls and Microsoft servicing-status awareness, replacing live escalation with bounded, contained SYSTEM-reach proof. Composes with `rt-windows-boundaries`, `rt-active-directory`, `rt-advanced-redteam`.

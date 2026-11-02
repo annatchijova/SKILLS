@@ -1,90 +1,90 @@
 ---
 name: workflow-abuse-assessment
-description: Test business workflow invariants across retries, concurrent requests and role changes. Use for payment, quota, approval, invitation and webhook state-machine reviews.
+description: "Red-team assessment of business-logic and workflow boundaries: state-machine step-skipping and replay, price/quantity/currency and coupon manipulation, refund/chargeback/payout abuse, tenant/role boundary and mass-assignment, and logic-level race conditions. Re-expressed as scoped experiments on owned accounts and synthetic value that reconstruct the intended state machine and prove a prohibited transition with negative controls, not live financial abuse."
 ---
 
-# Workflow Abuse Assessment
+# Workflow and Business-Logic Boundary Assessment
 
-Use within the user's authorized scope. Carry existing authorization forward; a skill does not expand it. Record observation, expected behavior, hypothesis, falsifier and actual result. Distinguish CANDIDATE, CONFIRMED, REFUTED and NOT TESTED.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's business-logic craft as scoped experiments: it reconstructs the intended state machine and tests prohibited transitions on owned accounts with synthetic value, rather than extracting real money.
 
-## Model before probing
-Write states, permitted transitions, actors, preconditions and side effects. State conservation properties using integers or exact fractions: a refund cannot exceed the captured amount; replay cannot apply a debit twice.
-Identify transaction, queue and external-provider boundaries. Use fixture balances and a sandbox provider.
+## Scope and prerequisites
 
-## Experiments
-Test skipped steps, reordered events, duplicate delivery, stale authorization and partial failure independently. Inspect durable state, not only the response.
-For races, coordinate two workers at the suspected check/use boundary and record the schedule. Compare with serial execution. Bound concurrency, time and total attempts.
-Inspect idempotency scope: same key and body should preserve the promised result; same key with a different body must follow the documented conflict policy; keys should not collide across principals.
-Test failure between local commit and remote acknowledgement, then redelivery. Distinguish at-least-once delivery from duplicate business effect.
+Business-logic flaws are not payload bugs — they are allowed operations in a disallowed order or combination. First build the intended state machine (the legitimate flow and its invariants), then test transitions it should forbid. Use owned accounts and synthetic balances/coupons/inventory.
 
-## Refute and deliver
-Test the innocent explanation: a unique constraint, transaction isolation, provider deduplication or compensating action already prevents the alleged loss.
-Report the shortest violating sequence, before/after state, interleaving, logs and exact invariant. Bound demonstrated impact to the fixture; do not extrapolate arbitrary financial totals.
-Propose a regression sequence and an atomicity or reconciliation change at the responsible boundary. Cleanup only test-owned artifacts.
+Declare target, the flows in scope, attempt budget, stop condition. Source-only or spec-only authorization yields a hypothesis marked NOT TESTED. Monetary extraction is an impact class to demonstrate with synthetic value on an owned instance, bounded.
 
-## Required methodology and fixture contract
+## Attack surface and classes
 
-Read [the assessment methodology](../METHODOLOGY.md) before execution.
-Use synthetic orders, integer minor-unit amounts, explicit currency and a sandbox provider with no real settlement.
-Declare the maximum events, attempts, worker count and reconciliation interval before running.
-Firstness records the exact state delta; Secondness compares it with an explicit conservation or transition rule.
-Thirdness identifies the absent atomicity, authorization or reconciliation rule only after the controlled experiment.
-No CAPTCHA defeat, identity rotation, fraud-control evasion or real reward redemption belongs to this procedure.
+- **State-machine bypass** — skip a required step, replay a one-time action, downgrade state, invoke an endpoint directly out of order.
+- **Value manipulation** — negative/zero/float quantities, hidden price fields, currency confusion, coupon stacking/reuse/negative discount, cart SKU tampering.
+- **Refund/payout abuse** — refund more than paid, refund to a different method, payout-account race.
+- **Identity/tenant/role** — tenant-ID substitution, role confusion via multipart/HPP, mass assignment, indirect privilege via object linking.
+- **Logic races** — parallel coupon/withdraw/redeem/2FA (see `rt-race-condition`).
 
-## Discriminator: acknowledged effect versus durable effect
+## Mechanism and observation
 
-**Abduction:** a local retry reissues an external business effect after an acknowledgement is lost.
-**Benign rival:** provider deduplication or reconciliation already guarantees a single settled effect even if multiple requests are logged.
-**Deduction:** a repeated event with the same scoped operation identity must preserve the promised final ledger state.
-**Induction:** execute one ordinary fixture transaction, then reproduce a lost acknowledgement with the sandbox's supported fault hook.
-Redeliver the same fixture event once; compare application records, outbox entries and provider ledger after the declared settling interval.
-Use a no-fault replay as the negative-condition control and a legitimate distinct operation as the acceptance control.
-A double response or duplicate delivery is not a duplicate business effect.
-If the settling interval or provider ledger is unavailable, retain a CANDIDATE result rather than declaring financial loss.
+Map the state machine, then trace each transition's server-side enforcement.
 
-## Additional business mechanisms
+**Firstness:** Record the state reached and the value computed after a crafted sequence (e.g. order confirmed without a payment step; total went negative). **Secondness:** State the invariant the flow should enforce (payment precedes fulfillment; total >= 0; one redemption per coupon) and the deviation. **Thirdness:** Infer the defect class only after a controlled prohibited transition succeeds.
 
-- Price authority: compare a server-calculated fixture total with a client-submitted amount; the server must follow the documented authoritative source.
-- Currency: carry amount and currency together; use fixed fixture conversion rules and exact arithmetic where conversion is part of the contract.
-- Partial returns: assert cumulative refunds do not exceed the captured eligible amount for returned fixture items.
-- Promotions: distinguish intentionally stackable discounts from violation of an explicit exclusivity rule.
-- Entitlements: test one upgrade and downgrade sequence against the documented effective time and cache invalidation interval.
-- One-time actions: compare a consumed invitation or coupon with an unused fixture, observing durable effects rather than only status.
-- State rollback: test whether a finalized fixture can return to an editable state and whether prior side effects are reconciled.
-- Authorization changes: inspect whether delayed workers use the required current or captured permission context; document that policy first.
+## Abduction and refutation
 
-## Evidence and tool limitations
+**Mechanism hypothesis:** The server enforces the workflow only through UI sequencing or client-side values, so a direct or reordered request reaches a state/value the business rules forbid.
 
-Deliver a state-transition diagram or table, exact invariant, initial/final ledger and event IDs.
-Include idempotency key scope, body identity, provider acknowledgement and compensation timeline.
-Pin application, queue, database and sandbox-provider versions plus retry and isolation settings.
-No runtime tools were executed for this rewrite; a payment emulator cannot prove a real provider's settlement semantics.
-A sandbox may omit dispute or delayed-settlement behavior; mark those paths NOT TESTED.
-Bound monetary impact to the synthetic violated invariant without multiplying it by imagined scale.
+**Competing benign explanation:** The server re-validates every precondition (rejects the out-of-order call); prices/totals are recomputed server-side from trusted data (client values ignored); idempotency blocks replay; tenant/role is derived from the session, not the payload.
+
+## Deduction and controls
+
+The legitimate flow produces the correct state/value (positive control). A confirmed finding reaches a forbidden state/value via a crafted sequence where the control is rejected. Predeclare the violated invariant and the state that proves it. Server-side re-validation / recomputation / idempotency rejecting the crafted request is a PASS control.
+
+## Induction: bounded laboratory procedure
+
+Owned accounts; synthetic value.
+
+1. **Reconstruct the state machine.** Enumerate steps and endpoints (including internal/undocumented ones from JS bundles, OpenAPI/Swagger). Record invariants.
+2. **Step-skip / replay / downgrade.** Jump directly to a later step, replay a one-time action (refund/redeem) for idempotency, or move state backward; observe server enforcement.
+3. **Value manipulation.** Submit negative/zero/float quantities, edit hidden price/discount fields, mismatch currency, stack/reuse coupons, tamper SKU — on synthetic items.
+4. **Refund/payout.** Test refund > paid, refund to a different method, payout-account change timing — synthetic amounts only.
+5. **Tenant/role.** Substitute tenant ID in a hidden field, add `role`/`owner` via mass assignment, link objects to bypass a role check.
+6. **Logic race.** Route parallel-redeem/withdraw cases to `rt-race-condition` with a bounded set.
+7. **Control.** Run the legitimate flow and confirm the invariant holds.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Craft notes (leads)
+
+Compare authenticated vs unauthenticated JS bundles for buried admin routes; API specs list endpoints the UI never calls. Classic invariants to probe: payment-before-fulfillment, non-negative totals, one-time coupon/refund, per-tenant isolation, seat/quota caps. Negative-discount and coupon-stacking turn a discount into a surcharge-that-reduces-total. Single-packet parallel requests expose "one per user" checks. Free-trial/referral loops abuse non-unique identity (email aliasing, VOIP numbers, device-ID reset).
+
+## Domain-specific failure modes
+
+Server-side recomputation of price/total makes client tampering inert — report that as a control. An out-of-order call that the server re-validates is a refutation. Reaching a "weird" state is only a finding if it violates a real business invariant with impact; name the invariant and the loss. Synthetic value only — do not extract real money to "prove" it.
+
+## Evidence and deliverable
+
+Provide the reconstructed state machine, the crafted sequence, the forbidden state/value reached, the violated invariant, and the control rejection. Use synthetic value and owned accounts. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered flows.
+
+## Versions and tool limitations
+
+Business logic is app-specific; there is no generic tool verdict — reason from the state machine. No flow behavior was verified by this content; reconstruct the live workflow first.
 
 ## Remediation and detection
 
-Enforce state transitions and authoritative pricing server-side, with idempotency tied to actor and operation.
-Use transactional event publication and explicit reconciliation across non-atomic provider boundaries.
-Add assertions for conservation, duplicate-effect keys and forbidden entitlement transitions.
-Correlate business event IDs with provider operation IDs; alert on actual invariant violations.
-Verify the regression under replay and fault injection, not only the normal happy path.
-Restore fixture balances and subscriptions and drain test events without deleting the audit trail.
+Enforce every precondition and value server-side (recompute totals from trusted data, re-check state transitions, idempotency keys for one-time actions, derive tenant/role from the session, allowlist writable fields). Add regressions asserting each prohibited transition is rejected. Detect out-of-order transitions, negative/float values, and repeated one-time actions.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| One captured synthetic order receives two settled refunds exceeding its eligible amount after a single controlled redelivery. | CONFIRMED; FAIL for the refund invariant. |
-| Two successful responses resolve to one provider operation and one settled ledger effect under documented idempotency. | REFUTED for duplicate settlement; PASS. |
-| Two requests were accepted but provider settlement and reconciliation state were not inspected. | CANDIDATE; WARN. |
+| Supported finding | A crafted sequence reaches a forbidden state/value (order without payment, negative total, double refund) on owned fixtures where the control is rejected: CONFIRMED; FAIL. |
+| Benign refutation | The server re-validates/recomputes and rejects the crafted request: REFUTED; PASS for the control. |
+| Insufficient evidence | An unusual state with no violated invariant or impact: CANDIDATE; WARN. |
 
-Acceptance cases specify expected behavior; they are not executed target tests.
+These are authoring acceptance scenarios, not executed target tests.
 
-## Provenance
+## Provenance and treatment
 
-Exact upstream path: `Skills/web/offensive-business-logic/SKILL.md`.
-Treatment: Strengthens economic and lifecycle invariants using exact synthetic ledgers while excluding fraud evasion and speculative scaling; schedule mechanics remain in rt-race-condition.
+Upstream research: `Skills/web/offensive-business-logic/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Methodology adapted from Claude-Red `offensive-business-logic` at commit `a8de813edc9f66f60d44cfe42d47750e89d9930b`. See [collection provenance](../PROVENANCE.md). This is a rewritten assessment workflow, not a verbatim upstream skill.
-
+This revision restores the upstream's state-machine, value-manipulation, refund-abuse and tenant-boundary craft, re-expressed as owned-account experiments with synthetic value that prove a prohibited transition against a reconstructed invariant, replacing live financial abuse with bounded logic-violation proof.

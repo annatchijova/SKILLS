@@ -1,117 +1,90 @@
 ---
 name: rt-iot
-description: Assess firmware provenance, update validation, debug exposure and device authorization using supplied images and recoverable embedded lab fixtures.
+description: "Red-team assessment of IoT/embedded device boundaries: firmware extraction and analysis, hardware debug interfaces (UART/JTAG/SWD/SPI flash), bootloader and secure-boot, protocol and update-integrity, and credential/key storage. Re-expressed as scoped experiments on an owned device with lab bench access that prove one boundary weakness against the device's own firmware with hardened-config controls instead of attacks on deployed third-party devices."
 ---
 
-# Embedded trust and recovery validation
+# IoT / Embedded Device Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's IoT craft as scoped bench experiments on an owned device: it names the firmware, hardware-interface and protocol boundaries, proving one weakness against the device's own artifacts rather than attacking deployed devices in the field.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a spare non-actuating device, supplied firmware and documented recovery path. Keep analysis offline; unpack images in a sandbox without executing extracted binaries or privileged mounts.
+Embedded security spans firmware, hardware debug ports, boot chain, and protocols. Work on an owned device you may open and bench-test (or a consented sample), with its own firmware. Prove a weakness against the device/firmware itself; do not attack deployed third-party devices or radio spectrum outside scope (route RF to the wireless skills).
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the device, firmware version, bench access, attempt budget, stop condition. Datasheet-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- Image signatures, secure boot and anti-rollback enforce different points in the boot/update chain; one enabled feature does not prove the others.
+- **Firmware** — extraction (flash dump, update-file unpack), analysis (binwalk, filesystem, hardcoded secrets/keys), modification + re-flash.
+- **Hardware debug** — UART consoles (bootloader/root shell), JTAG/SWD (halt/dump/patch), SPI/I2C flash read.
+- **Boot chain** — secure boot / verified boot, bootloader unlock, rollback protection.
+- **Update integrity** — signed vs unsigned updates, downgrade.
+- **Credential/key storage** — keys in firmware, lack of secure element.
+- **Protocol** — device-to-cloud/app auth, local API (see `rt-network-attacks` / wireless skills for the transport).
 
-- UART/JTAG/SWD accessibility depends on production lifecycle state and permissions; pad presence is not confirmed privileged access.
+## Mechanism and observation
 
-- Firmware strings and component banners require reachability and configuration evidence before becoming vulnerability findings.
+Pick one boundary; trace the protection to the weakness.
 
-- MQTT topic ACLs, CoAP resource authorization and cloud device ownership must be tested per principal, not inferred from network access.
+**Firstness:** Record what was obtained (a flash dump, a UART root shell, a hardcoded key, an accepted unsigned update). **Secondness:** State the intended protection (encrypted/signed firmware, locked debug ports, secure boot, signed updates) and the deviation. **Thirdness:** Infer the class only after the weakness is exercised under control on the owned device.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record artifact digest, hardware revision, lifecycle state and update verifier decision. Compare the accepted image and version against the signed update and rollback policy.
+**Hypothesis:** A boundary is unprotected — debug ports open, firmware unencrypted/unsigned, keys in the clear, updates unverified.
 
-**Abduction:** The production-equivalent update verifier accepts an image that fails the required signature policy.
+**Competing benign explanation:** Debug interfaces are fused/disabled; firmware is encrypted and secure boot verifies it; updates are signed and rollback-protected; keys live in a secure element; the "open" port is a decoy or requires authentication.
 
-**Competing benign explanation:** The fixture is in a documented development mode, or the UI stages the image but boot-time verification rejects it.
+## Deduction and controls
 
-**Deduction:** The production-equivalent verifier marks the invalid test artifact executable while a valid signed reference succeeds and a deliberately wrong-device artifact fails.
+A locked-down device resists the attempt (positive control = protections hold). A confirmed finding obtains the artifact/access via the boundary where a hardened device would not. Predeclare the obtained artifact. Fused debug ports / signed+encrypted firmware / secure boot / secure-element keys are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded bench procedure
 
-## Bounded laboratory procedure
+Owned device; bench access.
 
-1. Inventory supplied images and device state; record hashes and confirm recovery on the spare before changing state.
+1. **Recon.** Identify chips, interfaces, and the update mechanism (datasheets, board inspection).
+2. **Firmware.** Obtain firmware (update file or flash dump via SPI); unpack (binwalk), analyze for secrets/keys and the filesystem.
+3. **Hardware debug.** Probe UART for a console/bootloader; attempt JTAG/SWD halt+dump; SPI flash read.
+4. **Boot/update.** Test secure-boot enforcement and whether an unsigned/downgraded update is accepted on the owned device.
+5. **Prove one weakness, stop.** e.g. extract a hardcoded key, or get a UART root shell; do not pivot to fielded devices.
+6. **Controls.** Confirm whether fusing/secure-boot/signing would have blocked it.
 
-2. Analyze boot/update configuration and image metadata without running image contents. Separate public trust anchors from secret key material.
+Record results including refutations. Keep finding and control status separate.
 
-3. Use a vendor-supported validation-only harness with known valid and invalid fixtures; require verifier and activation decisions rather than an upload response.
+## Craft notes (leads)
 
-4. If actual activation is separately authorized, use only the documented inert vendor test image on the spare; stop at abnormal power, boot or recovery behavior.
-
-5. For service authorization, use one inert MQTT topic or CoAP resource with owner/other-device principals; restore configuration and verify boot and normal telemetry.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+UART consoles (often a 3- or 4-pad header) frequently drop to a bootloader or root shell. SPI flash can be dumped in-circuit or with a clip. binwalk + filesystem extraction surfaces hardcoded credentials/keys and private keys embedded in firmware (a recurring real finding). Secure boot + signed, rollback-protected updates + a secure element for keys are the controls that defeat most of this. RF protocols route to the wireless skills.
 
 ## Domain-specific failure modes
 
-- High entropy does not distinguish compression from encryption without additional structure.
+Fused/disabled debug ports defeat UART/JTAG access. Encrypted firmware + secure boot defeats trivial extraction/modification. A hardcoded key found in firmware is a real finding only if it is actually used for a security function (not a test/public key). Attacking deployed devices or out-of-scope spectrum is out of scope. Bench access to an owned device is required.
 
-- A debug development build cannot establish exposure in shipped production lifecycle state.
+## Evidence and deliverable
 
-- A staging success is not signature bypass; anti-rollback rejection is not signature failure. Keep these results separate.
+Provide the boundary, the artifact/access obtained, the firmware version, and the control (fusing/secure-boot/signing) result. Keep to the owned device; redact extracted secrets. Attach minimal replay, expected/observed, rival explanation, falsifier, boundaries not assessed.
 
-## Evidence and output
+## Versions and tool limitations
 
-Deliver image digests, chain-of-trust diagram, exact hardware/firmware revisions, verifier/activation logs, principal-resource decisions and observed recovery result.
+Pin the firmware/bootloader and silicon revisions — protections and fuse states are device- and version-specific. No device behavior was verified by this content; confirm on the owned device first.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate update rejection, rollback, debug-state and unauthorized-topic events; ensure telemetry survives a failed update without discarding audit records.
-
-Verify signed images before activation, bind model/version policy, enforce rollback controls and production debug restrictions, and scope device identities to required resources.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record boot ROM/bootloader, RTOS/kernel, update library, analysis-tool and filesystem parser versions. Legacy package names and CVE strings are unverified leads.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Fuse/disable debug interfaces in production, encrypt firmware and enforce secure boot with rollback protection, sign updates, store keys in a secure element (never in firmware), and authenticate device-to-cloud protocols. Add a regression that an unsigned update and a debug-port access are refused. Detect anomalous update/boot behavior server-side.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A boundary yields access/artifact (UART root, flash dump, used hardcoded key, accepted unsigned update) on the owned device where hardening would refuse: CONFIRMED; FAIL. |
+| Benign refutation | Fused ports / secure boot / signing / secure element defeats the attempt: REFUTED; PASS for the control. |
+| Insufficient evidence | A debug pad found but no access/artifact obtained: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Production-equivalent verifier accepts the invalid signature fixture for execution while valid and wrong-device controls isolate the signature failure. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Upload staging succeeds but the production verifier rejects the artifact before activation; only documented development mode accepts it. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A firmware string suggests a vulnerable package but no reachable service or exact build mapping is established. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/iot/offensive-iot/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Preserves hardware, firmware, update and IoT service boundaries while replacing chip-off, fault injection, destructive flashing and pivot chains with recoverable validation.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/iot/offensive-iot/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's firmware/hardware-debug/boot/update/key-storage craft, re-expressed as owned-device bench experiments with hardening controls, replacing attacks on fielded devices with bounded, bench-scoped weakness proof. Composes with the wireless skills, `rt-crypto-attacks`, `root-of-trust-reasoning`.

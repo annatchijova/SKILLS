@@ -1,99 +1,84 @@
 ---
 name: rt-waf-bypass
-description: "Measure WAF inspection coverage and parser consistency in an owned lab using inert policy markers and known rule decisions, without evasion recipes."
+description: "Red-team measurement of WAF/filter control effectiveness: does the WAF actually stop a given injection class, or can a semantically-equivalent payload transformation reach the application? Covers encoding, case/comment, protocol-level (HTTP/2, HTTP/3, chunked), SNI/domain-fronting, GraphQL and ML-WAF differential families as a filter-vs-application parser differential, re-expressed as owned-stack experiments that score the control PASS/WARN/FAIL with the defender in the loop."
 ---
 
-# WAF Enforcement Coverage Measurement
+# WAF / Filter Control-Effectiveness Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision reframes the upstream's bypass catalog as control-effectiveness measurement (the purple-team posture): the question is whether the WAF stops a class, measured against an owned stack with the defender informed, not how to evade detection to harm a third party. Compose with `purple-team-exercise` and `parser-differential-hunting`.
 
 ## Scope and prerequisites
 
-Treat the upstream topic as control-effectiveness measurement. Do not rotate identities, solve challenges, hide automation, bypass origin controls or construct attack encodings.
+A WAF bypass is a parser differential: the WAF classifies the request as benign while the application parses it as the attack. Test against an owned application behind the owned WAF, with the WAF team aware, measuring whether a known-malicious class is blocked or reaches the app. Do not use this to evade a third party's controls.
 
-Obtain an owner-controlled WAF configuration, exact rule version, enforcement mode and a small benign conformance corpus. Use a dedicated origin and lab-only rule matching a harmless marker.
-
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+Declare the WAF product/mode and the backend, the injection class under test, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
 ## Mechanism and observation
 
-Trace listener, routing, inspection body limit, content decoding, rule evaluation and origin handling. Record exclusions, skip rules, fail-open policy and protocol termination.
+Send a payload that is unambiguously the attack class to the application, with and without transformation, and observe whether the WAF blocks it and whether the app executes it.
 
-**Firstness:** Capture per-request rule matches, action, inspection completion and origin receipt. Compare with the explicit lab rule's expected allow/deny decision.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the WAF verdict (block/allow) and the app's behavior (inert/executed) for each payload variant. **Secondness:** State what the WAF is expected to stop and the deviation. **Thirdness:** Infer a control gap only after a transformed payload is both allowed by the WAF and acted on by the app.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** The WAF does not inspect a supported request location or its normalized view differs from the application's view.
+**Mechanism hypothesis:** The WAF normalizes/parses the request differently from the application, so a semantically-equivalent transformation of a blocked payload slips past while remaining effective at the app.
 
-**Competing benign explanation:** A rule may intentionally run in log-only mode, an approved exclusion may apply, or the request may never reach the origin. A missing block alone does not show a bypass.
+**Competing benign explanation:** The WAF blocks the transformed variant too; the "bypass" payload is also inert at the app (transformation broke it); the app's own validation stops it regardless of the WAF; the test hit a different rule/path.
 
 ## Deduction and controls
 
-A known harmless denied marker is blocked in each declared supported location while a marker-free control reaches the origin. A missed location must be demonstrated in both WAF and origin traces.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+The raw attack payload is blocked (positive control = WAF working). A confirmed gap has a transformed payload allowed by the WAF and executed by the app, where the raw payload was blocked and a benign control is allowed. Predeclare both the app effect and the WAF verdict. The WAF blocking all effective variants is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Install or select the owner-provided lab marker rule and record its intended coverage and enforcement mode.
+Owned stack; defender informed.
 
-2. Replay one marker-free request and one marker-bearing request through the same authorized route.
+1. **Baseline.** Confirm the WAF blocks the raw attack payload (control that the rule exists) and allows a benign request.
+2. **Transformation families (differential probes).** Apply equivalence-preserving transforms and re-test both WAF verdict and app effect:
+   - Encoding: URL/double-URL, hex, HTML-entity, Unicode normalization/overlong.
+   - Lexical: case variation, inline comments, whitespace substitution, string concatenation/dialect tricks.
+   - Protocol: chunked transfer, HTTP/2 and HTTP/3 framing, header/param placement (payload in a low-weight field).
+   - Content-type/parser confusion, JSON wrappers, GraphQL-specific shapes.
+3. **Confirm both ends.** A gap requires WAF=allow AND app=executed. If the app is inert, the transform broke the payload (not a bypass).
+4. **ML-WAF note.** For ML/scoring WAFs, measure robustness to paraphrase/synonym/noise-token variants as a model-evaluation question, not a guaranteed evasion.
+5. **Control.** Re-confirm the raw payload is still blocked.
 
-3. Move the same inert marker among declared supported body/header fields without obfuscation; inspect which locations the engine actually evaluates.
+Record results including refutations. Keep finding status (control gap) separate from the control score (PASS/WARN/FAIL).
 
-4. Use a tiny lab-configured inspection-size threshold to test at and just beyond the limit without large traffic; compare documented reject, truncate or skip behavior.
+## Craft notes (leads)
 
-5. Compare supported protocol paths using identical semantics, then restore the lab rule configuration and retain the result matrix.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Fingerprint the WAF first (response signatures, headers). The high-value differentials are protocol-level (the WAF and origin disagree on request structure) and encoding/normalization (the WAF decodes once, the app twice). Payload-in-low-weight-field and content-type confusion exploit incomplete inspection. SNI manipulation and domain fronting are routing/perimeter concerns — note them, but the application-layer differential is the measurable control question here. Origin-direct access (reaching the backend IP, bypassing the WAF entirely) is an architecture finding, not a payload bypass.
 
 ## Domain-specific failure modes
 
-A WAF block can originate from rate limiting rather than the intended rule. Origin logs may be absent because of caching. Detection of an inert marker measures coverage, not exploit prevention against arbitrary payloads.
+A transform that the app does not execute is not a bypass — confirm the app end. Blocking the raw payload proves the rule exists, not that the control is complete. ML-WAF evasion is probabilistic; one evading sample is WARN on robustness, not a guaranteed bypass. Testing a third party's WAF to attack it is out of scope for this skill.
 
 ## Evidence and deliverable
 
-Provide policy/rule digest, enforcement mode, request corpus hashes, per-location decisions, inspection completeness and correlated origin receipt. Report uncovered paths without supplying operational evasion strings.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the class under test, the raw-blocked baseline, the transformed payload with WAF verdict and app effect, and the benign control. Report the control as PASS/WARN/FAIL. Attach minimal replay, expected/observed, rival explanation, falsifier, untested families. Share with the defender.
 
 ## Versions and tool limitations
 
-Record WAF engine, managed-rule revision, connector and protocol versions. Vendor product names and historical bypass claims do not establish behavior. Verify replay tools preserve the intended benign request structure.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the WAF product, ruleset version and mode, and the backend — differentials are version-specific. WAF-testing tools exist; keep testing on the owned stack. No WAF behavior was verified by this content; confirm the live product and rules first.
 
 ## Remediation and detection
 
-Align supported parsers and normalization, explicitly reject unsupported or uninspected content and test exclusions. Keep application validation independent; do not represent a marker-rule pass as complete application security.
-
-Alert on inspection skips, oversize truncation and unexpected origin receipt after a deny decision. Validate alerts with known marker cases and inspect false positives on the clean control.
+Normalize identically to the backend (decode fully, canonicalize) before inspection, prefer positive-security/allowlist models, block origin-direct access, cap and normalize protocol variants, and defend the app independently of the WAF (defense in depth). Add a regression asserting each known transform of the class is blocked. Detect transformed-payload patterns reaching the app.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A supported field reaches the origin with the lab deny marker while logs show that field was skipped contrary to policy: CONFIRMED for coverage failure; FAIL. |
-| Benign refutation | The rule is intentionally log-only and records the marker exactly as configured: REFUTED for an enforcement malfunction; PASS for logging only. |
-| Insufficient evidence | A scanner fingerprints a WAF and receives 200 without rule or origin evidence: CANDIDATE; WARN. |
+| Supported finding | A transformed payload is allowed by the WAF and executed by the app where the raw payload was blocked: CONFIRMED control gap; control FAIL. |
+| Benign refutation | The WAF blocks all effective variants, or the transform leaves the payload inert at the app: REFUTED; control PASS. |
+| Insufficient evidence | A variant passes the WAF but the app effect is unconfirmed: CANDIDATE; control WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-waf-bypass/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-waf-bypass/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Reframes evasion into measurable inspection coverage, mode and parser validation; removes residential proxy, CAPTCHA, fingerprint and origin-bypass guidance.
-
+This revision reframes the upstream's evasion catalog as owned-stack control-effectiveness measurement scored PASS/WARN/FAIL with the defender in the loop, retaining the encoding/protocol/parser-differential craft while dropping third-party anti-bot/CAPTCHA/residential-IP evasion as outside the authorized-testing posture.

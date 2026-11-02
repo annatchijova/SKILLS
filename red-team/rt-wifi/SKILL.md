@@ -1,117 +1,86 @@
 ---
 name: rt-wifi
-description: Assess Wi-Fi estate isolation, management reachability, roaming policy and cross-band consistency using owned clients and bounded lab traffic.
+description: "Red-team assessment of 802.11 WLAN security posture in an authorized, controlled RF lab: an umbrella over recon, deauth/PMF, evil-twin, WPA2-PSK handshake/provisioning, WPA3-SAE, WPA-Enterprise/EAP and WPS, routing each to its specific skill. Re-expressed as a scoped WLAN posture assessment on owned networks with synthetic credentials and negative controls instead of attacks on third-party networks."
 ---
 
-# Wi-Fi estate boundary assessment
+# 802.11 WLAN Posture Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the assessment below.
+This revision restores the upstream's Wi-Fi material as an umbrella posture assessment over the specific wireless skills, bounded by authorization and spectrum law, testing an owned WLAN rather than third-party networks.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use two owned clients, two managed APs and a canary service in each permitted zone. Export the intended role-to-zone matrix, controller configuration and allowed exceptions.
+A WLAN posture assessment covers discovery, availability (deauth/PMF), rogue-AP susceptibility, and the authentication/cipher layer. Test only owned/in-scope networks in a controlled RF setting with synthetic credentials; respect spectrum/monitoring law. Prove each weakness against the owned WLAN with a negative control.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the scoped SSIDs, the RF environment, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Assessment areas (route to the specific skill)
 
-- SSID-to-VLAN mapping and controller tunnel placement determine the actual forwarding boundary; an SSID name is not an isolation control.
+- **Recon** — AP/client/cipher map → `rt-wifi-recon`.
+- **Availability / management frames** — deauth/disassoc, PMF/802.11w → `rt-deauth-disassoc`.
+- **Rogue AP / credential capture** → `rt-evil-twin`, `rt-wpa-enterprise`.
+- **WPA2-PSK** — handshake/PMKID, provisioning policy → `rt-wpa2-psk`.
+- **WPA3-SAE** — Dragonblood-class, transition-mode downgrade → `rt-wpa3-sae`.
+- **WPA-Enterprise/EAP** — RADIUS/evil-twin, weak EAP → `rt-wpa-enterprise`.
+- **WPS** — PIN/Pixie-Dust → `rt-wps`.
+- **Protocol flaws** — KRACK/FragAttacks → `rt-krack-fragattacks`.
 
-- Client isolation may differ for same-AP, cross-AP, wired-to-wireless and multicast paths; enumerate each separately.
+## Mechanism and observation
 
-- Roaming, cached authorization and dynamic VLAN assignment can retain stale access after a role change.
+Assess each area against the owned WLAN's intended posture.
 
-- Multi-band and multi-link configurations can expose different authentication or forwarding policies despite a shared profile name.
+**Firstness:** Record the per-area observation (cipher, PMF state, WPS state, handshake/SAE behavior) from the specific skill. **Secondness:** State the target posture (WPA3 or WPA2 with PMF, no WPS, strong PSK/EAP) and the deviation. **Thirdness:** Infer a posture finding only after the specific skill confirms it under control.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record the exact ingress SSID, negotiated security, AP/link, assigned role, address family and canary response. Contrast this with the policy for that actor and zone.
+**Hypothesis:** The WLAN has a posture weakness (weak cipher, no PMF, WPS on, weak PSK/EAP, downgrade-able transition mode).
 
-**Abduction:** A guest association inherits a forwarding role that permits access to a protected management canary.
+**Competing benign explanation:** WPA3 with PMF is enforced; WPS is disabled; the PSK is high-entropy; EAP uses strong methods with proper server-cert validation; the guest/IoT SSID's weaker posture is intentional and segmented.
 
-**Competing benign explanation:** The apparent protected address is a guest-facing proxy, or the client retained an earlier administrator session.
+## Deduction and controls
 
-**Deduction:** A fresh guest session reaches the protected listener, whose server log identifies that session; an explicitly denied comparison path stays denied and an allowed guest service remains usable.
+The target WLAN meets its intended posture (positive control). A finding is a per-area deviation confirmed by the specific skill where the hardened posture would not allow it. The hardened posture (WPA3/PMF/no-WPS/strong-PSK-EAP) is the PASS control.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Owned WLAN; synthetic credentials.
 
-1. Provision isolated guest and management fixtures with distinct response markers and no production credentials.
+1. **Map** with `rt-wifi-recon`.
+2. **Route** each weakness area to its skill and run its bounded experiment (owned network, synthetic creds, negative control).
+3. **Aggregate** the per-area results into a posture scorecard (PASS/WARN/FAIL per area).
+4. **Control.** Confirm the hardened posture resists each tested area.
 
-2. Establish allowed-path reachability and denied-path baselines on the same client; expire prior sessions using supported controls.
-
-3. Exercise one harmless request per role/zone pair, changing only the association role; confirm receipt at the server.
-
-4. Repeat the failing pair across the second AP and after a normal operator-initiated roam; record changed role and VLAN rather than assuming equivalence.
-
-5. Restore profiles and verify the guest service and management isolation after the policy correction.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+Record results including refutations. Keep per-area findings and control scores separate.
 
 ## Domain-specific failure modes
 
-- DHCP leases and DNS caches can outlive a role change; inspect both before attributing traffic to a VLAN.
+Testing a third-party network is out of scope and often illegal. An intentionally weaker segmented guest/IoT SSID is not a finding. A single area's weakness does not condemn the whole WLAN — score per area. Each area's depth and caveats live in its specific skill; this umbrella does not restate them.
 
-- A successful ping establishes only the tested path; it does not establish application authorization.
+## Evidence and deliverable
 
-- A controller capture may omit direct AP forwarding or a second radio link.
+Provide the posture scorecard: per-area result, the specific-skill evidence, and the hardened-posture control. Keep to owned networks and synthetic credentials. Attach scope, expected/observed, rival explanation, falsifier, areas not assessed.
 
-## Evidence and output
+## Versions and tool limitations
 
-Deliver the role/zone/IPv4/IPv6 matrix, association and controller event IDs, listener receipts, configuration revision and each untested roaming or multi-link case.
+Pin AP/supplicant firmware and adapter capabilities. Posture and attacks are version/hardware-specific. No WLAN behavior was verified by this content; test the owned WLAN to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Correlate guest role assignment with management listener access and unexpected VLAN changes; test whether controller and destination logs agree.
-
-Enforce role isolation at the forwarding boundary, isolate management services and reauthorize on relevant session changes. Retest same-AP and cross-AP paths.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record AP firmware, controller release, client OS/driver and capture adapter capabilities. A generation label such as Wi-Fi 7 proves neither capture completeness nor a security policy.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+WPA3 (or WPA2 with mandatory PMF), disable WPS, high-entropy PSK or strong EAP with server-cert validation, avoid downgrade-able transition mode where feasible, segment guest/IoT, and deploy a WIDS. Add regressions per area. Detect deauth floods, rogue APs, and EAP downgrade.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A per-area weakness is confirmed by its skill on the owned WLAN where the hardened posture would not allow it: CONFIRMED; FAIL for that area. |
+| Benign refutation | The hardened posture holds, or weaker guest/IoT posture is intentional/segmented: REFUTED; PASS. |
+| Insufficient evidence | A suspected weakness not confirmed by the specific skill: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh guest session reaches the management canary while the matched deny control and permitted guest service behave as predicted. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Only the documented guest proxy responds; direct management access is denied after cached administrator state is cleared. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | Only a shared SSID name and an address inventory are available. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-wifi/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Retains the broad Wi-Fi source as an estate forwarding and roaming assessment; delegates protocol-specific authentication claims to distinct skills.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-wifi/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's Wi-Fi material as a scoped posture umbrella routing to the specific wireless skills, replacing third-party attacks with a bounded, owned-WLAN scorecard. Composes with `rt-wifi-recon`, `rt-deauth-disassoc`, `rt-evil-twin`, `rt-wpa2-psk`, `rt-wpa3-sae`, `rt-wpa-enterprise`, `rt-wps`, `rt-krack-fragattacks`.

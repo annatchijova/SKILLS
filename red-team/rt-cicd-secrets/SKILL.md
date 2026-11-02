@@ -1,91 +1,86 @@
 ---
 name: rt-cicd-secrets
-description: Validate CI secret delivery, retention, federation and revocation with synthetic credentials in isolated runners.
+description: "Red-team assessment of CI/CD secret-exposure boundaries: pipeline environment-variable and log-masking exposure, Vault/secrets-manager token reuse, cloud-runner metadata and managed-identity reach, and OIDC-federation trust. Re-expressed as scoped experiments on an owned pipeline using a planted canary secret and detection measurement, naming exfiltration as an impact class to bound rather than shipping exfil recipes."
 ---
 
-# CI Secret Lifecycle Assessment
+# CI/CD Secret-Exposure Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before selecting an experiment.
-Use this skill for credential distribution and residue; use pipeline-boundary-assessment
-for the separate question of who controls executed code.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's CI/CD secrets craft as scoped experiments on an owned pipeline with a planted canary secret: it names the exposure vectors and measures whether masking/isolation hold, treating exfiltration channels and masking bypass as impact classes to bound, not as free actions.
 
-## Mechanisms and prerequisites
+## Scope and prerequisites
 
-- Secret injection grants access to processes in a job; log masking does not revoke it.
-- Vault authorization depends on authenticated role, path, namespace and lease;
-  listing a secret name is different from reading its value.
-- Federation binds issuer, audience and workload claims to a receiving identity.
-  A decoded token establishes claimed content, not signature validity or acceptance.
-- Persistent workspaces, caches and image layers can outlive the credentialed step.
-- Registry helpers and service connections have their own identity and storage lifecycle.
-- Runner registration authority and job authorization are separate grants.
+A pipeline step runs with injected secrets, cloud-runner identity and often broad token scope. Use an owned pipeline with a planted non-production canary secret (a unique string wired to detection). Demonstrate exposure by observing the canary where it should not appear; do not exfiltrate real secrets off real infrastructure.
 
-## Observation and baseline
+Declare the platform (GitHub/GitLab/Jenkins/cloud), attempt budget, stop condition. Config-only authorization yields a hypothesis marked NOT TESTED.
 
-Record the job event, source ref, runner identity, environment gate and secret binding.
-Inventory names, intended consumers, lifetime and storage classes without collecting values.
-Define which fixture jobs may receive the synthetic secret and when it must disappear.
-Record the policy revision and whether protected variables are available in this context.
-Do not assume every CI platform exposes every stored secret through an API.
+## Attack surface and classes
 
-## Abduction and deduction
+- **Env/secret exposure** — secrets in the step environment; masking bypass (encoding, reversal, char-by-char) revealing the canary in logs/artifacts.
+- **Vault/secrets-manager** — a present `VAULT_TOKEN`/AppRole or cloud secret handle reachable from the step.
+- **Cloud-runner identity** — AWS IMDS creds, Azure managed identity, GCP metadata SA on the runner.
+- **OIDC federation** — a workflow in a trusted org assuming a cloud role via OIDC.
+- **Exfiltration channels** (impact class) — HTTP/DNS/ICMP/artifact egress from the runner.
 
-Hypothesis: a secret granted to the release job remains reachable by an untrusted later job.
-Benign rival: the apparent value is a sample string, masked rendering or a new authorized lease.
-Prediction: only reuse of the same runner storage exposes the unique fixture marker;
-an equivalent job on a fresh runner and an unbound job do not observe it.
-Use a private checker returning presence and artifact ID, never printing real credentials.
+## Mechanism and observation
 
-## Bounded laboratory procedure
+Trace the canary from the secret store to the step and observe where it can leak.
 
-1. Create an isolated pipeline fixture with no production integrations or external egress.
-2. Bind a unique nonfunctional marker to one authorized job and verify that delivery works.
-3. Let the ordinary build complete; inspect only the fixture log, artifact and cache paths.
-4. Run the unbound consumer on reused storage, then repeat on fresh storage.
-5. Vary one storage class at a time to distinguish environment inheritance from disk residue.
-6. For Vault-like delivery, compare one allowed fixture path with one denied fixture path.
-7. For federation, use an owned issuer/test verifier and change audience or subject alone.
-8. For revocation, use an inert test service: check before expiry, after expiry and after
-   revocation, distinguishing newly issued sessions from the original credential.
-9. Stop at marker exposure or the agreed job/time budget; do not retrieve unrelated values.
-10. Remove test-owned bindings and storage after retaining the authorized evidence.
+**Firstness:** Record the canary appearing in a log, artifact, or an owned collector from the runner. **Secondness:** State the intended control (masking, least-scope token, runner isolation, egress limits) and the deviation. **Thirdness:** Infer the exposure class only after the canary leaks under control.
 
-## Domain failure modes
+## Abduction and refutation
 
-File-type variables may survive step cleanup; artifact upload can preserve their bytes.
-Protected-branch and environment policies may differ between push and merge-request jobs.
-Secret masking can hide a fixture from the UI while a downloaded log retains it.
-Revoking a refresh credential may not immediately invalidate an already issued access token.
-Cache restoration may be denied by writer scope even when cache keys match.
-Separate these outcomes rather than reporting a single "secrets insecure" finding.
+**Mechanism hypothesis:** The pipeline exposes secrets or identity more broadly than needed — masking is bypassable, the token is over-scoped, runner metadata is reachable, or OIDC trust is loose.
 
-## Evidence and response
+**Competing benign explanation:** Masking catches the canary in all encodings; the token is minimally scoped; IMDSv2/hop-limit blocks metadata from the step; OIDC `sub` claims are tightly conditioned; egress is restricted so no channel works.
 
-Keep binding metadata, runner reuse evidence, fixture marker ID, storage origin,
-authorization outcomes and lease timestamps. Record CANDIDATE/CONFIRMED/REFUTED/NOT TESTED.
-Detect secret access by unexpected workload identity and retention beyond job completion.
-Prefer per-job short-lived identities, exact federation claims and isolated runner storage.
-Verify revocation semantics with the issuer; log redaction is defense in depth.
-Retest authorized delivery as well as denied delivery so the fix does not break releases.
+## Deduction and controls
 
-## Versions and limits
+A normal step keeps the canary masked and contained (positive control). A confirmed finding surfaces the canary (decoded) in a log/artifact/collector where a hardened pipeline would not. Predeclare the leak location. Masking-all-encodings / least-scope token / blocked metadata / tight OIDC are PASS controls.
 
-Record CI server, runner, credential plugin, secret provider and helper versions.
-Check installed help and provider documentation before executing platform commands.
-Legacy JWT variable names and runner registration flows are not portable assumptions.
-No tooling or credential validation against real services was executed to author this skill.
+## Induction: bounded laboratory procedure
 
-## Behavioral acceptance
+Owned pipeline; planted canary; detection on.
+
+1. **Baseline.** Run a normal step; confirm the canary is masked and contained.
+2. **Masking probe.** Attempt to surface the canary via encoding/reversal/char-by-char (bounded) and see whether masking catches it — a masking-effectiveness measurement.
+3. **Token/identity reach.** Check whether `VAULT_TOKEN`/cloud identity is present and what it can read (scope the reads to the owned lab).
+4. **Metadata.** Test whether the runner can reach cloud metadata (IMDSv2 token requirement often blocks GET-only reach).
+5. **OIDC.** Inspect the federation trust conditions.
+6. **Egress (bounded).** Confirm whether an owned collector is reachable from the runner — the exfil-channel class — without moving real data.
+7. **Control.** Confirm a hardened configuration contains the canary.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Domain-specific failure modes
+
+Masking that catches every encoding is a PASS, not a bypass. A present token that can read nothing useful is low impact. IMDSv2 with hop-limit 1 blocks many metadata reaches. OIDC with tight `sub`/`aud` conditions defeats federation abuse. An owned canary must be used — never surface real secrets to "prove" the leak.
+
+## Evidence and deliverable
+
+Provide the vector, the canary leak location, the token/identity scope observed, and the control result. Use only the planted canary. Attach minimal replay, expected/observed, rival explanation, falsifier, untested vectors.
+
+## Versions and tool limitations
+
+Pin the CI platform, runner image and cloud metadata version/mitigations. No pipeline behavior was verified by this content; confirm the live configuration first.
+
+## Remediation and detection
+
+Least-scope tokens and short-lived OIDC with tight claim conditions, secret masking plus never echoing secrets, ephemeral isolated runners, IMDSv2 + hop limit, restricted egress, and scanning logs/artifacts for secret shapes. Add a regression asserting the canary stays contained. Detect secret-shaped strings in logs/artifacts and runner egress to unexpected hosts.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Unbound job reads the unique marker from reused cache; fresh runner cannot | CONFIRMED residue exposure; control FAIL |
-| Suspected value is fixture documentation; actual secret remains restricted in both controls | REFUTED exposure claim for tested path; PASS |
-| Only a masked screenshot is available, with no binding or raw fixture artifact | CANDIDATE; WARN, no credential-compromise claim |
+| Supported finding | The planted canary surfaces (decoded) in a log/artifact/collector where a hardened pipeline contains it: CONFIRMED; FAIL (scope to the exposure shown). |
+| Benign refutation | Masking catches all encodings / token minimal / metadata blocked / OIDC tight: REFUTED; PASS for the control. |
+| Insufficient evidence | A reachable channel but no canary exposure: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/cicd/offensive-cicd-secrets/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: preserve delivery, federation and residue mechanisms; replace extraction,
-mask evasion and credential pivots with synthetic lifecycle tests.
+## Provenance and treatment
+
+Upstream research: `Skills/cicd/offensive-cicd-secrets/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's env/masking, Vault, cloud-runner-identity and OIDC exposure knowledge, re-expressed as owned-pipeline experiments with a planted canary and detection measurement, naming exfiltration/masking-bypass as impact classes to bound rather than shipping exfil recipes. Composes with `pipeline-boundary-assessment`, `cloud-identity-assessment`, `secret-lifecycle-discipline`.

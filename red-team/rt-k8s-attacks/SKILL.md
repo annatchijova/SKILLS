@@ -1,94 +1,89 @@
 ---
 name: rt-k8s-attacks
-description: Validate Kubernetes RBAC, admission, network policy and operator authority using isolated namespaces and synthetic resources.
+description: "Red-team assessment of Kubernetes cluster authority boundaries: service-account token discovery and RBAC abuse, kubelet/API-server reachability, privileged/hostPath/hostPID pod specs and escape, secrets access, and lateral movement across namespaces. Re-expressed as scoped experiments in an owned cluster using can-i permission mapping, a planted namespace/secret and RBAC-hardened negatives instead of live cluster takeover."
 ---
 
-# Kubernetes Control Boundary Assessment
+# Kubernetes Authority-Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before planning requests.
-Keep API authorization, admission, node isolation and cloud identity as separate boundaries.
-Use supplied exports when a disposable cluster is unavailable.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's Kubernetes craft as scoped experiments in an owned cluster: it names the token, RBAC and pod-spec escape paths, proving one against a planted namespace/secret with `kubectl auth can-i` as the control, rather than taking over a live cluster.
 
-## Mechanisms and prerequisites
+## Scope and prerequisites
 
-- RBAC grants are resource-, verb-, namespace- and sometimes name-specific.
-- Creating role objects does not by itself bypass escalation or binding authorization checks.
-- Pod creation can confer access to identities or volumes, subject to admission and scheduling.
-- Admission webhooks apply according to selectors, operations and failure policy.
-- NetworkPolicy effects depend on selected endpoints and the actual CNI implementation.
-- A custom resource may cause a privileged operator to act as a confused deputy.
-- Kubelet and etcd have distinct authentication surfaces; API-server RBAC alone does not
-  establish their effective authorization.
+Cluster compromise is RBAC and pod-security analysis: from a pod's service account, which API verbs and pod specs reach secrets, nodes or other namespaces. Use an owned cluster with a planted namespace and secret. Prove a path against the planted target; do not read real secrets or pivot across a production cluster.
 
-## Observation and baseline
+Declare the cluster, your starting identity, attempt budget, stop condition. Manifest/RBAC-only authorization yields a hypothesis marked NOT TESTED.
 
-Record cluster and namespace, service account, authorizer configuration and admitted pod spec.
-Read Role/ClusterRole rules and bindings from their actual schema, including aggregated roles.
-Inventory webhook selectors, Pod Security configuration, CNI and operator identities.
-Define two fixture namespaces and a synthetic ConfigMap accessible only to its owner.
-Identify the API route and admission stage expected to reject each forbidden operation.
+## Attack surface and classes
 
-## Abduction and deduction
+- **Position** — inside a pod? service host/port and SA token injected; API server reachable via DNS.
+- **Token/RBAC** — default/projected SA token; `kubectl auth can-i` to map effective verbs; over-broad roles (list/get secrets, create pods, impersonate).
+- **Pod-spec escape** — create a privileged / hostPath `/` / hostPID / hostNetwork pod → node (see `rt-container-escape`).
+- **Kubelet** — often weakly authenticated read/exec on `:10250`.
+- **Secrets** — read secrets in-namespace or cluster-wide.
+- **Lateral** — cross-namespace via RBAC gaps, node → other pods, cloud IAM via node identity.
 
-Hypothesis: a low-privilege principal can induce an operator to read a foreign fixture object.
-Benign rival: an operator reconciliation log describes a rejected or cached request.
-Prediction: only a permitted cross-namespace reference produces the unique foreign marker
-in the controlled result; an equivalent reference under restrictive policy cannot do so.
-Keep the operator's legitimate same-namespace operation as a positive liveness control.
+## Mechanism and observation
 
-## Bounded laboratory procedure
+Trace the SA's permissions to the authority they reach.
 
-1. Use a disposable cluster or explicitly scoped test namespaces with synthetic data.
-2. Snapshot RBAC, admission and network configuration; designate cleanup ownership.
-3. Compare authorization review results for allowed and forbidden fixture actions.
-4. Where permitted, execute the harmless real API action and retain its audit event;
-   an authorization review alone does not test admission or runtime behavior.
-5. Exercise one operator reference with same-namespace and cross-namespace twins.
-6. For admission, submit harmless fixture manifests differing in one prohibited field;
-   use server dry-run only when the installed webhook supports it and records the decision.
-7. For network isolation, use a dedicated echo service and compare allowed and denied
-   pod pairs, recording labels, namespace selectors, route and CNI observations.
-8. Verify workload metadata isolation using a simulated endpoint, not live token extraction.
-9. Review kubelet/etcd authentication configuration and supplied audit evidence separately;
-   do not enumerate real secrets, execute in unrelated pods or deploy a DaemonSet.
-10. Stop at the demonstrated boundary, restore fixture policy and remove owned resources.
+**Firstness:** Record the capability gained against the planted target (listed a planted secret, scheduled a privileged pod, reached the kubelet). **Secondness:** State the intended RBAC/pod-security boundary and the deviation. **Thirdness:** Infer the class only after the path is exercised under control.
 
-## Domain failure modes
+## Abduction and refutation
 
-An empty egress list is interpreted with policyTypes and policy selection, not in isolation.
-Service, pod-IP, host-network and node routes may have different implementation behavior.
-An API 403 can come from authorization; an admission rejection requires separate evidence.
-Webhook failurePolicy Ignore is a conditional exposure, not proof that a failure occurred.
-Base64 encoding of a Secret says nothing about etcd encryption or effective read permission.
-Service-account token audiences and expiry matter even when a token file is present.
-Operator CRD edit rights and controller execution rights must both be traced.
+**Mechanism hypothesis:** The service account holds verbs (or the cluster allows pod specs) that let it read secrets, create a node-reaching pod, or act in other namespaces.
 
-## Evidence, detection and remediation
+**Competing benign explanation:** RBAC scopes the SA to its own namespace with minimal verbs; Pod Security Admission (restricted) blocks privileged/hostPath pods; the kubelet is authenticated; `can-i` returns no for the action; the token is auto-mount-disabled.
 
-Deliver actor-resource-action rows with authorizer, admission and runtime outcomes.
-Retain audit IDs, sanitized resource diffs, observed marker and policy revision.
-Detect unexpected binding changes, operator cross-namespace access and direct node API use.
-Restrict bind/escalate/impersonate grants, constrain CR references and minimize workload identity.
-Enforce admission on intended routes and validate CNI isolation empirically.
-Retest the same-namespace control alongside the originally forbidden path.
+## Deduction and controls
 
-## Versions and limits
+A SA acting within its role succeeds (positive control); the escalation must fail if RBAC/PSA hold. A confirmed finding exercises the path against a planted namespace/secret where a hardened RBAC/PSA would deny (confirm with `kubectl auth can-i`). Predeclare the capability. `can-i: no` / restricted PSA / authenticated kubelet are PASS controls.
 
-Record API server, kubectl, CNI, operator, webhook and cloud identity integration versions.
-Inspect installed schemas/help; historical kubelet ports and token defaults are not universal.
-No live cluster actions or offensive toolkit modules were executed during authorship.
+## Induction: bounded laboratory procedure
 
-## Behavioral acceptance
+Owned cluster; planted namespace/secret.
+
+1. **Locate & authenticate.** Confirm in-pod position; extract the SA token/CA; query the API with it.
+2. **Map RBAC.** `kubectl auth can-i --list`; identify one path (read planted secret / create privileged pod / impersonate).
+3. **Exercise one path (planted target).** e.g. list the planted secret; or schedule a hostPath pod and touch a planted node marker; or hit the kubelet.
+4. **Prove capability, stop.** Do not read real secrets or pivot further.
+5. **Controls.** Tighten RBAC / apply restricted PSA and confirm the path denies; corroborate with `can-i`.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Craft notes (leads)
+
+Tools: kube-hunter, peirates (in-pod), kubeaudit, kdigger — enumeration aids. The projected SA token path is `/var/run/secrets/kubernetes.io/serviceaccount/`. Node-reaching pod specs (privileged, hostPath `/`, hostPID) turn pod-create into node compromise. A node's cloud identity bridges to `cloud-identity-assessment`. `can-i` is both recon and the control oracle.
+
+## Domain-specific failure modes
+
+A broad-looking role that `can-i` says cannot perform the action is a refutation. Restricted Pod Security Admission blocks the privileged-pod path regardless of RBAC. An authenticated kubelet closes `:10250`. Reading the planted secret is the proof; reading real secrets is out of scope.
+
+## Evidence and deliverable
+
+Provide the SA identity, the path (verbs/pod spec), the capability against the planted target, the `can-i` result, and the control outcome. Keep real secrets out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, untested paths.
+
+## Versions and tool limitations
+
+Pin the cluster version, PSA/PSP posture and kubelet config — paths are version-bound. Tools perform real API actions; run in the owned cluster. No cluster behavior was verified by this content; confirm live RBAC with `can-i` first.
+
+## Remediation and detection
+
+Least-privilege RBAC (no cluster-wide secret/get-list, no pod-create for app SAs, no impersonate), restricted Pod Security Admission, authenticated kubelet, disabled SA auto-mount where unused, network policies, and node-identity scoping. Add a regression asserting `can-i` denies the path. Detect privileged-pod creation, secret enumeration, and kubelet access.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Foreign synthetic marker appears through operator; restrictive twin denies it | CONFIRMED deputy boundary failure; FAIL |
-| Role creation is allowed but binding/escalation checks deny the proposed grant | REFUTED escalation path; PASS for that check |
-| Policy YAML exists but no CNI behavior or traffic control was measured | NOT TESTED enforcement; WARN |
+| Supported finding | A SA reads a planted secret / schedules a node-reaching pod where hardened RBAC/PSA would deny (`can-i` agrees): CONFIRMED; FAIL (scope to the path). |
+| Benign refutation | RBAC/PSA/`can-i` denies the path: REFUTED; PASS for the control. |
+| Insufficient evidence | A broad role without a verified reachable action: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/container/offensive-k8s-attacks/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain RBAC, admission, operator and network mechanisms; replace secret dumping,
-node takeover and persistence with synthetic resource and control validation.
+## Provenance and treatment
+
+Upstream research: `Skills/container/offensive-k8s-attacks/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's token/RBAC, kubelet, pod-spec-escape and lateral-movement craft, re-expressed as owned-cluster experiments with `can-i` mapping, a planted target and RBAC/PSA controls, replacing live cluster takeover with bounded authority-path proof. Composes with `rt-container-escape`, `cloud-identity-assessment`.

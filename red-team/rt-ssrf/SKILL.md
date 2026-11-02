@@ -1,99 +1,94 @@
 ---
 name: rt-ssrf
-description: "Validate server-side URL fetch policy, redirects, resolution and egress using owned callback fixtures and isolated network destinations."
+description: "Red-team assessment of server-side request forgery boundaries: URL-input, webhook, importer, PDF/screenshot and proxy vectors. Covers allowlist/denylist bypass (IP representation, DNS rebinding, redirects), cloud-metadata reachability (AWS IMDSv1/v2, GCP, Azure, ECS), and Kubernetes/service-mesh/container-socket exposure, re-expressed as scoped reachability experiments against owned collectors and fixtures with negative controls instead of live internal pivoting."
 ---
 
-# Server Fetch Destination Controls
+# Server-Side Request Forgery Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's SSRF craft as scoped reachability experiments: it names the vectors, bypass families and high-value internal endpoints to probe, using owned collectors and lab targets rather than live internal exploitation.
 
 ## Scope and prerequisites
 
-Determine which component initiates a fetch and which destinations it may reach. A callback establishes a fetch, not metadata access, credential access or arbitrary internal reachability.
+Find every place where the server fetches a URL derived from input: URL fields, website previews, link unfurlers, webhooks, importers, media/document converters, PDF/screenshot exporters, API gateways and proxies. Use an owned callback collector (DNS and HTTP) in scope, and a lab instance whose internal topology you are authorized to reach.
 
-Prepare two owned collectors in an isolated network and a documented destination allowlist. Use synthetic response bodies, blocked external egress and bounded redirect/time limits.
+Declare target, permitted internal ranges, attempt budget and stop condition. If only source is authorized, produce a vector hypothesis and mark runtime verification NOT TESTED. A metadata-credential pivot is an impact class to demonstrate on an owned lab, not to run against production infrastructure.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+- **Full SSRF** — the server returns the fetched response to you (read internal services).
+- **Blind SSRF** — no response body; confirmed only by an owned callback.
+- **Semi-blind** — timing/status/length differences leak reachability.
+- **Second-order** — a stored URL is fetched later by a backend job.
 
 ## Mechanism and observation
 
-Trace URL parsing, DNS resolution, address classification, redirects, proxy routing and socket connection. Record method and header policy and whether fetched response data is returned to the caller.
+Trace the input URL through validation (scheme, host allow/deny, DNS resolution) to the actual fetch.
 
-**Firstness:** Capture collector request IDs, resolved and connected addresses and final response handling. Compare these with the configured permitted destination set.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record what the server resolved and requested (owned-callback logs, response, timing). **Secondness:** State the intended egress policy (which hosts/schemes are allowed) and how the observation deviates. **Thirdness:** Infer the defect class only after a controlled callback or internal response confirms the request left as directed.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** The validator approves one destination but the connector or redirect handler reaches another without revalidation.
+**Mechanism hypothesis:** The fetcher validates a representation of the destination (string, pre-resolution host) but acts on another (post-resolution IP, post-redirect URL), letting a request reach an unintended internal target.
 
-**Competing benign explanation:** An outbound fetch may be the feature's intended behavior and restricted correctly. A DNS lookup may come from an inspection service or security scanner rather than the application fetcher.
+**Competing benign explanation:** An egress firewall blocks the internal request regardless of app behavior; the callback was the app's legitimate preview fetch; the "metadata" response is a mocked fixture; DNS did not actually rebind in the time window.
 
 ## Deduction and controls
 
-The approved collector succeeds as a control; a redirect to a disallowed isolated collector is stopped before connection. Any validator/connector mismatch must be associated with the same fixture request.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+An allowed external URL fetches normally (positive control); a disallowed internal URL must be refused if the control holds. A confirmed SSRF shows the owned collector received the request, or an internal fixture response returned, where the control URL did not reach. Predeclare the callback or response that confirms it. Egress blocking it is a PASS control, recorded separately.
 
 ## Induction: bounded laboratory procedure
 
-1. Fetch a small synthetic document from the allowed collector and correlate application and collector logs.
+Owned collector and authorized lab targets only.
 
-2. Use a single controlled redirect to the second lab collector, whose policy status is explicitly disallowed.
+1. **Baseline.** Submit an allowed external URL pointing at your collector; confirm the fetch and capture request metadata (headers, source, follows-redirects?).
+2. **Internal reachability.** Point at authorized lab internal addresses: `127.0.0.1`, `0.0.0.0`, `localhost`, link-local, internal service names; observe response/timing/callback.
+3. **Bypass discriminators** (filter-vs-resolver differential): alternate IP encodings (decimal, octal, hex, IPv6, `[::ffff:a.b.c.d]`), DNS rebinding (owned rebinder), open-redirect chaining, `@`-userinfo tricks, scheme abuse (`file:`, `gopher:`, `dict:`), trailing-dot and case.
+4. **Metadata reachability (owned lab)** — demonstrate the class, do not harvest production creds: AWS IMDS `169.254.169.254` (note IMDSv2 requires a PUT token — a GET-only SSRF often cannot reach it), GCP `metadata.google.internal` with `Metadata-Flavor: Google`, Azure IMDS with `Metadata: true`, ECS task-metadata URI.
+5. **Protocol/port sweep** against the lab only, bounded.
+6. **Control.** Re-run the allowed URL to confirm the positive control still passes.
 
-3. In the isolated resolver harness, compare the validated address set with the actual socket destination; do not target real internal services.
+Record each result including refutations. Keep finding status and control status separate.
 
-4. Check method, header forwarding and response exposure using only synthetic headers and body markers.
+## High-value internal targets (impact classes to bound)
 
-5. Repeat with redirect following disabled as a control, then stop on the first demonstrated policy breach and remove fixture registrations.
+On a vulnerable fetcher in an authorized lab, these are the reachable-impact classes that make SSRF serious; demonstrate reachability and report the bound, do not exfiltrate real secrets:
 
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+- **Cloud metadata** → instance IAM credentials (the classic escalation; IMDSv2 and hop-limit mitigations change reachability — test, do not assume).
+- **Kubernetes** → kubelet API (often weakly authenticated), service-account token at the mounted path, then API-server `secrets`.
+- **Service mesh** → Envoy/Linkerd admin on localhost, Pilot discovery.
+- **Container sockets** → Docker/containerd/CRI-O sockets (via `unix:`/gopher where supported) → container control.
+- **Internal dashboards** → Prometheus, Grafana, ArgoCD, Rancher, Consul.
 
-## Domain-specific failure modes
+## Framework and domain failure modes
 
-DNS-only evidence does not prove HTTP access. An egress proxy can change resolution semantics. Mixed IPv4/IPv6 answers, cached resolution and redirects need separate observations; arbitrary internal scanning is not a discriminator.
+A callback alone proves reachability, not data return — separate blind from full. Egress controls can make an app-layer SSRF unexploitable; report residual impact. DNS rebinding depends on TTL and resolver caching; a single failed window is not a refutation. Node (`request`/`axios` redirect handling), Python (`requests`/`urllib`), and Java (`URL`/`HttpClient`) differ in redirect and scheme behavior — pin the client.
 
 ## Evidence and deliverable
 
-Provide URL normalization, DNS answer set, socket address, redirect sequence, method, synthetic header handling and response marker. Bound impact to the destination and data class actually tested.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the vector, the submitted URL, the resolved destination, owned-callback records or internal fixture response, the bypass used, and any egress control that bounded impact. Keep real credentials and internal data out of portable output. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered vectors.
 
 ## Versions and tool limitations
 
-Record HTTP client, resolver, proxy and URL library versions. Verify supported schemes and redirect defaults locally; do not inherit metadata endpoint or cloud-token assumptions from upstream.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the HTTP client and its redirect/scheme config; pin cloud metadata-service version and mitigations (IMDSv2, hop limit). No endpoint behavior was verified by this content. Confirm installed versions and current cloud metadata behavior before claiming.
 
 ## Remediation and detection
 
-Use explicit destination policy, validate resolved addresses at the connection boundary and revalidate redirects. Restrict schemes, methods and forwarded headers, with network egress controls as an independent layer.
-
-Correlate rejected destinations and unexpected application egress with fetch request IDs. Verify telemetry distinguishes DNS resolution from established connections and returned data.
+Validate post-resolution (resolve, then check the IP against a denylist of internal/link-local ranges, and re-check after redirects), allowlist schemes and hosts, disable unused URL schemes, enforce IMDSv2 with hop limit 1, and isolate egress. Add a regression asserting an internal URL is refused. Detect via egress logs showing requests to metadata/link-local ranges correlated to the request ID.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | An allowed fixture URL redirects to a disallowed lab collector and the application connects despite a documented block: CONFIRMED; FAIL. |
-| Benign refutation | Only the approved collector is fetched and the disallowed redirect is stopped before connection: REFUTED; PASS. |
-| Insufficient evidence | An uncorrelated DNS callback appears but the initiating component and HTTP activity are unknown: CANDIDATE; WARN. |
+| Supported finding | An owned collector or authorized internal fixture receives the server's request where the control URL does not: CONFIRMED; FAIL (scope the impact to what was reached). |
+| Benign refutation | The internal URL is refused / egress blocks it: REFUTED for the tested vector; PASS for the control. |
+| Insufficient evidence | Only a timing difference, no callback or response: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-ssrf/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-ssrf/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains fetch, DNS, redirect and egress mechanisms without metadata credential access, internal enumeration or protocol abuse chains.
-
+This revision restores the upstream's vector taxonomy, IP/DNS/redirect bypass families and cloud/Kubernetes/service-mesh target map, re-expressed as owned-collector reachability experiments with egress controls, replacing live metadata-credential harvesting and internal pivoting with bounded reachability proof.

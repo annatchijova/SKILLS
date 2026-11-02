@@ -1,111 +1,90 @@
 ---
 name: rt-keylogger-arch
-description: "Assess input-observation exposure and detection in isolated synthetic-input sessions without collecting real keystrokes or building keyloggers."
+description: "Blue-team assessment of keylogging / input-capture detection and defense: understanding the capture mechanisms (kernel/user hooks, raw input, accessibility APIs, hardware) so defenders can detect them, and measuring whether endpoint controls catch an authorized emulation. Re-expressed as a detection-and-prevention exercise on an owned lab host with a benign input-capture stub and PASS/WARN/FAIL scoring, not an implementation guide for covert surveillance."
 ---
 
-# Input Capture Exposure Assessment
+# Input-Capture Detection and Defense Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the detection exercise below.
+This revision reframes the upstream's keylogger-architecture material toward defense: it explains input-capture mechanisms so a defender can detect and prevent them, and measures endpoint controls against an authorized, benign emulation. It is not an implementation guide for covert surveillance. Compose with `detection-engineering`.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Review input-observation architecture and validate a claimed boundary with a reviewed diagnostic
-fixture. Use synthetic keystrokes only; exclude real login screens, personal sessions and clipboard
-contents.
+Keylogging is surveillance; building a covert one against people is out of scope and can be unlawful. The legitimate purpose here is defensive: understand the capture mechanisms to detect and block them. Emulate only a benign, consented input-capture stub on an owned lab host (no real user's keystrokes), with the goal of measuring detection and prevention.
 
-- user-mode hook versus driver distinction.
-- raw-input scope.
-- desktop and session isolation.
+Declare the lab host, the endpoint controls (EDR/AV/OS protections), the benign emulation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Capture mechanism classes (as detection targets)
 
-Map the proposed observation path: application event handling, user-mode keyboard hook, raw input
-registration or a separately reviewed device driver.
+- **User-mode hooks** — `SetWindowsHookEx`/event taps; detectable by hook enumeration and API telemetry.
+- **Raw input / polling** — `GetAsyncKeyState`/raw-input registration; detectable by behavioral analytics.
+- **Kernel/driver** — filter drivers; detectable by driver-load and code-integrity controls.
+- **Accessibility APIs** — assistive interfaces abused for capture; detectable by API-grant monitoring.
+- **Hardware** — inline devices; detectable by physical inspection and USB-device policy.
+- **Exfiltration** — how captured data would leave (routes to `rt-data-exfiltration` for the channel).
 
-Do not equate a low-level user-mode hook API with a kernel driver. Identify execution context and
-actual permissions from the supplied implementation.
+## Mechanism and observation
 
-Create two isolated test sessions or desktops, a dummy editor and a fixture that records only
-recognition of a fixed public marker rather than arbitrary input.
+Emulate one benign capture mechanism, then measure whether endpoint controls detect/prevent it.
 
-## Discriminating laboratory procedure
+**Firstness:** Record what the benign stub did (registered a hook, loaded a driver) and which control alerted/blocked. **Secondness:** State the expected detection/prevention and the deviation. **Thirdness:** Infer a gap only after an emulated mechanism evades a control that should catch it, under control.
 
-Abduction: a diagnostic observer can see a synthetic marker outside its permitted input scope.
-Rival: the dummy editor and observer share the same allowed desktop or an accessibility exemption.
+## Abduction and refutation
 
-Deduction: moving the dummy editor across the documented boundary should stop marker recognition,
-while same-scope input remains visible to the diagnostic fixture.
+**Hypothesis:** A given capture mechanism can run without detection or prevention (a defensive gap).
 
-Induction: submit a short fixed marker to the dummy editor and retain only marker-present/absent,
-foreground process and session identifiers.
+**Competing benign explanation:** EDR enumerates and flags the hook; driver signing/HVCI blocks the kernel path; the accessibility grant is monitored and alerts; AV detects the known pattern; the emulation did not actually register the mechanism.
 
-Repeat in the disallowed scope using the same binary and synthetic marker. Keep a same-scope control
-to establish that the observer is functioning.
+## Deduction and controls
 
-If the fixture cannot constrain itself to synthetic data or reliably identify its session, stop and
-perform static architecture review only.
+Normal input handling produces no alert (positive control = no false positive). A confirmed gap shows the benign emulated mechanism running undetected/unblocked where a hardened endpoint would catch it. Predeclare the detection/prevention signal. Hook enumeration / driver-signing-HVCI / accessibility monitoring / AV detection are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded procedure
 
-## Domain failure modes
+Owned lab host; benign consented stub.
 
-- API import presence proves a possible capability, not that a process captured input.
-- Foreground-window labels and process activity can be sensitive even without keystrokes; minimize
-  them and use dummy titles.
-- A user-mode observer failing to see a protected desktop does not establish that kernel-level
-  observation is impossible.
+1. **Baseline.** Run normal input handling; confirm no false alerts.
+2. **Emulate one mechanism** with the benign stub (a hook that counts, not captures, keystrokes; a benign test driver load in a test-signing lab).
+3. **Measure detection/prevention.** Did EDR flag the hook/driver? Did code integrity block it? Did accessibility-grant monitoring alert?
+4. **Score.** PASS (detected/blocked), WARN (partial), FAIL (neither) per mechanism.
+5. **Tune and re-test.** Add detections/controls for gaps; confirm closure.
+6. **Control.** Confirm normal handling still does not alert.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from the control score. The emulation never captures real keystrokes.
 
-Produce a scope matrix of observer process, integrity context, session, desktop, declared permission
-and marker result. Include fixture source digest and data-minimization behavior.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The defensive levers: hook enumeration (EDR can list installed hooks), driver signing + HVCI (blocks kernel capture), accessibility-API grant monitoring, USB-device policy (hardware), and exfiltration detection (the captured data must leave — see `rt-data-exfiltration`). Understanding the mechanism is what makes the detection specific rather than signature-based.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require visibility into unexpected input-observer registrations and unsigned or unapproved driver
-loading where the platform exposes it. Prefer allowlisted accessibility tooling and session
-isolation over keyword detections.
+An undetected benign emulation may be an incomplete emulation, not a real gap. Hardware keyloggers evade software detection entirely — physical/USB policy is the control. Capturing a real person's keystrokes to "prove" it is never appropriate; the stub must be benign and consented. Exfiltration is a separate control layer.
 
-## Recovery
+## Evidence and deliverable
 
-Terminate the diagnostic observer, verify its input subscriptions are gone, remove only its dummy
-output and preserve the aggregate evidence record.
+Provide the mechanism emulated, the detection/prevention controls that did/did not catch it, the score, and the tuning that closed gaps. Keep to the owned lab with a benign stub. Attach minimal replay, expected/observed, rival explanation, falsifier, mechanisms not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record OS build, desktop/session model, input API and fixture version. ETW availability is
-provider-specific and does not imply universal keystroke capture.
+Pin the OS build and endpoint-control versions — detection is product- and version-specific. No control behavior was verified by this content; reproduce on the lab first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Enumerate and alert on input hooks, enforce driver signing and HVCI, monitor accessibility-API grants, apply USB-device policy, and detect exfiltration channels. Add detections per gap and a regression that the emulated mechanism is now caught.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Synthetic marker appears across a boundary that the verified policy denies; same-scope control works | CONFIRMED input-scope violation; FAIL |
-| Both processes share a permitted desktop and the separated-session probe cannot observe input | REFUTED cross-session claim; PASS |
-| Only a suspicious input API import is present | CANDIDATE capture capability; WARN |
+| Supported finding | A benign emulated capture mechanism runs undetected/unblocked where a hardened endpoint would catch it: CONFIRMED defensive gap; control FAIL. |
+| Benign refutation | EDR/code-integrity/monitoring detects or blocks it: REFUTED; control PASS. |
+| Insufficient evidence | Partial detection or incomplete emulation: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-keylogger-arch/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-keylogger-arch/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Corrects architectural conflation and retains input-boundary analysis without implementing capture,
-stealth or exfiltration.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision reframes the upstream's input-capture architecture as a defensive detection-and-prevention exercise with a benign consented emulation and PASS/WARN/FAIL scoring, replacing a surveillance-implementation guide with endpoint-control measurement. Composes with `detection-engineering`, `rt-data-exfiltration`.

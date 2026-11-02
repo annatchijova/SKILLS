@@ -1,117 +1,85 @@
 ---
 name: rt-krack-fragattacks
-description: Assess key reinstallation and fragment-reassembly regression evidence using pinned laboratory conformance fixtures and non-sensitive canaries.
+description: "Red-team assessment of 802.11 protocol-flaw patch status: KRACK (key-reinstallation in the 4-way/group-key handshake) and FragAttacks (fragmentation/aggregation design and implementation flaws). Re-expressed as a scoped patch-verification experiment in an isolated RF lab against owned AP/client that confirms whether the stack is vulnerable or patched, with a patched-stack control, instead of attacks on live networks."
 ---
 
-# Wi-Fi key-state and reassembly regression assessment
+# KRACK / FragAttacks Patch-Status Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the KRACK/FragAttacks craft as a scoped patch-verification experiment in an isolated RF lab: it confirms whether the owned AP/client stack is vulnerable or patched to these protocol flaws, with a patched stack as the control, rather than attacking live networks.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an isolated AP/client, owned synthetic traffic, a pinned reviewed regression harness and known affected and fixed reference fixtures when available.
+KRACK and FragAttacks are known protocol/implementation CVE classes; the practical question is patch status on the specific AP/client. Work on owned devices in an isolated RF lab. Respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned AP/client firmware, the RF isolation, attempt budget, stop condition. Firmware-version-only review yields a hypothesis marked NOT TESTED (confirm by test where possible).
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- A retransmitted handshake message is legitimate; reinstalling the same key with reset nonce or replay state is the disputed behavior.
+- **KRACK** — key reinstallation by replaying handshake messages (4-way, group-key, FT handshake), resetting nonces/replay counters and enabling decryption/replay on vulnerable stacks.
+- **FragAttacks** — design flaws (plaintext injection, mixed-key fragment reassembly, cached-fragment) plus common implementation flaws; several are stack-specific.
 
-- Packet-number reuse must be scoped to the same key and relevant traffic context; key rotation changes interpretation.
+## Mechanism and observation
 
-- Fragment caches must preserve security context and avoid accepting fragments across incompatible key or association state.
+Use the published test tools against the owned devices to determine vulnerability.
 
-- Aggregation parsing and plaintext acceptance are distinct variants; one result does not confirm an entire CVE family.
+**Firstness:** Record whether the test reproduces the flaw (nonce reuse accepted, fragment injected/reassembled) on the owned stack. **Secondness:** State the expected patched behavior and the deviation. **Thirdness:** Infer "vulnerable" only after the test reproduces it under control on the owned device.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record the exact variant, state transition, key-context identifier and canary delivery. Contrast with expected monotonic counters or reassembly rejection.
+**Hypothesis:** The owned AP/client stack is unpatched for a KRACK or FragAttacks variant.
 
-**Abduction:** The target resets replay or nonce state after a legitimate handshake retransmission in the same key context.
+**Competing benign explanation:** The firmware is patched (the test reports not-vulnerable); the device rejects the replayed/retransmitted frame; the variant does not apply to this stack; the observed behavior is a test-harness artifact, not the device.
 
-**Competing benign explanation:** A new key was negotiated or the capture merged multiple links or traffic contexts.
+## Deduction and controls
 
-**Deduction:** The target repeats counter state under the same key context after the specific regression case; a no-retransmission control stays monotonic and a fixed reference rejects the condition.
+A patched stack passes the test (positive control = not vulnerable). A confirmed finding reproduces the flaw on the owned device where a patched firmware does not. Predeclare the reproduction signal from the test tool. A patched stack passing is the PASS control.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated RF lab; owned AP/client.
 
-1. Identify one variant and inspect the existing harness documentation and fixture behavior before execution.
+1. **Baseline.** Record firmware versions and expected CVE applicability.
+2. **Run the published test** (the KRACK scripts / FragAttacks test tool) against the owned AP and client.
+3. **Confirm per variant.** Record which variants the stack is vulnerable to vs patched.
+4. **Patched control.** Update firmware (or test a known-patched device) and re-run; confirm not-vulnerable.
+5. **Stop.** The deliverable is the patch-status matrix, not exploitation.
 
-2. Establish canary delivery and capture completeness using a normal exchange, without production payloads.
+Record results including refutations. Keep finding and control status separate.
 
-3. Execute the reviewed finite regression case inside the enclosure; inspect key-state instrumentation and endpoint receipts rather than a headline tool label.
+## Craft notes (leads)
 
-4. For fragment variants, use the harness's inert marker and compare same-context acceptance with incompatible-context rejection; keep the variant results separate.
-
-5. Restore the clean association, rerun the ordinary canary and retain failed as well as successful cases.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+Both have authoritative test tools from the original research; use them rather than hand-rolling. KRACK is largely patched in current stacks but lingers in unmaintained firmware/IoT; FragAttacks has design variants that affect nearly all devices plus implementation variants that vary by stack. The finding is almost always "unpatched firmware", and the fix is updating it.
 
 ## Domain-specific failure modes
 
-- KRACK evidence does not establish PSK recovery or arbitrary application plaintext access.
+Patched firmware reports not-vulnerable — the primary refutation. A variant may not apply to a given stack. A test-harness artifact can look like a device flaw — corroborate. Inferring vulnerability from a version string without a test is weaker evidence (NOT TESTED). Live-network testing is out of scope.
 
-- A WPA3 or PMF label does not alone prove fragment processing is correct.
+## Evidence and deliverable
 
-- Missing fragments, retransmission duplication and decoder errors can imitate counter or reassembly defects.
+Provide the firmware versions, the per-variant test results (vulnerable/patched), and the patched-stack control. Keep to owned devices. Attach the test-tool output, expected/observed, rival explanation (patched/artifact), falsifier, variants not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide per-variant case IDs, harness revision, key-context and counter records, capture digests, endpoint receipts and actual affected/fixed build evidence.
+Pin AP/client firmware — vulnerability is entirely patch-status-dependent. The test tools themselves have version/driver requirements. No device behavior was verified by this content; run the tests on the owned devices to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Evaluate telemetry for repeated key-state transitions and invalid reassembly; establish sensor visibility using the reference fixture.
-
-Apply implementation-specific fixes for idempotent key installation and security-context-bound reassembly. Rerun the same failing case and normal retransmission compatibility controls.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record chip firmware, driver, supplicant and AP builds separately. Verify advisory applicability; release year and broad OS-family labels are not patch attestations.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Update AP and client firmware/drivers to patched versions; for unpatchable IoT, segment and monitor. Enforce WPA3/PMF where possible. Add a regression that the test tool reports not-vulnerable. Detect handshake-replay anomalies via WIDS where supported.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The test reproduces a KRACK/FragAttacks variant on the owned stack where a patched firmware does not: CONFIRMED; FAIL (scope to the variant/stack). |
+| Benign refutation | The patched stack reports not-vulnerable / the variant does not apply: REFUTED; PASS for the control. |
+| Insufficient evidence | Version suggests exposure but no test was run: NOT TESTED; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Counter reset is instrumented in the same key context after the regression case, with monotonic baseline and fixed-reference controls. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The repeated counter belongs to a newly established key; same-key retransmission leaves state unchanged. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | The harness reports a variant name but key context, frame delivery and reference behavior are unavailable. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-krack-fragattacks/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Retains two implementation defect families with per-variant proof and rejects blanket patch claims, password-recovery implications and crafted-frame chains.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-krack-fragattacks/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the KRACK/FragAttacks material as a scoped patch-verification experiment against owned devices with a patched-stack control, replacing live attacks with a bounded patch-status matrix. Composes with `rt-wifi`, `rt-deauth-disassoc`, `known-defect-disposition`.

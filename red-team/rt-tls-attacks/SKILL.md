@@ -1,95 +1,88 @@
 ---
 name: rt-tls-attacks
-description: Validate TLS peer identity, negotiated policy, early-data handling and compression preconditions in owned client-server fixtures.
+description: "Red-team assessment of TLS/SSL configuration boundaries: protocol-downgrade and legacy-protocol exposure (POODLE, DROWN, FREAK, BEAST), compression oracles (CRIME/BREACH), Heartbleed, weak ciphers/keys, certificate validation and shared-key reuse. Re-expressed as scoped enumeration against owned endpoints with testssl.sh-class evidence and clear PASS/WARN/FAIL control scoring instead of live interception."
 ---
 
-# TLS Trust and Transport Assessment
+# TLS/SSL Configuration-Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before selecting a handshake test.
-Separate server configuration, client validation and application replay semantics.
-A supported protocol or scanner label is not proof of a complete historical attack.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's TLS craft as scoped configuration assessment: it names the vulnerability classes and their indicators, scoring each control PASS/WARN/FAIL from enumeration evidence rather than executing a live downgrade/interception against third parties.
 
-## Mechanisms and preconditions
+## Scope and prerequisites
 
-- Certificate validation combines trusted issuer, name, validity and application policy.
-- mTLS authenticates a certificate; authorization must map its identity to permitted actions.
-- Negotiation depends on both endpoints, SNI, ALPN and any terminating proxy.
-- TLS early-data acceptance and a duplicated application effect are different claims.
-- HTTP compression leakage requires secret/reflected data co-compression and an observable
-  length channel; a gzip header alone is insufficient.
-- HSTS behavior depends on client state and domain scope, separately from TLS negotiation.
-- Historical CBC, export-cipher and memory-disclosure flaws have version and path preconditions.
+TLS findings are mostly configuration posture: which protocols, ciphers, and extensions the endpoint accepts, and whether certificate validation and key hygiene hold. Scan owned endpoints. Active MITM/downgrade is an impact class to reason about; confirm exposure by the server's accepted configuration, not by intercepting real sessions.
 
-## Observation and baseline
+Declare target hosts, attempt budget, stop condition. Config-only authorization yields a hypothesis marked NOT TESTED.
 
-Record the actual client build, server/terminator, destination, SNI, ALPN and trust store.
-Specify the peer identity expected by the application and the allowed protocol policy.
-Retain the negotiated result rather than substituting a generic TLS scanner's view.
-Use test certificates, synthetic response secrets and a local side-effect counter.
-Do not intercept unrelated traffic or disable verification in the tested client.
+## Attack surface and classes
 
-## Abduction and deduction
+- **Legacy protocols** — SSLv2 (DROWN), SSLv3 (POODLE), export ciphers (FREAK), TLS 1.0 CBC (BEAST).
+- **Compression oracles** — TLS compression (CRIME), HTTP compression + reflection (BREACH).
+- **Implementation** — Heartbleed (OpenSSL 1.0.1-1.0.1f), ROBOT, Ticketbleed.
+- **Weak crypto** — weak ciphers, small keys/DH params, RSA key reuse across hosts (DROWN cross-protocol).
+- **Certificate** — expired/self-signed/wrong-host, weak signature, chain issues, missing HSTS.
 
-Hypothesis: this client omits hostname validation while still accepting the certificate chain.
-Benign rival: the scanner connected without the application's intended SNI or trust store.
-Prediction: the actual client accepts a trusted but wrong-name test certificate while a
-validation-enforcing twin rejects it; both accept the matching-name certificate.
-Distinguish failure before handshake from rejection caused by the property under test.
+## Mechanism and observation
 
-## Bounded laboratory procedure
+Enumerate the accepted configuration and compare to a secure baseline.
 
-1. Create an owned loopback/test-network TLS server and isolated application client profile.
-2. Establish successful communication with a matching-name, valid, fixture-trusted certificate.
-3. Change only the certificate name, preserving issuer and server behavior; record acceptance.
-4. Independently test an untrusted issuer and expired certificate, with clock state recorded.
-5. For mTLS, compare allowed client identity, trusted but unauthorized identity and no certificate;
-   inspect application authorization, not only successful handshake completion.
-6. For early data, use a synthetic operation with an instrumented counter and fixture session.
-   Compare early and ordinary delivery, duplicate delivery and idempotency-enabled control.
-   A new connection that sends a second request is not proof of captured-record replay.
-7. For compression, measure encoded wire/body bytes for synthetic data; compare compression
-   disabled and reflection removed controls. Do not infer wire length from decoded response text.
-8. Limit handshakes and requests before starting; stop on unexpected state or absent controls.
-9. Remove test trust anchors and sessions, restore profile settings, and verify normal behavior.
+**Firstness:** Record exactly what the server accepts (protocols, ciphers, extensions, cert details) from the scanner. **Secondness:** State the secure baseline (TLS 1.2/1.3 only, strong ciphers, valid cert, HSTS) and the deviation. **Thirdness:** Infer the vulnerability class only after the accepted configuration is confirmed.
 
-## Domain failure modes
+## Abduction and refutation
 
-A client lacking old-protocol support cannot demonstrate that a server rejects that protocol.
-Load balancing may expose different TLS configurations; record the terminator tested.
-A source occurrence of verify=False may belong to a test stub rather than a production path.
-Instrumentation that disables pinning changes the property being measured.
-TLS fingerprints are not proof of malicious instrumentation or a particular application build.
-Certificate transparency records establish logged issuance, not current endpoint ownership.
-Compression distinguishability alone does not prove secret recovery at practical query cost.
+**Mechanism hypothesis:** The endpoint accepts a legacy protocol/cipher/extension (or reuses a key) that enables a known downgrade/oracle/leak.
 
-## Evidence, detection and remediation
+**Competing benign explanation:** The legacy protocol is actually refused (scanner false positive from a probe artifact); the cipher is offered but never negotiated with modern clients; HSTS preload defeats strip; the "shared key" is not actually reused; the OpenSSL build is patched.
 
-Retain sanitized handshake transcripts, certificate fingerprints, trust policy, application
-outcomes and fixture counter events. Bound each verdict to client, route and version.
-Detect unexpected negotiation changes, validation failures and duplicated state-changing events.
-Use maintained TLS libraries with identity validation and deliberate trust-store management.
-Authorize mTLS identities explicitly; reject or safely handle early data on sensitive operations.
-Separate reflected input from secret-bearing compressed responses where the channel exists.
-Retest legitimate clients as well as rejected peers before closing the finding.
+## Deduction and controls
 
-## Versions and limits
+A modern handshake succeeds with strong parameters (positive control). A confirmed finding shows the server accepting the weak protocol/cipher/extension where a hardened config would refuse. Predeclare the accepted indicator (e.g. "SSLv3 + CBC accepted"). Refusal of legacy protocols / HSTS preload / patched build are PASS controls; an offered-but-not-negotiated weak cipher may be WARN.
 
-Record TLS library build, enabled providers, scanner version and platform trust behavior.
-Inspect installed help; similarly named flags do not establish FREAK or 0-RTT coverage.
-Memory-disclosure and downgrade exploitation are excluded; assess patch/build evidence instead.
-No network handshake or scanner was executed during authorship.
+## Induction: bounded procedure
 
-## Behavioral acceptance
+Owned endpoints.
+
+1. **Enumerate.** Run testssl.sh (and sslscan/tlsx for breadth) for full protocol/cipher/vuln output in JSON.
+2. **Confirm per class.** POODLE (SSLv3+CBC accepted), DROWN (SSLv2 or shared RSA key with an SSLv2 host), FREAK (export ciphers), BEAST (TLS 1.0 CBC negotiated), CRIME (TLS compression), Heartbleed (vulnerable OpenSSL + heartbeat).
+3. **Key reuse.** Extract the certificate modulus; hash and compare across scoped hosts to find shared keys (DROWN cross-host).
+4. **Certificate.** Validate chain, host, expiry, signature strength, HSTS.
+5. **Score.** Record each control PASS/WARN/FAIL; separate "accepted/negotiable now" from "offered but legacy-client-only".
+
+Record results including refutations. Keep finding status separate from the control score.
+
+## Craft notes (leads)
+
+testssl.sh flags map directly to classes (`--poodle`, `--drown`, `--freak`, `--beast`, `--crime`, `--heartbleed`). DROWN also applies when a modern host shares its RSA key with any SSLv2-enabled host — hence the modulus-hash comparison across infrastructure. BREACH needs HTTP compression + a secret + reflected input (an app-layer condition, not pure TLS). Heartbleed is version-pinned to OpenSSL 1.0.1-1.0.1f.
+
+## Domain-specific failure modes
+
+A scanner "vulnerable" can be a probe artifact — confirm the protocol is actually accepted in a real handshake. An offered weak cipher that no modern client negotiates is WARN, not FAIL. HSTS preload defeats SSL-strip at the client. Cross-host key reuse is the subtle DROWN condition; check it explicitly.
+
+## Evidence and deliverable
+
+Provide the host, the accepted configuration (scanner output), the class and its indicator, any shared-key finding, and the PASS/WARN/FAIL per control. Attach minimal replay, expected/observed, rival explanation (false positive / not negotiated), falsifier, untested hosts.
+
+## Versions and tool limitations
+
+Pin the TLS stack/OpenSSL version and testssl.sh version. Scanners can produce false positives; corroborate with a real handshake. No endpoint behavior was verified by this content; confirm the live configuration first.
+
+## Remediation and detection
+
+TLS 1.2/1.3 only, disable SSLv2/3 and export/CBC-legacy ciphers and TLS compression, patch OpenSSL, strong keys/DH params, no key reuse across hosts, valid certs and HSTS preload. Add a regression asserting legacy protocols are refused. Detect legacy-protocol handshakes and expired/weak certs via monitoring.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Actual client accepts trusted wrong-name peer; validating twin rejects it | CONFIRMED hostname-validation failure; FAIL |
-| Scanner omitted SNI; actual configured client rejects wrong peer and accepts correct peer | REFUTED client-bypass claim; PASS |
-| gzip and TLS 1.3 appear in headers without wire measurements or state evidence | NOT TESTED leakage/replay impact; WARN |
+| Supported finding | The server accepts a legacy protocol/cipher/extension (or reuses a key) enabling a named class, confirmed in a real handshake: CONFIRMED; control FAIL. |
+| Benign refutation | The legacy protocol is refused / weak cipher not negotiated / build patched: REFUTED; PASS (or WARN if merely offered). |
+| Insufficient evidence | A scanner flag not corroborated by a handshake: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/crypto/offensive-tls-attacks/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain trust, negotiation, compression and replay distinctions; replace pinning
-bypass, interception and memory extraction recipes with owned-fixture control tests.
+## Provenance and treatment
+
+Upstream research: `Skills/crypto/offensive-tls-attacks/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's downgrade/oracle/implementation/cipher/cert craft and its indicator table, re-expressed as owned-endpoint configuration assessment scored PASS/WARN/FAIL with handshake corroboration, replacing live interception with bounded posture evidence. Composes with `rt-crypto-attacks`, `rt-network-attacks`.

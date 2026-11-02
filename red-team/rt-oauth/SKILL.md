@@ -1,99 +1,92 @@
 ---
 name: rt-oauth
-description: "Validate OAuth and OIDC authorization transaction binding, callback handling, refresh rotation and account linking using synthetic clients and identities."
+description: "Red-team assessment of OAuth 2.0/2.1 and OIDC trust boundaries: authorization-code and implicit flows, redirect_uri validation, state/PKCE/nonce handling, token leakage and mix-up, and escalation to account takeover or lateral movement. Covers FAPI considerations, re-expressed as owned-client experiments that prove a flow weakness against a negative control instead of taking over real accounts."
 ---
 
-# OAuth Transaction Binding
+# OAuth / OIDC Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's OAuth craft as scoped experiments on owned clients/accounts: it names the flow weaknesses, confirming a leak/bypass against a control rather than taking over a real user's account.
 
 ## Scope and prerequisites
 
-Assess the authorization flow and identity binding. Token signature and key-selection mechanics belong to token-trust-assessment. Do not treat OAuth authorization alone as a user authentication assertion.
+Map the flow (authorization server, client, resource server) and its type (auth-code + PKCE, implicit, client-credentials). Use owned client registrations and owned accounts; redirect only to owned endpoints. Confirm a leak by receiving an owned code/token at your endpoint, not by compromising a victim.
 
-Provision an isolated authorization server or owned test tenant, two clients, two browser sessions and two synthetic identities. Record redirect registrations, grant types and the application's chosen CSRF and PKCE guarantees.
+Declare target, flow, attempt budget, stop condition. Config-only authorization yields a hypothesis marked NOT TESTED. Account takeover is an impact class to reason about, not to execute against real users.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+- **redirect_uri** — loose matching (prefix/suffix/subdomain/open-redirect on the client) leaks the code/token.
+- **state / CSRF** — missing/unchecked `state` enables login CSRF / code injection.
+- **PKCE** — missing or downgradeable `code_challenge` on public clients.
+- **nonce** (OIDC) — missing nonce enables ID-token replay.
+- **Implicit flow** — token in URL fragment, leak via referrer/history.
+- **Token/code leakage** — via redirect, logs, `Referer`; code replay (not one-time), code substitution.
+- **Mix-up** — client confused about which AS issued a code.
+- **Scope/consent** — scope upgrade, consent bypass.
 
 ## Mechanism and observation
 
-Trace authorization initiation, transaction storage, callback validation, code exchange, issuer validation and local account linkage. Record where nonce is checked for an OIDC ID token and where the resource server validates access tokens.
+Trace the code/token from issuance to redemption and the validation at each hop.
 
-**Firstness:** Capture transaction and session identifiers as digests, selected issuer/client and resulting local account ID. Compare the result with the initiating session and registered redirect policy.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record an owned code/token arriving at an endpoint it should not, or a flow completing without a required check (no `state`, no PKCE). **Secondness:** State the spec-correct behavior (exact redirect match, `state` verified, PKCE enforced, code one-time) and the deviation. **Thirdness:** Infer the class only after a controlled flow confirms the leak/bypass.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** A callback is accepted under the wrong initiating session or client because correlation is checked superficially or after account binding.
+**Mechanism hypothesis:** The AS or client validates a flow parameter loosely (redirect_uri match, `state`, PKCE, code reuse), so a code/token can be redirected, replayed or injected.
 
-**Competing benign explanation:** A missing visible state value may be compensated by another correctly implemented protocol binding. Different identity-provider emails may intentionally represent different local accounts. Refresh reuse may have a documented concurrency grace policy.
+**Competing benign explanation:** redirect_uri is matched exactly; `state` is bound and verified; PKCE is enforced; codes are one-time and short-lived; the ID-token nonce is checked; the leak endpoint is actually same-origin and safe.
 
 ## Deduction and controls
 
-A valid callback completes only its own transaction; a mismatched or already consumed transaction must not bind the wrong identity. A wrong PKCE verifier must fail at exchange when PKCE is required.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+The legitimate flow completes correctly (positive control). A confirmed finding delivers an owned code/token to an owned unintended endpoint, or completes a flow missing a required check, where a correct configuration refuses. Predeclare the confirming artifact. Exact redirect match / `state` / PKCE / one-time code are PASS controls.
 
 ## Induction: bounded laboratory procedure
 
-1. Complete one normal flow for each test client and record the initiating session, issuer, redirect and resulting synthetic account.
+Owned client and accounts; owned endpoints only.
 
-2. Using only test artifacts, replay a completed callback and try a callback associated with the other synthetic browser transaction.
+1. **Baseline.** Complete the legitimate flow; capture redirect_uri matching, `state`, PKCE, code lifetime.
+2. **redirect_uri.** Test suffix/subdomain/path variants and client-side open redirect, pointing at an owned domain; see if the code/token follows (compose with `rt-open-redirect`).
+3. **state/PKCE/nonce.** Drop/alter `state`; omit/downgrade PKCE on a public client; omit nonce and replay the ID token.
+4. **Code handling.** Replay a used code; attempt code injection into another owned session; test mix-up with a second owned AS.
+5. **Implicit.** Observe token exposure in the fragment and referrer leakage.
+6. **Control.** Confirm a correct configuration refuses each.
 
-3. Exercise the client's documented wrong-verifier and mismatched-issuer test fixtures; compare with successful exchange controls.
+Record results including refutations. Keep finding and control status separate. Only ever handle owned codes/tokens.
 
-4. Test one refresh rotation and one reuse after the documented grace interval; observe family state rather than assuming immediate global revocation.
+## Craft notes (leads)
 
-5. Test account linking with an unverified and a verified synthetic identity under the application's linking policy; stop before any real account mutation.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+The highest-impact variant is a `redirect_uri` loophole that leaks the authorization code (→ account takeover) — often via suffix/subdomain matching or an open redirect on an allowlisted client host. OAuth 2.1 mandates PKCE and drops implicit; FAPI adds stronger binding (PAR, JARM, DPoP). Mix-up attacks target multi-AS clients. Token-in-URL (implicit) leaks via history/referrer.
 
 ## Domain-specific failure modes
 
-Code consumption by the harness can cause false failures. SameSite cookie behavior and popup flows can remove correlation cookies. Email equality is not an issuer-subject binding; provider verification semantics must be established.
+Exact redirect matching defeats most code-leak variants — a refutation. A bound, verified `state` defeats CSRF/injection. PKCE enforcement neutralizes code interception on public clients. A same-origin "leak" endpoint is not a leak. Reason about takeover impact; do not execute it against real accounts.
 
 ## Evidence and deliverable
 
-Retain a redacted transaction sequence with callback decisions, exchange error category, issuer/subject pair, client identifier and local account outcome. Store no reusable codes or bearer tokens in portable reports.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the flow, the weakness (loose redirect / missing state / missing PKCE / code reuse), the owned code/token delivered to the owned endpoint, and the control refusal. Handle only owned credentials. Attach minimal replay, expected/observed, rival explanation, falsifier, untested flows.
 
 ## Versions and tool limitations
 
-Record provider profile, SDK, browser and grant configuration. Verify supported PKCE, PAR, JAR, JARM or DPoP behavior against the deployed version; none is assumed simply because a feature name appears in documentation.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the AS/client library and the OAuth/OIDC profile (2.0 vs 2.1, FAPI). Behavior is profile- and library-specific. No flow behavior was verified by this content; confirm the live configuration first.
 
 ## Remediation and detection
 
-Bind callback processing to the initiating transaction before account mutation; use exact registered redirect handling, proper issuer/client validation and verified identity linking. Make rotation/grace and family revocation explicit.
-
-Log correlation failures, issuer mismatches, repeated code use and refresh family reuse without secret values. Validate alerts with the same synthetic transactions.
+Exact redirect_uri matching, mandatory PKCE, bound/verified `state`, OIDC nonce, one-time short-lived codes, drop implicit, and FAPI binding (PAR/DPoP) where required. Add regressions asserting loose redirect/missing-state/missing-PKCE flows are refused. Detect redirect_uri anomalies and code replay at the AS.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A callback from synthetic session B links B's identity into session A without the required transaction binding: CONFIRMED; FAIL. |
-| Benign refutation | The visible state is absent but enforced PKCE and documented transaction binding reject the mismatched callback: REFUTED for the claimed callback swap; PASS for that case. |
-| Insufficient evidence | An authorization URL contains a broad redirect value but callback acceptance was not observed: CANDIDATE; WARN. |
+| Supported finding | An owned code/token is delivered to an owned unintended endpoint, or a flow completes without a required check, where the control refuses: CONFIRMED; FAIL (takeover impact reasoned, not executed). |
+| Benign refutation | Exact redirect match / state / PKCE / one-time code defeats the attempt: REFUTED; PASS for the control. |
+| Insufficient evidence | A redirect variant accepted but no code/token leak shown: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/auth/offensive-oauth/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/auth/offensive-oauth/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Replaces token capture and account takeover chains with measured transaction, issuer, refresh and linking controls; avoids universal state, cookie and lifetime prescriptions.
-
+This revision restores the upstream's flow-weakness, redirect_uri, PKCE/state/nonce and mix-up craft plus FAPI/2.1 context, re-expressed as owned-client experiments with spec-correct controls, replacing real account takeover with bounded leak/bypass proof. Composes with `token-trust-assessment`, `rt-open-redirect`.

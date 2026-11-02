@@ -1,109 +1,87 @@
 ---
 name: rt-lateral-movement
-description: "Validate remote-service segmentation and authorization with dedicated identities and harmless resource checks, without credential reuse attacks or pivots."
+description: "Red-team assessment of lateral-movement boundaries in an authorized engagement: credential reuse/pass-the-hash/pass-the-ticket, remote-execution services (SMB/WMI/WinRM/SSH/RDP), trust and segmentation traversal, and session/credential harvesting. Re-expressed as scoped experiments across owned/planted hosts that prove one hop with a benign marker, measure detection, and respect segmentation controls instead of free-roaming a live network."
 ---
 
-# Remote Access Boundary Validation
+# Lateral-Movement Boundary Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's lateral-movement craft as scoped experiments across owned/planted hosts: it names the reuse and remote-exec techniques, proving one hop with a benign marker and measuring detection, rather than free-roaming a production network.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Test one documented source-host, identity, protocol and destination tuple. A successful tuple does
-not authorize further traversal or testing of newly discovered hosts.
+Lateral movement spreads from one host to another using harvested credentials/tickets and remote-exec services. Carry the engagement authorization; move only between in-scope/planted hosts; prove a hop with a benign marker (an owned-collector callback or a planted file on the next host). Deconflict and respect segmentation.
 
-- network reachability versus service authorization.
-- identity and protocol restrictions.
-- cross-host telemetry correlation.
+Declare the scoped hosts, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Map source and destination zones, expected firewall policy, service identity and allowed action.
-Include SMB, WinRM, RDP or SSH only when explicitly in the fixture scope.
+- **Credential reuse** — reused local-admin passwords, pass-the-hash (NTLM), pass-the-ticket / overpass-the-hash (Kerberos).
+- **Remote execution** — SMB (admin shares/service create), WMI, WinRM, SSH, RDP, DCOM.
+- **Trust/segmentation** — crossing network segments, domain trusts, jump hosts.
+- **Harvesting** — session tokens, cached creds, SSH keys, ticket caches on a compromised owned host.
 
-Provision a permitted test identity and a disallowed identity with valid dedicated credentials.
-Avoid authentication retries that could lock out shared accounts.
+## Mechanism and observation
 
-Use an owned dummy share or service query. Do not invoke remote command execution merely to verify
-that a read-only action is authorized.
+Pick one hop; trace the credential/service to execution on the next host.
 
-## Discriminating laboratory procedure
+**Firstness:** Record the benign marker on the next host (callback, planted file) and the credential/service used. **Secondness:** State the intended boundary (unique local creds, no admin reuse, segmentation, signing) and the deviation. **Thirdness:** Infer the lateral path only after the hop reaches the marker under control.
 
-Abduction: the destination accepts an identity from a prohibited source zone. Rival: the account has
-a legitimate delegated role or the route reaches a different host.
+## Abduction and refutation
 
-Deduction: the disallowed tuple should fail while an explicitly permitted tuple reaches the same
-service and dummy resource.
+**Hypothesis:** A harvested credential/ticket plus a remote-exec service lets execution move to another in-scope host.
 
-Induction: establish service identity, make one harmless access request per tuple and retain
-network, authentication and resource-access outcomes separately.
+**Competing benign explanation:** LAPS gives unique local-admin passwords (reuse fails); SMB signing blocks relay; the service requires MFA; segmentation/firewall blocks the path; the credential lacks rights on the target; EDR blocks the remote-exec technique.
 
-Hold identity constant to test segmentation, then hold route constant to test authorization. Do not
-change both in one comparison.
+## Deduction and controls
 
-Check signing, channel binding or mutual-authentication policy through configuration and approved
-diagnostics; do not coerce or relay live authentication.
+A legitimate admin action to an owned host succeeds (positive control); the lateral hop must fail if controls hold. A confirmed hop reaches the benign marker on the next host where LAPS/segmentation/signing/MFA would stop it. Predeclare the marker. Those controls defeating the hop are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded procedure
 
-## Domain failure modes
+Owned/planted hosts; benign marker; deconflicted.
 
-- An open port establishes reachability, not usable authentication or remote execution.
-- A tool's administrator label may represent only one protocol-specific check; verify the actual
-  allowed operation.
-- Cached sessions, DNS aliases and local/domain identity ambiguity can invalidate an apparent
-  cross-host result.
+1. **Harvest (owned host).** From a compromised owned host, collect a credential/hash/ticket/key in scope.
+2. **Pick one hop.** Choose an in-scope/planted target the credential should reach.
+3. **Execute one hop.** Pass-the-hash/ticket or reuse via SMB/WMI/WinRM/SSH to drop a benign marker on the next host; stop.
+4. **Measure detection.** Did auth logging / EDR / NDR catch the technique (e.g. Kerberos anomalies, service creation, remote WMI)?
+5. **Controls.** Confirm LAPS/signing/segmentation/MFA would block the hop.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from detection/control status. Prove one hop; do not sprawl.
 
-Output a source/identity/protocol/destination/action matrix with resolved host identity, requested
-operation, deny/allow reason and source-to-target correlation identifiers.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+Pass-the-hash works where NTLM and reused local-admin passwords exist; LAPS kills password reuse. Pass-the-ticket/overpass-the-hash uses Kerberos (see `rt-active-directory`). SMB service-create and remote WMI/WinRM are the common exec vectors, each with distinct telemetry (service 7045, WMI operational logs). Segmentation and tiered admin are the structural defenses. Harvest only on the owned compromised host.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require authentication events to retain source host, account scope and destination service.
-Remediate overly broad remote-management groups, endpoint ACLs or segmentation at the failing layer.
+LAPS/unique local creds defeat reuse and pass-the-hash to local admin. SMB signing blocks relay. Segmentation/firewall can make the path unreachable regardless of credentials. A credential without rights on the target fails. Sprawling across the network instead of proving one hop is scope creep.
 
-## Recovery
+## Evidence and deliverable
 
-Close dedicated sessions and revoke temporary grants; verify no remote job or tunnel was created.
-Preserve logs from both hosts.
+Provide the credential/ticket, the service, the benign marker on the next host, the detection result, and the control (LAPS/segmentation/signing) outcome. Keep real credentials out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, hops not tested.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record OS, server/client protocol versions and effective authentication policy. Do not assume NTLM,
-SMB signing or remote management defaults from historical examples.
+Pin OS/domain versions and the remote-exec tooling. Techniques and telemetry are version-specific. No host behavior was verified by this content; confirm on the scoped hosts first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+LAPS/unique local-admin passwords, SMB/LDAP signing, network segmentation and tiered admin, MFA on remote access, disable NTLM where possible, and credential-guard. Detect pass-the-hash/ticket anomalies, remote service creation (7045), remote WMI/WinRM, and anomalous admin logons. Add a regression that the hop is refused under controls.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Disallowed zone and identity read the dummy protected resource while matched permitted controls work | CONFIRMED remote-access boundary failure; FAIL |
-| Account is explicitly delegated the tested action and prohibited identity is denied | REFUTED unauthorized-access claim; PASS |
-| Only the destination port is reachable | CANDIDATE exposure; WARN |
+| Supported finding | One lateral hop reaches a benign marker on the next in-scope host where LAPS/segmentation/signing/MFA would stop it: CONFIRMED; FAIL (scope to the hop). |
+| Benign refutation | A control defeats the hop (unique creds / signing / segmentation / MFA): REFUTED; PASS for the control. |
+| Insufficient evidence | A harvested credential without a confirmed hop: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/post-exploitation/offensive-lateral-movement/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/post-exploitation/offensive-lateral-movement/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains remote-service trust-boundary reasoning while removing credential extraction, relay, session
-hijacking and tunneling chains.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's credential-reuse, remote-exec and trust-traversal craft, re-expressed as scoped owned/planted-host experiments with a benign marker, detection measurement and segmentation controls, replacing network free-roaming with bounded single-hop proof. Composes with `rt-active-directory`, `rt-netexec`, `rt-advanced-redteam`.

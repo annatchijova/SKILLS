@@ -1,95 +1,86 @@
 ---
 name: rt-dependency-confusion
-description: Test package source selection and namespace isolation using two private fixture registries and inert packages across supported ecosystems.
+description: "Red-team assessment of dependency-confusion / namespace boundaries across npm, PyPI, NuGet, Maven, Gradle, Go and RubyGems: internal-package-name reconnaissance (lock files, source maps, errors, repo mining) and registry-priority misconfiguration. Re-expressed as scoped experiments that prove resolution-order risk with a DNS-canary-only package and registry-config controls instead of publishing functional malicious packages."
 ---
 
-# Dependency Source Selection Assessment
+# Dependency Confusion Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before designing resolution tests.
-This skill covers which source supplies a package. Artifact signing and promotion
-belong in rt-supply-chain; no public package publication is part of this procedure.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's dependency-confusion craft as scoped experiments: it names the recon sources and per-ecosystem misconfigurations, proving resolution-order risk with a canary-only package (DNS callback, no payload) rather than publishing a working malicious package.
 
-## Mechanisms and preconditions
+## Scope and prerequisites
 
-Confusion requires an intended private identity, an alternate eligible source and a
-resolver decision that selects the alternate bytes. Name availability is not that proof.
-Separate client selection from registry proxy fallback; either can change package origin.
-Read effective configuration from project, user, environment and CI layers.
-Record package name normalization, version constraints, platform markers and lock mode.
+Dependency confusion exploits a resolver preferring a public package over a same-named private one. The engagement must authorize claiming names on public registries; use a canary package that only makes an owned DNS/HTTP callback and carries no functional payload, and remove it at the end. Prefer verifying the resolver's order in an owned build first.
 
-| Ecosystem | Specific decision to inspect |
-|---|---|
-| npm | Scope-to-registry mapping, resolved lock URLs and private proxy upstream policy |
-| pip | Candidate union across indexes, normalized names, hashes and wheel compatibility |
-| NuGet | Package source mapping, restore mode, cache and transitive source eligibility |
-| Maven/Gradle | Mirrors, content filters, plugin repositories and metadata resolution |
-| Go | Module path ownership, GOPROXY separators, GOPRIVATE and checksum policy |
-| Ruby | Bundler source blocks, lock source and transitive resolution |
-| OCI images | Fully qualified registry, tag resolution and digest pinning |
+Declare the ecosystems in scope, attempt budget, stop condition. Config/lock-file-only authorization yields a hypothesis marked NOT TESTED.
 
-Do not assume a universal "highest public version wins" algorithm or automatic npm fallback.
-Go proxy 404/410 responses do not establish that a module namespace is claimable.
+## Attack surface and classes
 
-## Abduction and deduction
+- **Recon** — internal names from lock files (`package-lock.json`, `yarn.lock`, `requirements.txt`, `Pipfile.lock`, `*.csproj`), JS source maps/webpack chunks, error messages/stack traces, GitHub mining (`.npmrc`, `--extra-index-url`, `NuGet.config`), job postings.
+- **Resolution misconfiguration** (per ecosystem): npm unscoped or no scope→registry mapping; pip `--extra-index-url` (additive) vs `--index-url`; NuGet multiple feeds without `<clear/>`/packageSourceMapping; Maven/Gradle central-before-private; Go GOPROXY/GOPRIVATE; Ruby default sources.
 
-Hypothesis: an internal package resolves from an unintended configured source.
-Benign rival: the observed URL is an approved mirror or a stale cache entry for identical bytes.
-Prediction: a cold restore with source-distinct inert packages selects the wrong digest;
-exclusive source mapping prevents that selection while still resolving the legitimate package.
-Record the expected origin before running; do not infer execution from download alone.
+## Mechanism and observation
 
-## Bounded laboratory procedure
+Trace how the build resolves an internal name when a public name of equal/higher version exists.
 
-1. Copy only the relevant manifest and sanitized resolver settings into a temporary workspace.
-2. Create two private/local fixture repositories representing intended and alternate sources.
-3. Use invented package names and inert prebuilt packages with distinct content markers.
-   Do not include install hooks, callbacks, real internal namespaces or production credentials.
-4. Fix resolver version and platform. Record all configuration layers and proxy settings.
-5. Run a bounded clean-cache resolution with both sources available and capture origin/digest.
-6. Repeat with the intended source exclusively mapped; retain the successful allowed control.
-7. Repeat with the intended package absent to measure fail-closed versus fallback behavior.
-8. Compare locked and unlocked modes separately; do not silently regenerate the lockfile.
-9. If metadata generation can execute a build backend, use inert wheels/packages instead
-   or a disposable no-egress sandbox. A "download" command is not necessarily nonexecuting.
-10. Stop after the origin decision is established; remove test repositories and workspace
-    after retaining the sanitized configuration, logs and package digests.
+**Firstness:** Record which registry the build resolved the name from (owned-build trace) or a canary callback on install. **Secondness:** State the intended resolution (private registry only / scope-pinned) and the deviation. **Thirdness:** Infer the confusion class only after a controlled build resolves the public canary.
 
-## Failure modes and interpretation
+## Abduction and refutation
 
-Warm caches can mask source mapping changes; lockfiles can suppress the candidate under test.
-An unsupported platform package can lose resolution for reasons unrelated to source trust.
-Same-name packages in two feeds may be legitimate mirrors; compare digests and policy intent.
-Dependency resolution, build execution and runtime import are separate evidence stages.
-Disabled scripts reduce one effect but do not prove the correct package was selected.
-Inspect plugin/build dependency sources even when runtime dependencies are locked.
+**Mechanism hypothesis:** The resolver considers the public registry for an internal name, so a higher-version public package wins.
 
-## Evidence and remediation
+**Competing benign explanation:** A scope→registry mapping / exclusive index / `<clear/>` + source mapping / private-first repo pins resolution to the private source; the name is already claimed publicly by the org (defensive registration); the build uses a lockfile with pinned integrity hashes.
 
-Produce package coordinate, intended source, chosen source, digest, resolver decision log,
-cache state, control result and missing preconditions for every candidate.
-Detect unexpected source changes in lockfiles and build inventories, including transitive tools.
-Remediate through namespace/source binding, controlled mirrors and hash-verified locked restores.
-For OCI consumers, pin the fully qualified image digest and verify its provenance separately.
-Retest source outage behavior: an unavailable private package should not silently widen trust.
+## Deduction and controls
 
-## Versions and tool limits
+A correctly-configured build resolves the internal name only from the private registry (positive control). A confirmed finding has the build resolve the public canary (callback or trace) where the pinned config would not. Predeclare the canary callback. Scope mapping / exclusive index / source mapping / private-first are PASS controls.
 
-Record package-manager, registry/proxy and lockfile format versions before execution.
-Inspect installed help and ecosystem documentation for the exact restore mode and flags.
-Scanners that report an unclaimed name produce candidates, not resolution or execution proof.
-No resolver experiment or registry interaction was executed during authorship.
+## Induction: bounded procedure
 
-## Behavioral acceptance
+Owned build first; canary-only public package if authorized.
+
+1. **Recon.** Extract candidate internal names from the sources above; identify which are unclaimed publicly.
+2. **Config review.** Inspect the resolver config for the misconfiguration class per ecosystem.
+3. **Owned-build trace.** In an owned build, add a same-named public canary at a higher version and observe which source resolves — the safest confirmation.
+4. **Canary registration (if authorized).** Publish a DNS-canary-only package; a callback on the target's install confirms resolution. No payload.
+5. **Control.** Apply the pinned config (scope mapping / exclusive index / source mapping) and confirm the private source wins.
+6. **Cleanup.** Remove the canary package.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Craft notes (leads)
+
+The `confused` scanner checks lock files for confusable names across npm/pip/NuGet. The per-ecosystem secure patterns are in the table of the upstream and above — the fix is always "pin resolution to the private source," not "register every name" (though defensive registration helps). Integrity-hash lockfiles blunt confusion for already-locked deps but not new/unlocked ones.
+
+## Domain-specific failure modes
+
+A scope→registry mapping or exclusive index makes the public name unreachable — a PASS. A name already defensively registered by the org is not confusable. An owned-build trace that resolves private is a refutation. The canary must be payload-free and removed; publishing a functional package is out of scope.
+
+## Evidence and deliverable
+
+Provide the internal name, the recon source, the resolver misconfiguration, the owned-build trace or canary callback, and the pinned-config control result. Attach minimal replay, expected/observed, rival explanation, falsifier, ecosystems not covered. Note canary cleanup.
+
+## Versions and tool limitations
+
+Pin the package manager and registry-client versions — resolution semantics change (e.g. npm scope handling, NuGet source mapping). No resolver behavior was verified by this content; confirm the live config and prefer an owned-build trace first.
+
+## Remediation and detection
+
+Pin resolution to the private registry (scope→registry mapping, exclusive `--index-url`, NuGet `<clear/>` + packageSourceMapping, private-first Maven/Gradle, `GOPRIVATE`), use integrity-hash lockfiles, and defensively register internal names publicly. Add a regression asserting the internal name resolves only from the private source. Detect installs resolving internal names from public registries.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Cold restore chooses alternate marker; exclusive mapping chooses intended marker | CONFIRMED source-selection failure; FAIL |
-| Alternate URL is an approved mirror with expected digest and no unauthorized source | REFUTED confusion claim for tested package; PASS |
-| Public-name absence is reported without effective config or resolver output | CANDIDATE; WARN, no execution claim |
+| Supported finding | A build resolves the public canary for an internal name (trace or callback) where the pinned config would not: CONFIRMED; FAIL. |
+| Benign refutation | Scope mapping / exclusive index / source mapping pins to the private source: REFUTED; PASS for the control. |
+| Insufficient evidence | An unclaimed internal name without a confirmed resolution trace: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/supply-chain/offensive-dependency-confusion/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain ecosystem-specific resolution questions; replace public namespace
-registration and callback packages with isolated source-selection experiments.
+## Provenance and treatment
+
+Upstream research: `Skills/supply-chain/offensive-dependency-confusion/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's recon-source and per-ecosystem resolution-misconfiguration craft, re-expressed as owned-build/canary experiments with pinned-config controls, replacing functional malicious packages with payload-free resolution proof. Composes with `rt-supply-chain`, `dependency-provenance`.

@@ -1,110 +1,75 @@
 ---
 name: rt-netexec
-description: "Interpret and bound NetExec protocol assessments using installed help, dedicated identities and independently verified read-only results."
+description: "Red-team reference for NetExec (nxc) as a bounded protocol-enumeration and validation tool within an authorized engagement: SMB/WinRM/LDAP/MSSQL/SSH/RDP/FTP/WMI auth, discovery, share and user enumeration, password-policy-aware spraying, and the Pwn3d! semantics per protocol. Re-expressed as a scoped tool contract with lockout-safe throttling, owned-fixture validation and detection awareness instead of mass credential attack."
 ---
 
-# NetExec Result Verification
+# NetExec (nxc) Bounded-Tooling Reference
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's NetExec craft as a bounded tool contract: it documents the protocol surface and flags, and insists on scope, lockout-safe throttling and detection awareness, rather than presenting spraying as a free action.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Review supplied NetExec output or run an explicitly scoped read-only protocol check. The tool name
-or a success banner never expands permission to enumerate secrets or execute remotely.
+NetExec acts across SMB, WinRM, LDAP, MSSQL, SSH, RDP, FTP and WMI. Every action authenticates against real accounts and can trigger lockouts, alerts and service disruption. Carry the engagement authorization: which hosts, which accounts, the attempt budget, and the stop condition. Check the domain password policy before any spray. Validate technique behavior against an owned lab first.
 
-- protocol-specific result semantics.
-- authentication versus authorization.
-- module side-effect review.
+Declare targets, credentials in scope, attempt budget, stop condition. Config-only authorization yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Tool contract and observation
 
-Record the installed NetExec version, protocol plugin and module version. Read local help before
-selecting options; do not transplant upstream command lines.
+Core flags: protocol + target (CIDR/host/file), `-u`/`-p`/`-H` (hash), `-k` (Kerberos, ccache or password-derived TGT), `-d` domain or `--local-auth`, `-t` threads, `--timeout`, `--jitter` (random delay, e.g. `3`, `2-5`), `--no-bruteforce` (pair user[i]:pass[i] instead of full product), `--continue-on-success`.
 
-Inspect module behavior before use, including remote writes, authentication attempts and stored
-output. Exclude secret collection, remote execution and broad target expansion.
+`Pwn3d!` semantics differ by protocol: SMB/WMI = admin, WinRM/RDP/VNC = code execution, LDAP = path to DA, SSH = root, FTP = no check. A `[+]` is valid creds; `Pwn3d!` is privileged access — do not conflate them.
 
-Choose one owned endpoint, a known valid dedicated account and a harmless dummy resource. Set a
-strict attempt budget and protect credentials from command history and logs.
+**Firstness:** Record the exact nxc output line (host, protocol, result, signing, OS). **Secondness:** State the expected access for that account and the deviation. **Thirdness:** Infer an access/authority finding only after the tool's result is corroborated (not from a single ambiguous line).
 
-## Discriminating laboratory procedure
+## Lockout-safe usage (the critical discipline)
 
-Abduction: the tool reports administrative access even though the claimed operation is denied.
-Rival: the label reflects a narrower protocol-specific capability rather than arbitrary
-administration.
+1. **Read policy first.** `nxc smb <dc> -u user -p pass --pass-pol`; compute a safe attempts-per-window below the lockout threshold with margin.
+2. **Spray, do not brute force.** One password across users with `--no-bruteforce`, `--jitter`, and attempts under the threshold; never the full user×pass product against a live domain.
+3. **Throttle and jitter** to reduce lockout and detection; prefer `--continue-on-success` off unless the engagement wants full coverage.
+4. **Validate on lab.** Confirm a technique's behavior against an owned host before running it against scoped production.
 
-Deduction: a read-only operation on the dummy resource should independently establish the actual
-capability; an explicitly denied identity should fail the same operation.
+## Protocol surface (leads)
 
-Induction: capture the minimal protocol check, its raw status and endpoint audit record. Use the
-native service client for the same harmless request as the independent control.
+- **SMB** — host discovery (OS/signing/SMBv1), share enumeration and access, null/guest checks, RID-brute user enum (no creds), logged-on users (admin), `--pass-pol`. Signing:False flags relay targets (see `rt-active-directory`).
+- **LDAP** — domain object enumeration, Kerberoast/ASREProast helpers, delegation and trust reads.
+- **WinRM/WMI/MSSQL/SSH/RDP** — authenticated execution/enumeration where creds allow; each is code-exec-capable — treat as consequential.
 
-Resolve local-versus-domain identity, target hostname and authentication method before interpreting
-a result. Do not retry with harvested hashes or tickets.
+## Abduction and refutation
 
-If a module's effects cannot be determined from its installed source/help, omit it and mark that
-capability NOT TESTED.
+**Mechanism hypothesis:** A supplied credential grants access or privilege it should not, or an unauthenticated enumeration (null/guest/RID) leaks principals.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+**Competing benign explanation:** The `[+]` is an expected low-priv account; the `Pwn3d!` is on an in-scope admin host that is supposed to allow it; the enumeration is anonymous-allowed by design; a single result is a transient/timeout artifact.
 
-## Domain failure modes
+## Evidence and deliverable
 
-- Color, a success banner or a tool exit code may indicate transport or authentication success only.
-- Name resolution, Kerberos service naming, clock skew and account lockout can cause failure unrelated
-  to authorization.
-- A version-dependent module may change behavior or default collection. Treat output databases as
-  sensitive and export only necessary redacted facts.
+Provide the exact command (with throttling flags), the nxc output lines, the account context, and whether lockout policy was respected. Keep real credentials/hashes out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, hosts not covered.
 
-## Evidence and verdict
+## Domain-specific failure modes
 
-Provide tool/plugin versions, reviewed operation, target identity, actor scope, raw status,
-native-client comparison and server event correlation. State exactly which capability was verified.
+Spraying without reading the policy causes account lockouts — a production-impacting mistake, not a finding. `[+]` is not `Pwn3d!`. Threads default high (100) and are noisy; a single result can be a timeout. Local-auth vs domain-auth confusion produces misleading results.
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+## Versions and tool limitations
 
-## Detection and remediation
+Pin the NetExec version — protocols, flags and module behavior change across releases; confirm with `nxc --help` / `nxc <proto> --help` on the installed build before relying on any flag. No host behavior was verified by this content.
 
-Require protocol authentication and resource-access logs to match the test account and endpoint. Fix
-excessive service permissions; address tool interpretation errors separately from target defects.
+## Remediation and detection
 
-## Recovery
-
-Close test sessions and remove only documented test artifacts. Verify that no module wrote remote
-services, files or jobs; retain redacted output and its digest.
-
-## Versions and tool limits
-
-No command or option is asserted current by this document. Local help and installed module source
-are the authority for the selected release; historical CrackMapExec semantics may differ.
-
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+Enforce SMB/LDAP signing, lockout policies, strong/unique local admin passwords (LAPS), disable null/guest and SMBv1, and restrict RID enumeration. Detect: spray patterns (many users, few passwords, from one source), RID-brute, and nxc's execution footprints (service creation, WMI, WinRM). Add detections rather than relying on the tool being noisy.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Tool and native client both read a forbidden dummy resource as the restricted test identity | CONFIRMED resource authorization failure; FAIL |
-| Banner suggests administration but the documented narrow check succeeds while the protected action is denied | REFUTED broad-admin claim; PASS for protected action |
-| Only a colored success screenshot is provided | CANDIDATE capability; WARN |
+| Supported finding | A scoped, policy-respecting run shows an account with access/privilege it should not have, corroborated: CONFIRMED; FAIL (scope to the access shown). |
+| Benign refutation | The access is expected for that account / enumeration is anonymous-by-design: REFUTED; PASS for the control. |
+| Insufficient evidence | A single ambiguous line, or a run that ignored lockout policy: CANDIDATE; WARN (and flag the policy risk). |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/active-directory/offensive-netexec/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/active-directory/offensive-netexec/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves tool-specific interpretation as a separate skill; removes spraying, dumping and chained
-execution while requiring version verification.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's NetExec protocol/flag reference and `Pwn3d!` semantics, re-expressed as a bounded tool contract with mandatory lockout-safe throttling, owned-lab validation and detection awareness, replacing free-action mass credential attack with scoped, policy-respecting use. Compose with `rt-active-directory`.

@@ -1,117 +1,87 @@
 ---
 name: rt-zigbee-thread-matter
-description: Assess Zigbee, Thread and Matter commissioning boundaries separately with disposable fabrics, inert endpoints and explicit ownership controls.
+description: "Red-team assessment of IEEE 802.15.4 mesh security (Zigbee, Thread, Matter): network/link-key provisioning and the classic Zigbee open-join / default-Trust-Center-link-key exposure, commissioning weaknesses, key transport, and replay. Re-expressed as a scoped experiment in an isolated RF lab against an owned network with synthetic keys and a hardened-commissioning control instead of attacks on others' devices."
 ---
 
-# Mesh commissioning and application authority
+# 802.15.4 Mesh (Zigbee/Thread/Matter) Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the 802.15.4-mesh craft as a scoped experiment in an isolated RF lab against an owned network: it tests key provisioning, commissioning, and replay with synthetic keys, with hardened commissioning as the control, rather than attacking others' devices.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a disposable coordinator or border router, two test commissioners/fabrics and an inert endpoint. Export intended ownership and commissioning-window policy before testing.
+Zigbee/Thread/Matter secure a mesh with network and link keys; the classic weaknesses are insecure joining and the well-known default Trust-Center link key. Work on an owned network/coordinator with synthetic keys in an isolated RF lab; respect spectrum law. Recover/inject only synthetic material.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned network, stack (Zigbee/Thread/Matter), the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- Zigbee network admission, link/application keys and ZCL command authorization are related but distinct controls.
+- **Insecure join / key transport** — a device joining receives the network key encrypted with a link key; the well-known default Zigbee Trust-Center link key exposes the network key if used.
+- **Open commissioning** — permit-join left open; weak install codes.
+- **Thread/Matter commissioning** — commissioning credential strength, PASE/CASE handshake posture, out-of-band secret.
+- **Replay / injection** — replaying captured commands where anti-replay/frame-counter is weak.
 
-- Thread network credentials, commissioner authorization and application authorization are not interchangeable; PSKc is not the entire operational dataset.
+## Mechanism and observation
 
-- Matter runs over IP transports including Thread and Wi-Fi; it is not a universal Zigbee commissioning layer.
+Observe a join/commissioning on the owned network and test key exposure and replay.
 
-- Matter commissioning sessions, operational certificates, fabrics and access-control entries must be evaluated separately; possession of a setup code alone does not prove access.
+**Firstness:** Record whether the (synthetic) network key is recoverable from a captured join using the default link key, whether permit-join is open, and whether a captured command replays. **Secondness:** State the secure baseline (unique install codes, non-default link keys, closed permit-join, frame-counter anti-replay, Matter certified commissioning) and the deviation. **Thirdness:** Infer a weakness only after a controlled test confirms it on the owned network.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Identify the exact stack, transport, commissioning state and application principal. Compare the operation with the intended fabric or network authorization.
+**Hypothesis:** The network uses the default/weak link key or open commissioning, exposing the network key, or accepts replayed commands.
 
-**Abduction:** A Matter principal from test fabric B can change an endpoint marker reserved for fabric A.
+**Competing benign explanation:** Unique per-device install codes and non-default link keys are used (join is secure); permit-join is closed; Thread/Matter use strong commissioning with OOB secrets; frame counters enforce anti-replay; another owned network was observed.
 
-**Competing benign explanation:** The endpoint is intentionally shared through a documented ACL, or the client still uses a fabric A session.
+## Deduction and controls
 
-**Deduction:** A fresh fabric B operational session changes the restricted marker despite the exported ACL; fabric A succeeds and an unauthenticated comparison is rejected.
+A hardened mesh protects the network key and rejects replay (positive control). A confirmed finding recovers the synthetic network key from a join (default link key / open join) or replays a command on the owned network where hardened commissioning does not. Predeclare the signal. Unique install codes / non-default keys / closed join / frame counters are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated RF lab; owned network; synthetic keys.
 
-1. Map protocol layers explicitly and establish a normal owner operation on the inert endpoint.
+1. **Capture a join/commissioning** on the owned network (802.15.4 sniffer).
+2. **Key transport.** Attempt to decrypt the network-key transport using the default Trust-Center link key; succeeds only if the default/weak key is used.
+3. **Commissioning posture.** Check permit-join state and install-code/credential strength (Zigbee); PASE/CASE and OOB secret posture (Thread/Matter).
+4. **Replay.** Replay a captured owned command; check frame-counter anti-replay.
+5. **Control.** Confirm unique install codes / non-default keys / closed join / anti-replay refuse the above.
 
-2. Close commissioning using the supported interface and verify its reported state before any new enrollment test.
+Record results including refutations. Keep finding and control status separate. Synthetic keys only.
 
-3. For the fabric-boundary case, use fresh sessions and a single documented marker operation for each principal; inspect device-side fabric and ACL decisions.
+## Craft notes (leads)
 
-4. For Zigbee or Thread enrollment, run separate fresh-device cases inside and outside the operator window; do not reset unrelated nodes or extract network keys.
-
-5. Remove only disposable fabrics/nodes, restore the ownership configuration and verify owner access and closed-window rejection.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+The signature Zigbee finding is use of the well-known default Trust-Center link key, which lets a sniffed join reveal the network key — install codes/unique link keys are the fix. Open permit-join is a commissioning finding. Thread and Matter use stronger commissioning (ECDH-based PASE/CASE, OOB passcodes); findings there are weak passcodes or misconfiguration, not a default key. Frame counters provide anti-replay.
 
 ## Domain-specific failure modes
 
-- An 802.15.4 packet capture cannot by itself prove Matter ACL behavior or reveal every application key context.
+Unique install codes / non-default link keys defeat the key-transport attack — the primary refutation. Closed permit-join prevents rogue joins. Matter/Thread's modern commissioning resists the classic Zigbee weaknesses. Weak frame-counter handling enables replay. Interacting with others' meshes is out of scope; synthetic keys only.
 
-- Border-router reachability is not proof of application authorization.
+## Evidence and deliverable
 
-- Device labels and USB adapter names can misidentify chipsets; inspect actual radio/firmware support.
+Provide the captured join/commissioning, the synthetic network-key recovery (or failure), the permit-join/credential posture, the replay result, and the hardened-commissioning control. Keep to the owned network. Attach expected/observed, rival explanation, falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide protocol-layer map, fabric/network IDs, principal and ACL snapshots, commissioning timestamps and endpoint receipts, excluding secret datasets.
+Pin the stack (Zigbee version/profile, Thread, Matter) and the 802.15.4 sniffer. Exposure is configuration- and stack-specific. No network behavior was verified by this content; test the owned network to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate events for window opening, unexpected enrollment, fabric additions and rejected application commands; tie them to the responsible principal.
-
-Restrict commissioning windows and commissioner authority, apply per-fabric ACLs and separate network membership from sensitive application permissions.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record Zigbee/Thread/Matter specification and SDK revisions, bridge behavior and radio support. Verify each protocol's credential roles against its versioned implementation before testing.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Use unique per-device install codes and non-default link keys, close permit-join except during commissioning, prefer Thread/Matter with strong OOB passcodes, enforce frame-counter anti-replay, and segment IoT. Add a regression that the default-link-key decryption and replay are refused.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The synthetic network key is recovered via the default link key / open join, or a command replays, on the owned network where hardened commissioning does not: CONFIRMED; FAIL. |
+| Benign refutation | Unique install codes / non-default keys / closed join / anti-replay refuses it: REFUTED; PASS for the control. |
+| Insufficient evidence | A captured join that could not be decrypted, or unclear commissioning posture: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh fabric B session changes the fabric A-only marker while owner and unauthenticated controls behave correctly. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The client was using fabric A; fresh fabric B access is rejected and the ACL matches the declared sharing policy. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | Only a mesh join was observed; no operational application session or ACL evidence exists. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-zigbee-thread-matter/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Corrects conflated protocol layers and key roles while preserving commissioning, mesh membership and application authority as distinct experiments.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-zigbee-thread-matter/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's key-transport/commissioning/replay craft as a scoped experiment against an owned mesh with synthetic keys and hardened-commissioning controls, replacing attacks on others' devices with bounded key-exposure and replay proof. Composes with `rt-z-wave`, `rt-iot`, `rt-crypto-attacks`.

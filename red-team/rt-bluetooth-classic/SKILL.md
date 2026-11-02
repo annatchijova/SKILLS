@@ -1,117 +1,87 @@
 ---
 name: rt-bluetooth-classic
-description: Validate Bluetooth Classic profile authorization and negotiated security on owned audio, serial or input test fixtures.
+description: "Red-team assessment of Bluetooth Classic (BR/EDR) security: device/service discovery (SDP), pairing/authentication mode and legacy-pairing weakness, profile exposure (RFCOMM/OBEX/HFP), and known protocol-flaw patch status (e.g. KNOB, BIAS-class). Re-expressed as a scoped experiment in a controlled RF setting against an owned device that proves one weakness with a negative control instead of attacks on others' devices."
 ---
 
-# BR/EDR service and pairing policy
+# Bluetooth Classic (BR/EDR) Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the Bluetooth-Classic craft as a scoped experiment against an owned BR/EDR device: it enumerates services, tests pairing/authentication strength, and verifies patch status for known protocol flaws, with a hardened control, rather than attacking others' devices.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use two owned peers and an inert serial echo or disposable object fixture. Disable real keyboard input, call audio and physical device controls.
+BR/EDR security spans discovery, pairing/authentication, exposed profiles, and known CVE-class flaws (KNOB key-entropy downgrade, BIAS impersonation). Work on an owned device in a controlled RF setting; interact only with the owned device; respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned device, the RF environment, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- SDP service discovery indicates availability, not permission to use a profile.
+- **Discovery** — SDP service enumeration, device class, discoverability.
+- **Pairing/auth** — legacy pairing vs Secure Simple Pairing/Secure Connections; Just-Works; PIN strength.
+- **Profile exposure** — RFCOMM/serial, OBEX push/ftp, HFP/HSP, and app-specific services reachable without auth.
+- **Protocol flaws** — KNOB (negotiated key entropy downgrade), BIAS (authentication impersonation) — patch-status questions.
 
-- BR/EDR remains relevant beyond Bluetooth 4.0; protocol role and enabled profiles matter more than marketing generation.
+## Mechanism and observation
 
-- Pairing, bonding, encryption-key strength and profile-level authorization are separate controls.
+Enumerate services and test pairing/auth and patch status against the owned device.
 
-- SPP, OBEX, HID and audio profiles expose different operations; service success must be measured at its own endpoint.
+**Firstness:** Record discoverable services, the pairing/auth negotiated (and the key entropy), unauthenticated profile access, and KNOB/BIAS test results. **Secondness:** State the expected protection (Secure Connections, adequate key entropy, authenticated profiles, patched stack) and the deviation. **Thirdness:** Infer a weakness only after a controlled test confirms it on the owned device.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record SDP advertisement, pairing state, negotiated security and profile operation result against the service authorization policy.
+**Hypothesis:** The device uses weak pairing/low key entropy, exposes a profile without authentication, or is unpatched for KNOB/BIAS.
 
-**Abduction:** An unbonded peer can invoke a protected SPP diagnostic operation that requires an approved bond.
+**Competing benign explanation:** Secure Connections with adequate key entropy is enforced (KNOB mitigated); profiles require authentication; the stack is patched (BIAS mitigated); the device is non-discoverable/requires user confirmation; another owned device was observed.
 
-**Competing benign explanation:** SDP listing was mistaken for profile access, or a stale bond grants legitimate permission.
+## Deduction and controls
 
-**Deduction:** A fresh peer receives the protected echo marker without a bond; the approved peer succeeds and an unauthenticated protected comparison service rejects access.
+A hardened device enforces strong pairing/auth and patched behavior (positive control). A confirmed finding downgrades key entropy, accesses a profile without auth, or reproduces KNOB/BIAS on the owned device where a hardened/patched config does not. Predeclare the signal. Secure Connections / min-key-entropy / authenticated profiles / patched stack are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Controlled RF; owned device.
 
-1. Export profile policy and controller/host security settings, then verify the approved peer's inert service operation.
+1. **Discover & enumerate.** SDP scan; map services/profiles and discoverability.
+2. **Pairing/auth.** Observe the pairing method and negotiated key entropy; test legacy/Just-Works acceptance.
+3. **Profile access.** Attempt unauthenticated access to exposed profiles (RFCOMM/OBEX) on the owned device.
+4. **KNOB/BIAS.** Use the published tests to check key-entropy downgrade and impersonation on the owned device.
+5. **Control.** Confirm Secure Connections / min-entropy / authenticated profiles / patched stack refuse the above.
 
-2. Query only the owned peer's advertised services and separate discovery from use.
+Record results including refutations. Keep finding and control status separate. Owned device only.
 
-3. With a fresh lab identity, attempt one documented harmless profile operation; inspect receiver-side authorization and output.
+## Craft notes (leads)
 
-4. For key-strength concerns, inspect negotiated values through supported controller diagnostics and compare against the configured minimum; do not patch firmware to weaken negotiation.
-
-5. Remove temporary bonds and objects and verify the intended peer's service after restoration.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+KNOB downgrades the negotiated encryption-key entropy (to as low as 1 byte on unpatched stacks); the fix is a minimum-entropy floor. BIAS impersonates a previously-paired device on stacks that mishandle authentication; the fix is a patched stack + Secure Connections. OBEX push and open RFCOMM serial are classic unauthenticated-profile findings. Legacy pairing and short PINs are weak.
 
 ## Domain-specific failure modes
 
-- A known device address is not an authenticated identity; neither is failure to appear in inquiry.
+A patched stack with Secure Connections and an entropy floor defeats KNOB/BIAS — the primary refutations. An authenticated profile is not an unauthenticated finding. A non-discoverable device that requires user confirmation raises the bar. Interacting with others' devices is out of scope.
 
-- A scanner's historic CVE match establishes a lead, not reachable profile exploitation.
+## Evidence and deliverable
 
-- A controller diagnostic limitation can hide negotiated security; mark that field unknown.
+Provide the service map, the pairing/auth and key entropy, unauthenticated profile access (if any), the KNOB/BIAS results, and the hardened-config control. Keep to the owned device. Attach expected/observed, rival explanation (patched/authenticated), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Deliver per-profile discovery/use decisions, host/controller builds, bond state and endpoint marker receipt. Keep audio and human input outside the evidence set.
+Pin the Bluetooth stack/version and controller — KNOB/BIAS exposure is patch-status-dependent. No device behavior was verified by this content; test the owned device to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate visibility of new bonds, rejected profile connections and weak-security negotiation events on the actual stack.
-
-Require suitable security at profile use, remove unused diagnostic services and update controller and host components implicated by evidence.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record BR/EDR features and profile versions explicitly. Check support for SDP and controller diagnostics locally; old scanner or adapter compatibility claims require verification.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enforce Secure Connections with a minimum key-entropy floor, patch the stack (BIAS), require authentication for sensitive profiles, disable unused profiles/discoverability, and use strong pairing. Add a regression that KNOB/BIAS tests report not-vulnerable and profiles require auth.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | Key-entropy downgrade / unauthenticated profile access / KNOB or BIAS reproduces on the owned device where hardening/patching does not: CONFIRMED; FAIL. |
+| Benign refutation | Secure Connections / entropy floor / authenticated profiles / patched stack refuses it: REFUTED; PASS for the control. |
+| Insufficient evidence | An exposed profile of unclear sensitivity or a version-only KNOB/BIAS inference: CANDIDATE/NOT TESTED; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh unbonded peer receives the protected SPP marker, while approved-peer and protected-deny controls isolate authorization failure. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | SDP advertises SPP but the protected operation is denied until the approved bond is present. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A historic scanner warning exists with no exact firmware revision or negotiated-security evidence. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-bluetooth-classic/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Preserves Classic profile and key-policy distinctions without HID injection, audio interception, address brute force or firmware weakening.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-bluetooth-classic/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's SDP/pairing/profile/KNOB/BIAS craft as a scoped experiment against an owned device with hardened/patched controls, replacing attacks on others' devices with bounded boundary and patch-status proof. Composes with `rt-bluetooth-ble`, `rt-iot`.

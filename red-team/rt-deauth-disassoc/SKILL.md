@@ -1,117 +1,79 @@
 ---
 name: rt-deauth-disassoc
-description: Validate negotiated PMF and bounded disconnect recovery using an isolated AP/client pair and a reviewed conformance harness.
+description: "Red-team assessment of 802.11 management-frame protection: whether deauthentication/disassociation frames can disrupt or deauth clients, and whether 802.11w/PMF defeats them. Re-expressed as a scoped availability-and-PMF experiment in an isolated RF lab against an owned AP and client, measuring whether management frames are protected, with explicit DoS-scope handling instead of disrupting live networks."
 ---
 
-# Management-frame resilience validation
+# Management-Frame Protection (Deauth/Disassoc) Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the upstream's deauth craft as a scoped PMF-effectiveness experiment in an isolated RF lab: it measures whether management frames are protected (802.11w), against an owned AP/client, with DoS scope handled explicitly, rather than disrupting live networks.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an isolated radio enclosure, owned AP/client and an approved conformance fixture with a finite test-case count. Record maximum permitted outage and an immediate stop control.
+Deauth/disassoc is fundamentally a DoS/availability technique — if the engagement excludes DoS, the deliverable is the PMF posture, not an executed flood. Run only in an isolated/shielded RF lab against an owned AP and client; never transmit deauth against third-party networks (illegal and disruptive). Respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned AP/client, the RF isolation, the DoS scope, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Mechanism and observation
 
-- PMF capability advertisement differs from negotiated protection for a particular association.
+Unprotected 802.11 management frames can be spoofed to deauth a client; 802.11w (PMF) cryptographically protects them.
 
-- Protection of robust management frames is not a promise against all RF interference, authentication load or every action-frame class.
+**Firstness:** Record whether a spoofed deauth disconnected the owned client (lab) or was ignored (PMF). **Secondness:** State the expected protection (PMF required → management frames authenticated) and the deviation. **Thirdness:** Infer "management frames unprotected" only after the owned client is controlled-disconnected where PMF would prevent it.
 
-- Disconnection can result from legitimate controller policy, inactivity, radio loss or client power management.
+## Abduction and refutation
 
-- Recovery includes reassociation, service restoration and state continuity; a connected icon is not a service oracle.
+**Hypothesis:** The AP/client accept spoofed deauth/disassoc, allowing targeted disconnection (and a precursor to evil-twin/handshake capture).
 
-## Observation and competing explanations
+**Competing benign explanation:** PMF/802.11w is enabled and the spoofed frame is ignored; the disconnect was unrelated RF interference; the client roamed; management-frame protection is mandatory on this AP.
 
-**Firstness / Secondness:** Record the negotiated PMF state, management-frame class and both endpoint state transitions against a stable baseline.
+## Deduction and controls
 
-**Abduction:** A PMF-negotiated association processes an invalid unprotected robust management-frame test case as an authenticated disconnect.
+With PMF off, the spoofed deauth disconnects the owned client (demonstration); with PMF on it must be ignored. A confirmed finding disconnects the owned client via spoofed frames where a PMF-enabled config ignores them. Predeclare the disconnect signal. PMF/802.11w ignoring the frame is the PASS control.
 
-**Competing benign explanation:** The disconnect was a legitimate protected AP event or unrelated RF loss.
+## Induction: bounded procedure
 
-**Deduction:** The reviewed invalid-frame case produces a correlated endpoint disconnect while a no-stimulus control remains connected and a legitimate protected disconnect follows the expected path.
+Isolated RF lab; owned AP/client.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+1. **Baseline.** Associate the owned client; confirm a stable connection and the AP's PMF setting.
+2. **PMF-off case.** With PMF disabled on the lab AP, send a bounded spoofed deauth to the owned client; observe disconnection. If DoS is out of scope, confirm the PMF setting from configuration instead of flooding.
+3. **PMF-on control.** Enable PMF/802.11w; repeat; confirm the client is not disconnected.
+4. **Stop.** Demonstrate the single targeted disconnect (or the config posture); do not flood or sustain.
 
-## Bounded laboratory procedure
+Record results including refutations. Keep the finding (frames unprotected) separate from the control (PMF). Respect DoS scope throughout.
 
-1. Establish a stable PMF association and periodic harmless service canaries; collect endpoint and capture timestamps.
+## Craft notes (leads)
 
-2. Confirm the conformance fixture reaches the intended association using a benign supported case.
-
-3. Run only the reviewed single-case fixture, below the agreed case and outage budget; do not construct attack frames or run broadcast floods.
-
-4. Compare invalid-frame handling with the no-stimulus baseline and an operator-issued protected disconnect; stop if service fails to recover.
-
-5. Restore association and confirm service state and policy; report recovery time separately from PMF handling.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+aireplay-ng/mdk4 send deauth; the finding is really "PMF not enforced". Deauth is a precursor: it forces a reconnect to capture a WPA2 handshake (`rt-wpa2-psk`) or to push a client to an evil twin (`rt-evil-twin`). WPA3 mandates PMF; WPA2 can enable it as required/optional. A targeted single deauth proves the posture without a sustained DoS.
 
 ## Domain-specific failure modes
 
-- No observed disconnect can mean the fixture never reached the target; require delivery evidence.
+PMF enabled defeats the attack — a PASS, and the primary refutation. A disconnect from interference/roaming is not a deauth finding. Flooding a live network is illegal and out of scope. If DoS is excluded, report the PMF posture from configuration rather than executing disruption.
 
-- Pre-association frames and non-robust action frames have different protection rules.
+## Evidence and deliverable
 
-- PMF optional on an AP does not tell whether the observed client negotiated protection.
+Provide the PMF posture, the targeted-disconnect result (PMF-off lab) vs the PMF-on control, and the DoS-scope handling. Keep to the isolated lab. Attach expected/observed, rival explanation (interference/roaming), falsifier, and whether a flood was deliberately not run.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide negotiated security, conformance case identifier, delivery evidence, endpoint reason codes, service timeline and outage bounds.
+Pin AP/client firmware and PMF capability — 802.11w support varies. No network behavior was verified by this content; test the owned lab to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate alerts for invalid management frames and correlate them with endpoint reasons; distinguish ordinary roaming from rejected conformance stimuli.
-
-Require PMF where supported, update affected client/AP code and test recovery budgets; document incompatible clients rather than claiming universal coverage.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Pin firmware, driver and harness revision. Verify case applicability to the exact management-frame class; generic tool attack-mode labels are not protocol evidence.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enforce PMF/802.11w (required), prefer WPA3, and deploy a WIDS to detect deauth floods and spoofed management frames. Add a regression that a spoofed deauth is ignored. Alert on management-frame anomalies and mass disconnects.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A spoofed deauth disconnects the owned client (PMF-off lab) where PMF-on ignores it: CONFIRMED management-frames-unprotected; FAIL (availability impact scoped). |
+| Benign refutation | PMF/802.11w ignores the frame: REFUTED; PASS for the control. |
+| Insufficient evidence | A disconnect attributable to interference/roaming, or DoS out of scope with only config posture: CANDIDATE/NOT TESTED; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Delivered invalid robust-management fixture disconnects a PMF association while the no-stimulus and protected-event controls isolate the cause. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The endpoint logs a legitimate protected controller disconnect before the test case arrives; invalid cases are rejected in the matched run. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | The client stays connected but no capture or fixture log proves delivery. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-deauth-disassoc/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Preserves PMF, frame-class and recovery analysis while replacing coercion and denial-of-service recipes with bounded conformance validation.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-deauth-disassoc/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's deauth craft as a scoped PMF-effectiveness experiment in an isolated lab with explicit DoS-scope handling, replacing live-network disruption with bounded posture proof. Composes with `rt-wpa2-psk`, `rt-evil-twin`, `rt-wifi`.

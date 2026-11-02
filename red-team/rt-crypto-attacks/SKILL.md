@@ -1,94 +1,92 @@
 ---
 name: rt-crypto-attacks
-description: Assess cryptographic misuse through nonce lifecycle, authenticated processing and controlled error measurements using synthetic keys and messages.
+description: "Red-team assessment of cryptographic-implementation boundaries: CBC padding oracles, ECB block manipulation, hash length-extension, RSA weaknesses (small-e, shared factors, Coppersmith), weak/predictable PRNG, AES-GCM nonce reuse, and timing side channels. Re-expressed as owned-fixture experiments against a disposable oracle with synthetic keys and negative controls instead of decrypting production secrets."
 ---
 
-# Cryptographic Implementation Assessment
+# Cryptographic-Implementation Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before defining a cryptographic claim.
-Identify the required property: confidentiality, authenticity, freshness or key separation.
-Do not certify a construction from an algorithm name or ciphertext length heuristic.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's crypto-attack craft as scoped experiments against an owned oracle with synthetic keys: it names the attack classes and their discriminators, proving a weakness on a disposable fixture rather than decrypting production data. Compose with `crypto-misuse-reasoning`.
 
-## Mechanisms and preconditions
+## Scope and prerequisites
 
-- GCM nonce uniqueness is scoped to a key; duplicate nonce bytes under different keys
-  are not the same defect. Track key-generation identity without exporting keys.
-- Unauthenticated decryption becomes dangerous when plaintext or validity influences output.
-- Secret-prefix hashes and HMAC are different constructions; inspect the exact composition.
-- RSA public exponent alone does not establish weakness; padding and message constraints matter.
-- Cryptographic randomness must survive restart, fork, snapshot restore and concurrent allocation.
-- Password KDF suitability depends on parameters, salt, hardware budget and service constraints.
-- Timing evidence requires controlling input length, execution path and environmental drift.
+These attacks exploit implementation choices (mode, padding, nonce, key generation, timing), not broken primitives. Use an owned endpoint/oracle with synthetic keys and planted ciphertexts. Recover only planted plaintext; never target production secrets.
 
-## Observation and baseline
+Declare target, construction, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
-Record library/build, construction, key identifier, nonce allocator and authentication order.
-Use synthetic messages and ephemeral lab keys with no connection to production secrets.
-Define an invariant such as "no repeated key-ID/nonce pair across independent encryptions"
-or "no application side effect before ciphertext authentication succeeds."
-Separate a code-level misuse from a demonstrated plaintext or forgery impact.
+## Attack surface and classes
 
-## Abduction and deduction
+- **CBC padding oracle** — distinguishable padding-error responses → decrypt/forge.
+- **ECB** — identical plaintext blocks → identical ciphertext blocks (detect, then manipulate).
+- **Hash length extension** — `H(secret||msg)` MACs with a Merkle-Damgard hash → append.
+- **RSA** — small `e` (Hastad broadcast), shared prime across keys (common-factor GCD), partial-key-exposure (Coppersmith), textbook RSA.
+- **Weak PRNG** — predictable tokens (e.g. Mersenne-Twister state recovery from 624 outputs).
+- **AES-GCM nonce reuse** — repeated nonce → authentication-key recovery.
+- **Timing side channels** — comparison/HMAC timing leaking position.
 
-Hypothesis: nonce allocation restarts at a prior value while the same key remains active.
-Benign rival: duplicate records are logging retries, or the restart changed the key.
-Prediction: independently requested encryptions of distinct fixture messages after restart
-reuse the pair; a persistent allocator or genuinely new key does not reuse that pair.
-Record operation IDs so a duplicated log event cannot satisfy the oracle.
+## Mechanism and observation
 
-## Bounded laboratory procedure
+Trace a ciphertext/token through the construction and the observable the implementation leaks.
 
-1. Reproduce the relevant application path with synthetic keys and bounded input sizes.
-2. Capture operation ID, key-generation ID and nonce for a small specified run budget.
-3. Restart or fork the fixture in the suspected way; repeat independent operations.
-4. Compare pair uniqueness and the allocator-corrected control without decrypting real data.
-5. For authentication ordering, use library-generated invalid-tag fixtures and observe whether
-   a mock application sink is reached; valid-tag fixtures prove the sink remains functional.
-6. For error-oracle candidates, compare documented invalid classes of equal length in a local
-   instrumented harness. Randomize order and record status, output length and integer timings.
-7. Compare with a uniform-error implementation and an unrelated equal-length input control.
-   Stop at evidence of distinguishability; do not recover secrets or construct forgeries.
-8. Inspect MAC composition, KDF parameters and RNG sources from code/configuration;
-   record unexecuted hypotheses separately from the measured nonce/authentication result.
-9. Preserve sanitized measurements and configuration, then retire the lab keys and fixture.
+**Firstness:** Record the distinguishing signal (padding-error vs valid response; repeated ciphertext blocks; timing delta; recovered planted plaintext). **Secondness:** State the secure baseline (constant-time, authenticated encryption, unique nonce, CSPRNG) and the deviation. **Thirdness:** Infer the class only after the oracle yields a controlled result on a fixture.
 
-## Failure modes and interpretation
+## Abduction and refutation
 
-Repeated ciphertext may reflect caching or deliberate deterministic encryption, not ECB.
-Distinct error codes before cryptographic processing may be schema validation, not an oracle.
-Network timing differences alone do not establish secret-dependent branching.
-An invalid tag must prevent release/use of plaintext; internal decryption by a library is
-not itself a failure if no unauthenticated plaintext escapes the API boundary.
-XChaCha20-Poly1305's large nonce space is not nonce-misuse resistance; do not conflate them.
-A length-extension concern does not apply unchanged to HMAC or unrelated hash constructions.
+**Mechanism hypothesis:** The implementation leaks a distinguishable response (padding, timing) or reuses state (nonce, PRNG, prime) that collapses the security of a sound primitive.
 
-## Evidence, detection and remediation
+**Competing benign explanation:** Errors are uniform and constant-time (no oracle); the mode is authenticated (AEAD) so tampering is rejected; nonces are unique; the RNG is a CSPRNG; the timing difference is noise, not key-dependent.
 
-Deliver the violated invariant, key-ID/nonce observations, operation IDs and controls.
-For timing, retain sampling design and raw integer observations; avoid invented confidence.
-Detect nonce allocation resets and authentication failures without logging plaintext or keys.
-Use maintained authenticated-encryption interfaces, appropriate nonce management and KDFs.
-Bind context through authenticated data and separate keys by purpose where required.
-Retest restart, concurrency and invalid-input paths while preserving valid-message behavior.
+## Deduction and controls
 
-## Versions and limits
+A valid ciphertext/token behaves normally (positive control). A confirmed finding recovers/forges planted material via the oracle where a constant-time/authenticated/unique-nonce implementation would not leak. Predeclare the recovered fixture value or the statistical threshold (for timing). Uniform errors / AEAD rejection / unique nonce / CSPRNG are PASS controls.
 
-Record crypto library, provider, runtime, platform and relevant configuration versions.
-Verify current vendor guidance before using KDF thresholds or affected-version claims.
-Custom schemes require specialist review; this workflow does not prove primitive security.
-No decryption oracle exploit, key recovery or credential cracking ran during authorship.
+## Induction: bounded laboratory procedure
 
-## Behavioral acceptance
+Owned oracle; synthetic keys; planted ciphertexts.
+
+1. **Baseline.** Submit a valid ciphertext/token; capture the normal response and timing distribution.
+2. **Oracle probe.** CBC: flip the last byte, check for a distinguishable padding error. ECB: send repeated identical blocks, check for repeated output blocks.
+3. **Decrypt/forge a planted value** (padbuster-class) against the oracle; stop at the planted plaintext.
+4. **Length extension.** Confirm the hash is Merkle-Damgard; try key lengths (e.g. 8-32) with hashpumpy to forge an extended planted MAC.
+5. **RSA/PRNG/GCM.** Extract `n,e`; check size/shared factors (GCD across scoped keys)/Coppersmith (RsaCtfTool/SageMath); collect PRNG outputs to clone state; detect nonce reuse across captured messages.
+6. **Timing.** Use percentile statistics across many samples to separate key-dependent deltas from noise.
+7. **Control.** Confirm a hardened construction does not leak.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Craft notes (leads)
+
+padbuster (CBC oracle), hashpumpy (length extension), RsaCtfTool + SageMath (RSA, Coppersmith), MT19937 cloning (624 outputs). Nonce reuse in AES-GCM is catastrophic (recovers the auth key). Shared-prime GCD works across a corpus of keys from the same bad generator. Timing attacks need statistical rigor to be more than noise.
+
+## Domain-specific failure modes
+
+A single timing sample is noise — require statistics. Uniform, constant-time error handling removes the padding oracle. AEAD rejects tampering, defeating malleability. A CSPRNG defeats state cloning. Recover only planted values; recovering production secrets is out of scope. "The library could be misused" is not a finding without a demonstrated oracle.
+
+## Evidence and deliverable
+
+Provide the construction, the oracle/leak, the recovered/forged planted value (or timing statistics), and the control result. Keep real keys/plaintext out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, untested constructions.
+
+## Versions and tool limitations
+
+Pin the crypto library and mode/version. Tools perform real recovery; use synthetic keys and planted data. No construction behavior was verified by this content; confirm the live construction first.
+
+## Remediation and detection
+
+Use authenticated encryption (AES-GCM/ChaCha20-Poly1305) with unique nonces, constant-time comparisons and uniform errors, HMAC (not `H(secret||msg)`), CSPRNGs, and vetted RSA with OAEP/large `e`/unique primes. Add a regression asserting the oracle does not distinguish. Detect padding-error response patterns and nonce reuse.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Distinct operations reuse the same key-ID/nonce after restart; persistent allocator does not | CONFIRMED nonce-lifecycle defect; FAIL |
-| Duplicate records share one operation ID and independent encryptions use unique pairs | REFUTED reuse claim for the observed duplicates; PASS |
-| Ciphertext is block-aligned but construction and key lifecycle are unknown | CANDIDATE classification only; WARN |
+| Supported finding | Planted plaintext/MAC is recovered/forged via the oracle, or nonce reuse is shown, where a hardened construction does not leak: CONFIRMED; FAIL. |
+| Benign refutation | Uniform errors / AEAD / unique nonce / CSPRNG prevents the attack: REFUTED; PASS for the control. |
+| Insufficient evidence | A timing hint without statistical separation: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/crypto/offensive-crypto-attacks/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain misuse and oracle preconditions; replace decryption, forgery, PRNG
-cloning and cracking recipes with invariant checks and bounded synthetic measurements.
+## Provenance and treatment
+
+Upstream research: `Skills/crypto/offensive-crypto-attacks/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's padding-oracle, ECB, length-extension, RSA, PRNG, GCM-nonce and timing craft, re-expressed as owned-oracle experiments with synthetic keys and hardened controls, replacing production decryption with bounded fixture recovery. Composes with `crypto-misuse-reasoning`, `rt-tls-attacks`.

@@ -1,110 +1,87 @@
 ---
 name: rt-phishing
-description: "Measure mail authentication, safe-link handling and reporting workflows using approved inert messages and synthetic recipients, without credential collection."
+description: "Red-team assessment of phishing susceptibility and email-security controls via an authorized, consented simulation: pretext and lure design, delivery and mail-security evasion measurement, credential-capture and payload-execution landing pages, and click/report metrics. Re-expressed as a sanctioned simulation against consented recipients with benign tracked artifacts and detection/awareness measurement instead of a real credential-harvesting campaign."
 ---
 
-# Email Simulation Control Assessment
+# Phishing Simulation Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the simulation below.
+This revision restores the upstream's phishing craft as a sanctioned, consented simulation: it designs lures and landing pages to measure susceptibility and mail-security coverage with benign tracked artifacts, not a real credential-harvesting campaign.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Design or evaluate an approved email simulation with owned sender infrastructure and designated test
-recipients. Authoring a plan does not authorize sending messages.
+A phishing assessment measures two things: whether mail security delivers the lure, and whether recipients click/submit/report. Run only as an authorized simulation with the client's sign-off and a defined recipient set (or an approved opt-out process). Use benign, clearly-tracked artifacts — a simulation landing page that records a click/submission without capturing real credentials or delivering real malware.
 
-- SPF DKIM and DMARC alignment.
-- automated link inspection versus human interaction.
-- report-to-response workflow.
+Declare the recipient scope, the mail-security stack, the simulation infrastructure, attempt budget, stop condition. Design-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and measurement targets
 
-Record sender and recipient ownership, approved audience, delivery window and stop contact. Use
-inert text or a noncredential landing page with a public test marker.
+- **Delivery / mail security** — does SPF/DKIM/DMARC, the secure email gateway, and sandboxing block or deliver the lure?
+- **Lure/pretext** — theme plausibility (compose with `social-engineering-plausibility`), sender spoofing/lookalike domain, urgency.
+- **Landing page** — benign credential-capture simulation (records the submission event, not the password) or a benign "payload" that reports execution.
+- **Human response** — click rate, submission rate, and crucially the report rate (did users report it?).
 
-Separate envelope sender authentication, signed domain and visible From alignment. SPF or DKIM
-success alone does not establish DMARC alignment.
+## Mechanism and observation
 
-Define metrics with denominators: accepted, delivered, quarantined, reported and verified human
-interaction. Do not rank individuals by raw click counts.
+Send the simulated lure; measure delivery, click/submit, and report.
 
-## Discriminating laboratory procedure
+**Firstness:** Record delivery (reached the inbox?), the click/submission events (benign tracking), and reports to the security team. **Secondness:** State the expected controls (mail security blocks spoofed/lookalike lures; users report) and the deviation. **Thirdness:** Infer a susceptibility/control gap only after the measured rates are in.
 
-Abduction: the mail gateway accepts a message that fails its enforced alignment policy. Rival: a
-documented forwarding exception, trusted connector or audit-only mode explains delivery.
+## Abduction and refutation
 
-Deduction: matched messages from owned domains with aligned and deliberately nonaligned test
-identities should receive their specified dispositions under the same route.
+**Hypothesis:** The organization is susceptible — mail security delivers the lure and/or users click/submit without reporting.
 
-Induction: submit the pair only to approved test inboxes and retain raw headers, authentication
-results, connector identity and final disposition.
+**Competing benign explanation:** DMARC/gateway blocks the spoofed sender; sandboxing detonates the link; users report at a high rate; the clicks came from security tooling scanning the link, not humans; the lure was unrealistic.
 
-Use separate tagged links for automated inspection and a consensual human test action; compare
-scanner timestamps before counting human behavior.
+## Deduction and controls
 
-Test the report-message workflow with one inert message, recording report receipt, case creation and
-response time. No cloned login page, session proxy or password field is needed.
+A legitimate email is delivered and acted on normally (baseline). A confirmed gap shows the lure delivered and clicked/submitted with low reporting, where mail security or trained users would stop it. Predeclare delivery and the click/submit/report metrics; exclude automated link-scanner clicks. Mail-security blocking / high report rate are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded simulation procedure
 
-## Domain failure modes
+Consented recipients; benign tracked artifacts.
 
-- Remote-image loads and link visits are frequently generated by security scanners; they are not proof
-  of recipient engagement.
-- Quarantine, inbox placement and client warning banners are distinct outcomes; preserve each.
-- Forwarding, mailing lists and trusted connector exceptions can alter authentication handling. Verify
-  the actual route rather than inferring a universal bypass.
+1. **Design.** Build a plausible, authorized lure and a benign landing page (records events, no real credential storage). Use a controlled sender/domain.
+2. **Deliver.** Send to the scoped recipients; record which reached inboxes vs were blocked/quarantined.
+3. **Measure.** Click rate, submission rate (benign), report rate; filter out security-scanner clicks (user-agent/timing).
+4. **Mail-security coverage.** Note which controls (SPF/DKIM/DMARC, gateway, sandbox) blocked or passed the lure.
+5. **Debrief.** Deliver awareness feedback; do not shame individuals.
 
-## Evidence and verdict
+Record results including refutations. Keep the susceptibility finding separate from the mail-security control score. No real credentials captured.
 
-Provide anonymized cohort counts, raw test headers, message IDs, gateway decisions, scanner/human
-distinction and reporting timestamps. Exclude personal behavioral narratives and secrets.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The report rate is as important as the click rate — a workforce that clicks but reports fast is resilient. Mail-security evasion here is measured (does the gateway catch the lookalike/spoof?), not optimized to harm. Lookalike domains, display-name spoofing, and urgency are standard lure levers; realism must be plausible (see `social-engineering-plausibility`). Automated link scanners inflate click counts — filter them.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require authentication and connector decisions to be observable and report actions to reach the
-response queue. Fix unintended trust exceptions and improve reporting friction before repeating a
-campaign.
+Scanner-generated clicks inflate the rate — filter by user-agent/timing. DMARC/gateway blocking the lure is a PASS, not a failed test. A high report rate is resilience even with some clicks. An unrealistic lure under-measures susceptibility. Capturing real credentials or delivering real malware is never appropriate — benign simulation only. Individual shaming is counterproductive and out of scope.
 
-## Recovery
+## Evidence and deliverable
 
-Remove only test messages and landing-page resources, expire tracking identifiers and preserve
-aggregate evidence under the agreed retention policy.
+Provide the lure, delivery results (per mail-security control), click/submit/report rates (scanner-filtered), and the awareness/remediation recommendations. No real credentials. Attach the recipient scope, consent basis, expected/observed, rival explanation (scanner clicks), falsifier, controls not exercised.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record mail gateway, client, simulation platform and policy versions. Authentication behavior
-depends on configured routing and must be verified for the tested path.
+Pin the mail-security stack and simulation platform. Delivery behavior is configuration-specific. No control behavior was verified by this content; run the sanctioned simulation to measure.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Enforce SPF/DKIM/DMARC (reject), deploy a secure email gateway + sandboxing + lookalike-domain detection, provide ongoing awareness training with easy reporting (a report button), and measure report rate as a KPI. Add a recurring simulation cadence. Detect lookalike domains and spoofed senders.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Nonaligned owned-domain message is delivered despite enforced rejection and no applicable exception; aligned control delivers | CONFIRMED mail-policy gap; FAIL |
-| Only scanner visits occur and approved human test records remain absent | REFUTED human-click claim; PASS for measurement distinction |
-| DNS policy is known but raw headers and final disposition are missing | CANDIDATE authentication issue; WARN |
+| Supported finding | The lure is delivered and clicked/submitted with low reporting where mail security or trained users would stop it: CONFIRMED susceptibility/control gap; FAIL (report rates). |
+| Benign refutation | DMARC/gateway blocks it or report rate is high (and clicks were scanners): REFUTED; PASS for the control. |
+| Insufficient evidence | Clicks unfiltered for scanners, or an unrealistic lure: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/social-engineering/offensive-phishing/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/social-engineering/offensive-phishing/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains email control and campaign measurement substance while excluding credential proxies, filter
-evasion and malicious attachments.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's lure/delivery/landing-page craft as a sanctioned, consented simulation measuring susceptibility and mail-security coverage with benign tracked artifacts and report-rate metrics, replacing real credential harvesting with bounded, ethical measurement. Composes with `social-engineering-plausibility`, `rt-social-engineering`, `rt-initial-access`.

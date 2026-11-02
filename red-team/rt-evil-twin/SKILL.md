@@ -1,117 +1,80 @@
 ---
 name: rt-evil-twin
-description: Evaluate saved-network selection and application trust on isolated lookalike AP fixtures without phishing or credential collection.
+description: "Red-team assessment of rogue-AP / evil-twin susceptibility: whether clients auto-associate to a spoofed SSID (karma/known-beacon), whether captive-portal credential capture works, and whether server-cert validation and PMF/WPA3 defeat it. Re-expressed as a scoped experiment in an isolated RF lab with an owned client and synthetic credentials that measures client trust behavior, not interception of real users."
 ---
 
-# Lookalike access-point trust validation
+# Evil-Twin / Rogue-AP Susceptibility Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the upstream's evil-twin craft as a scoped client-trust experiment in an isolated RF lab: it measures whether an owned client auto-associates to a spoofed SSID and whether server-cert validation / PMF / WPA3 defeat it, using synthetic credentials rather than capturing real users.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a shielded or otherwise contained lab with two distinct test AP identifiers, one owned client, synthetic saved profiles and a local HTTPS canary. Disable external routing.
+An evil twin spoofs a legitimate SSID to get clients to associate and disclose credentials or traffic. Run only in an isolated/shielded RF lab with an owned client configured with synthetic credentials; never stand up a rogue AP where real users or third-party clients could connect, and respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned client/profile, the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Mechanism and observation
 
-- SSID equality is a discovery hint, not proof of AP identity; saved authentication profiles determine whether a client can join.
+A client that trusts an SSID by name (and lacks server-cert validation / PMF) can be lured to a rogue AP.
 
-- Joining an open network and trusting its application endpoints are separate security decisions.
+**Firstness:** Record whether the owned client auto-associated to the spoofed SSID and whether the captive portal / EAP exchange captured the synthetic credential. **Secondness:** State the expected protection (client validates server cert / requires PMF / does not blindly trust SSID) and the deviation. **Thirdness:** Infer susceptibility only after the owned client is controlled-lured.
 
-- Captive portal detection can legitimately request cleartext connectivity probes; this does not prove application TLS compromise.
+## Abduction and refutation
 
-- User choice, automatic association and roaming are different triggers that need separate records.
+**Hypothesis:** The client auto-associates to a same-SSID rogue AP (karma/known-beacon) and discloses a synthetic credential or routes traffic through it.
 
-## Observation and competing explanations
+**Competing benign explanation:** The client requires server-cert validation (EAP) and rejects the rogue RADIUS; WPA3/PMF prevents the lure/downgrade; the client does not auto-join open/known SSIDs; the user must manually approve; the association was to the real AP.
 
-**Firstness / Secondness:** Record the saved-profile identity, association trigger, selected BSSID and canary TLS result. Compare them to the approved auto-join and endpoint-trust policies.
+## Deduction and controls
 
-**Abduction:** A managed client automatically joins an unapproved open test AP under a profile that requires authenticated access.
+A properly-configured client only joins the legitimate AP (positive control). A confirmed finding has the owned client associate to the rogue AP and disclose the synthetic credential where cert-validation/PMF/WPA3 would prevent it. Predeclare the association + capture signal. Server-cert validation / PMF / WPA3 / no-auto-join are PASS controls.
 
-**Competing benign explanation:** The user explicitly selected a separate open profile, or a connectivity probe was mistaken for sensitive application traffic.
+## Induction: bounded procedure
 
-**Deduction:** With the required profile unchanged and no user selection, association and canary receipt occur on the unapproved fixture; an authenticated reference works and an unrelated SSID is ignored.
+Isolated RF lab; owned client; synthetic credentials.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+1. **Baseline.** Confirm the owned client's profile and that it joins the legitimate lab AP.
+2. **Stand up the rogue AP** (same SSID) in the isolated lab; optionally use a deauth nudge (`rt-deauth-disassoc`, DoS scope permitting) to prompt reassociation.
+3. **Observe association.** Did the owned client auto-join the rogue AP?
+4. **Credential capture (synthetic).** For a captive portal or EAP, observe whether the synthetic credential is disclosed to the rogue AP.
+5. **Controls.** Enable server-cert validation / PMF / WPA3 and confirm the client refuses.
 
-## Bounded laboratory procedure
+Record results including refutations. Keep finding and control status separate. Only the owned client and synthetic credentials are involved.
 
-1. Record clean saved-profile state and establish the intended authenticated connection.
+## Craft notes (leads)
 
-2. Present the second lab fixture through the supported AP management interface; do not clone a production network or coerce reconnections.
-
-3. Observe a normal scheduled client scan and association attempt for the agreed interval, without portals requesting secrets.
-
-4. Separately test the canary endpoint with valid and wrong-name test certificates; verify whether the application transmits its synthetic marker.
-
-5. Remove test profiles and AP advertisements, restore client networking and retain association and TLS evidence.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+hostapd/hostapd-wpe for the rogue AP/RADIUS; karma/known-beacon abuses clients that probe for and trust preferred SSIDs (feeds from `rt-wifi-recon` probe analysis). For WPA-Enterprise, the evil twin captures the EAP identity/MSCHAPv2 challenge unless the client validates the server certificate (route to `rt-wpa-enterprise`). WPA3/PMF and strict cert validation are the controls that defeat it.
 
 ## Domain-specific failure modes
 
-- A stronger signal alone does not guarantee selection; profile history and user actions matter.
+A client that validates the server cert rejects the rogue RADIUS — the primary EAP refutation. WPA3/PMF prevents many lures. A client that does not auto-join (prompts the user) is a PASS. Standing up a rogue AP where real users could connect is out of scope and harmful. Capturing real credentials is never appropriate — synthetic only.
 
-- An HTTP connectivity check is not an application-secret disclosure.
+## Evidence and deliverable
 
-- Installing a trusted interception CA changes the threat model and must not support a stock-client trust claim.
+Provide the rogue-AP setup, the owned client's association behavior, the synthetic-credential capture (or refusal), and the cert-validation/PMF control result. Keep to the isolated lab. Attach expected/observed, rival explanation (joined real AP), falsifier, controls not exercised.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide profile revisions, user-action timeline, association logs, endpoint certificate metadata and marker receipts without collecting credentials.
+Pin client OS/supplicant and its cert-validation/auto-join behavior — susceptibility is client-config-specific. No client behavior was verified by this content; test the owned client to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate detection of unapproved test APs and unexpected auto-join events, then correlate endpoint trust failures with the same session.
-
-Restrict automatic joining, deploy authenticated managed profiles and enforce application TLS validation. Keep portal interactions separate from enterprise credential entry.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record client OS, wireless driver, profile management and portal subsystem versions. Do not inherit claims that every modern client responds to KARMA or that address randomization proves anonymity.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enforce server-cert validation (EAP) and pin the CA, require PMF/WPA3, disable auto-join to open/known SSIDs, remove stale network profiles (probe hygiene), and deploy a WIDS to detect rogue APs. Add a regression that the client refuses the same-SSID rogue AP. Detect duplicate-BSSID/same-SSID anomalies.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The owned client auto-joins the rogue AP and discloses the synthetic credential where cert-validation/PMF would prevent it: CONFIRMED; FAIL. |
+| Benign refutation | Server-cert validation / PMF / WPA3 / no-auto-join makes the client refuse: REFUTED; PASS for the control. |
+| Insufficient evidence | The client joined but no disclosure/traffic shown, or it joined the real AP: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | An unchanged authenticated-only profile automatically establishes the disallowed open session; reference and unrelated-SSID controls work. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Only a manually selected open profile connects; the managed profile refuses the fixture and the canary rejects wrong-name TLS. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A probe request is observed but no association or application transaction is recorded. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-evil-twin/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Recasts evil-twin and portal material as client selection and endpoint trust measurement, excluding credential harvesting, coercion and tracking.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-evil-twin/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's rogue-AP/karma/captive-portal craft as a scoped client-trust experiment in an isolated lab with synthetic credentials and cert-validation/PMF controls, replacing interception of real users with bounded susceptibility proof. Composes with `rt-wifi-recon`, `rt-deauth-disassoc`, `rt-wpa-enterprise`.

@@ -1,99 +1,97 @@
 ---
 name: rt-ssti
-description: "Validate whether user-controlled content becomes template source using constant-only lab fixtures and real rendering traces."
+description: "Red-team assessment of server-side template injection boundaries across Jinja2, Twig, Freemarker, Velocity, Pebble, Thymeleaf, Smarty, Mako, ERB, Handlebars, EJS, Pug and Nunjucks. Covers arithmetic/polyglot detection, engine fingerprinting by decision tree and error signature, sandbox-escape and RCE chains as bounded impact classes, filter/WAF bypass and blind/OOB inference, re-expressed as owned-fixture experiments with inert markers and negative controls."
 ---
 
-# Template Data and Source Separation
+# Server-Side Template Injection Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's SSTI craft — engine fingerprinting and per-engine escape chains — as scoped experiments: detection uses inert arithmetic/marker probes, and RCE chains are named as impact classes to demonstrate on an owned instance, not weaponized against a target.
 
 ## Scope and prerequisites
 
-Assess template evaluation and trust boundaries. Constant evaluation is evidence of template interpretation, not proof of operating-system execution or sandbox escape.
+Find where input is concatenated into a server-side template rather than passed as template data. Use an owned instance; prove execution with an inert marker (unique arithmetic result, benign file-read of a planted fixture, or an owned OOB callback), never a reverse shell or production file read.
 
-Use the real renderer in a disposable environment with synthetic context, no secrets and denied network/process capabilities. Obtain the expected user content contract and engine configuration.
+Declare target, engine (if known), version, attempt budget and stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+Template injection differs from XSS: the expression evaluates server-side. Vectors: any field rendered through a template (emails, PDFs, names, error pages, CMS blocks, notification templates). Classes: direct (output reflected), blind (no output; OOB/timing), and sandboxed (engine runs with a restricted context that must be escaped).
 
 ## Mechanism and observation
 
-Trace template selection, string construction, compilation, rendering, escaping and any second render pass. Record which extensions, helpers and context objects are exposed.
+Trace input into the template compile/render path.
 
-**Firstness:** Capture the selected template, compilation inputs and raw rendered result before browser interpretation. Compare with the requirement that submitted text remain data.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the engine's response to an arithmetic probe and any error string. **Secondness:** State whether that field is meant to be literal data vs an evaluated expression. **Thirdness:** Infer the defect class only after an inert marker evaluates server-side under control.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** A field intended as text is concatenated into template source or rendered a second time.
+**Mechanism hypothesis:** Input is compiled as template syntax, giving expression evaluation and, via engine internals, a path out of the sandbox to the host.
 
-**Competing benign explanation:** The field may intentionally be an approved template editor, or the apparent evaluated output may come from client-side rendering or a hard-coded demonstration.
+**Competing benign explanation:** The `{{7*7}}` rendered literally (not an engine); the `49` came from the app echoing input; the engine autoescapes and runs sandboxed with globals removed; the error is a generic parser error unrelated to evaluation.
 
 ## Deduction and controls
 
-An engine-appropriate constant-only fixture evaluates only on the suspected source path; the identical text passed as an ordinary context variable stays literal. A changed constant changes the output predictably.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A literal string control must render unchanged; an injection evaluates the expression. `{{7*7}}` returning `49` (and `{{7*'7'}}` disambiguating Jinja2 `7777777` vs Twig `49`) is the discriminator. Predeclare the exact evaluated marker. A field that renders `{{7*7}}` verbatim is REFUTED for that field. A sandbox that blocks the escape is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Render ordinary marked text and establish the expected server response and browser-independent output.
+Owned instance; inert markers only.
 
-2. Use an owner-approved constant arithmetic or literal-composition fixture for the installed engine; exclude attribute traversal, imports and file/process helpers.
+1. **Detection.** Inject a universal polyglot and arithmetic probes (`{{7*7}}`, `${7*7}`, `<%= 7*7 %>`, `#{7*7}`, `@(7+7)`); observe which evaluates.
+2. **Fingerprint.** Disambiguate by behavior and error signature: `{{7*'7'}}` (Jinja2 vs Twig), `{{config}}`/`{{_self.env}}` markers, Freemarker `<#assign>`, error strings (`jinja2.exceptions`, `Twig\Error`, `freemarker.core`, `org.apache.velocity`, `mako.exceptions`, Thymeleaf/Pebble classes).
+3. **Context/sandbox mapping.** Enumerate reachable objects with inert expressions (e.g. Jinja2 `{{ ''.__class__.__mro__ }}` read-only) to see whether globals/builtins are exposed.
+4. **Inert execution proof (owned).** Demonstrate reachability with a benign marker — read a planted fixture file, or trigger an owned OOB DNS callback — not `id`/reverse shell against a real target.
+5. **Blind inference.** If no output: time-based (engine-correct sleep) or OOB callback; boolean/error inference character-by-character against a fixture.
+6. **Control.** Confirm the literal control renders inert and, if present, the sandbox blocks the escape.
 
-3. Compare the same text through source construction and data binding, then repeat with a different constant to reject cached output.
+Record results including refutations. Keep finding and control status separate.
 
-4. Inspect whether a second render pass transforms previously escaped text; capture both render stages separately.
+## Per-engine escape craft (impact classes to bound)
 
-5. For an intentional template editor, inspect allowed capabilities and use inert registered helper probes only; stop before testing escape chains.
+These are the real escape chains; carry them as domain knowledge and demonstrate reachability on an owned lab, not as weaponized commands:
 
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+- **Jinja2/Python** — MRO traversal to `__subclasses__`, or globals via `cycler`/`lipsum`/`namespace`/`request.application`/`config` to reach `os`/`subprocess`. Subclass indices vary by version — never hardcode; enumerate at runtime.
+- **Twig/PHP** — `_self.env` (Twig 1.x), filter/map/sort/reduce callback abuse (`{{'id'|filter('system')}}`) in 2.x/3.x; `dump`, `file_excerpt` for info disclosure.
+- **Freemarker** — `Execute` and `ObjectConstructor`/`ProcessBuilder` built-ins.
+- **Velocity** — `Runtime.exec` via reflection. **Pebble** — reflection chain. **Thymeleaf** — SpEL via preprocessing (`__${...}__`).
+- **Smarty/Mako/ERB/Handlebars/EJS/Pug/Nunjucks** — each has a documented eval/require path; fingerprint first, then map the specific one.
+
+Chains to adjacent impact: SSTI → SSRF (metadata), SSTI → file read, SSTI → data exfil via chunked DNS. Treat each as a bounded reachability demonstration.
+
+## Filter and WAF bypass craft
+
+When characters are filtered, the escape mutates (test as filter-vs-engine differential): `|attr()` and bracket access when `.` is blocked; hex/`request.args` smuggling when `_` is blocked; string construction (`~` concat, `join`, `chr()`) when quotes are blocked; request-parameter smuggling to assemble `__class__` from pieces. Confirm the engine executed what the filter passed.
 
 ## Domain-specific failure modes
 
-Autoescaping protects output syntax but does not necessarily prevent source evaluation. A renderer error can fingerprint a parser without proving controllable evaluation. Engine identification by one arithmetic result is unreliable.
+`{{7*7}}=49` can be coincidental app math — always disambiguate with the engine-specific probe. A sandboxed engine with removed globals may evaluate expressions but not reach the host; scope the claim. Subclass indices and global availability are version-specific; a chain that works on one version fails on another. Blind timing is confounded by load.
 
 ## Evidence and deliverable
 
-Provide source/data flow, engine settings, paired raw outputs, compilation trace and the exact safe fixture class. Separate unintended evaluation from capability exposure and untested execution impact.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the injected field, the evaluated marker, the fingerprinted engine and version, the reachability proof (fixture read / OOB callback), and the sandbox state. Keep host data out of portable output. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered engines.
 
 ## Versions and tool limitations
 
-Pin engine and wrapper versions, sandbox settings and helper registrations. Historical object traversal chains are neither portable nor needed. Automatic template scanners may invoke unsafe probes; use only verified inert modes.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the template engine and version — behavior and escape paths are version-bound. `tplmap`/`SSTImap` default to active exploitation; run only in bounded mode against owned fixtures. No engine behavior was verified by this content; confirm the installed version first.
 
 ## Remediation and detection
 
-Use fixed templates with explicit data binding, remove second-pass rendering and restrict template selection. For intentionally programmable templates, minimize capabilities and isolate execution with documented resource limits.
-
-Log unexpected compilation from user-originated fields and rejected helper access without recording private template context. Validate alerts using the constant-only fixture.
+Never compile untrusted input as a template; pass user data as bound variables to a precompiled template; use a logic-less engine or a hardened sandbox with globals/builtins removed; sanitize template-syntax metacharacters where templates must accept text. Add a regression asserting the marker renders literally. Detect template-syntax metacharacters and engine error signatures correlated to the request ID.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | Text intended as literal content is compiled and evaluates two different constant fixtures while data binding preserves them: CONFIRMED for source/data boundary failure; FAIL. |
-| Benign refutation | The documented template editor evaluates constants within its allowed capabilities: REFUTED for unintended evaluation; no sandbox conclusion. |
-| Insufficient evidence | An error mentions a template engine but no controlled evaluation or compilation trace exists: CANDIDATE; WARN. |
+| Supported finding | An inert marker evaluates server-side (fixture read or OOB callback) on an owned instance where the literal control does not: CONFIRMED; FAIL (scope to reachability shown). |
+| Benign refutation | `{{7*7}}` renders verbatim or the sandbox blocks the escape: REFUTED for the tested field; PASS for the control. |
+| Insufficient evidence | Arithmetic evaluates but no engine fingerprint or escape is shown: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-ssti/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-ssti/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves engine, context, second-pass and sandbox analysis without traversal payloads, file reads or template-to-shell chains.
-
+This revision restores the upstream's engine-fingerprinting decision tree, per-engine escape chains and filter-bypass craft, re-expressed as owned-instance experiments with inert markers and version-aware reachability bounds, replacing reverse shells and production file reads with bounded execution proof.

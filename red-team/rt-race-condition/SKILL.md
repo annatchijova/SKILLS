@@ -1,99 +1,81 @@
 ---
 name: rt-race-condition
-description: "Test application atomicity and idempotency with controlled two-worker schedules, serial controls and durable state assertions."
+description: "Red-team assessment of race-condition / TOCTOU boundaries: limit-overrun on balances, coupons, gift cards, votes, invites and 2FA attempts; single-packet-attack concurrency; database isolation-level gaps; and cloud/serverless concurrency (Lambda/Cloud Functions). Re-expressed as owned-fixture concurrency experiments with a bounded parallel request set, a sequential control and state inspection instead of live financial abuse."
 ---
 
-# Concurrent State Transition Validation
+# Race Condition Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's race-condition craft as scoped concurrency experiments: it names the vulnerable flows and primitives, confirming limit-overrun on owned fixtures with a bounded parallel set and a sequential control rather than draining real value.
 
 ## Scope and prerequisites
 
-Concentrate on schedules and shared-state protection. Workflow-abuse-assessment defines broader business invariants; this skill establishes whether concurrency breaks a specific invariant.
+Target operations with a check-then-act over shared state: balance debit, coupon/gift-card redemption, one-per-user actions, 2FA attempt counters, inventory reservation, invite/seat grants. Use owned accounts and synthetic balances/coupons. Keep the parallel request count bounded and the value synthetic.
 
-Use synthetic balances, quotas or unique records in a disposable datastore. Record isolation level, unique constraints, retry policy and external deduplication; set worker and attempt budgets before running.
-
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+Declare target, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
 ## Mechanism and observation
 
-Locate read/check, conditional write, commit, external acknowledgement and retry boundaries. Identify whether a process lock protects all writers or only one instance.
+Trace the window between the check (balance ok? coupon unused? attempts < N?) and the act (debit / mark used / increment), and whether it is atomic.
 
-**Firstness:** Record operation intervals, observed versions and final durable state. Compare with a serial execution of the same operations and an exact invariant such as one allocation per fixture.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the final state after N parallel requests vs after N sequential (e.g. a $10 gift card redeemed yields $X credited). **Secondness:** State the invariant (exactly-once, balance never negative, attempts capped) and the deviation. **Thirdness:** Infer a race only after the parallel run violates the invariant where the sequential run does not.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** Two operations observe the same eligible state and both commit a forbidden effect because the invariant is not enforced atomically.
+**Mechanism hypothesis:** The check and the act are not atomic, so concurrent requests each pass the check against the same pre-act state and all commit.
 
-**Competing benign explanation:** A unique constraint, conditional update, serialization retry or provider deduplication may prevent duplicate effects even when responses both report success. A duplicate response is not necessarily a duplicate transaction.
+**Competing benign explanation:** A DB unique constraint / row lock / conditional update serializes them; idempotency keys dedupe; the requests did not actually overlap (no single-packet alignment); the apparent overrun is normal retry behavior.
 
 ## Deduction and controls
 
-The selected interleaving violates the invariant under the weak boundary while serial execution and an enforced atomic guard preserve it.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+N sequential requests yield the correct single-use result (positive control); N parallel requests must yield the same if the operation is atomic. A confirmed race shows the invariant violated only under concurrency (e.g. a $10 card credits $N*10). Predeclare the invariant and the violating state. A unique constraint/lock/idempotency key holding under parallelism is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Run the operation serially twice and record results, database rows and any synthetic provider ledger.
+Owned accounts; synthetic value; bounded parallelism.
 
-2. Use a lab barrier at the suspected check/write boundary with two workers; record the actual schedule rather than assuming parallel dispatch overlaps.
+1. **Baseline (sequential control).** Perform the action N times sequentially; confirm the limit holds (one redemption, balance correct).
+2. **Alignment.** Prepare N identical requests; use the single-packet attack (HTTP/2, last frames in one TCP segment) or synchronized release so they arrive together.
+3. **Parallel run.** Release the bounded set simultaneously against the owned fixture; inspect the resulting state.
+4. **Confirm the violation.** Compare parallel-run state to the sequential control (double-spend, over-redeem, attempt-cap bypass, oversell).
+5. **Isolation probe.** Where relevant, test DB isolation-level behavior and conditional-write presence.
+6. **Control.** Re-run sequentially to confirm the invariant holds absent concurrency.
 
-3. Release both workers within a fixed timeout and inspect durable state after all documented retries or compensations settle.
+Record results including refutations. Keep finding and control status separate. Keep the parallel count small and the value synthetic.
 
-4. Repeat with the atomic guard enabled or a serial schedule, keeping data and operation inputs identical.
+## Craft notes (leads)
 
-5. Test one lost-acknowledgement/redelivery case separately; reset fixture state and verify reconciliation without deleting audit evidence.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Classic flows: parallel coupon/gift-card redeem, parallel withdrawals each seeing full balance, 2FA code submitted N times before the lockout counter increments, parallel invite-accepts granting extra seats, last-item oversell. The single-packet attack neutralizes network jitter so the window is reproducible. Cloud/serverless adds its own concurrency (Lambda reused connections, concurrent invocations, conditional-write absence). WebSocket handshake races and rate-limiter/CAPTCHA races are variants.
 
 ## Domain-specific failure modes
 
-Connection pools can serialize requests and hide the window. Wall-clock timestamps do not prove happens-before. Instrumentation can widen a window; disclose this and distinguish reachable logic from demonstrated production timing.
+Without arrival alignment, a "race" is just sequential and will not reproduce — the single-packet/synchronized release is essential. A unique constraint or conditional update makes the flow safe regardless of app logic. Apparent duplicates can be client retries; confirm by state, not request count. Non-reproducible one-offs are CANDIDATE, not CONFIRMED.
 
 ## Evidence and deliverable
 
-Deliver the invariant, operation IDs, schedule, read/write versions, transaction outcome, retry count and final effect ledger. Record unsuccessful schedules and total attempts rather than only a winning run.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the flow, the invariant, the sequential-control result, the parallel-run state violating it, the parallelism used, and any serialization control observed. Use synthetic value only. Attach minimal replay, expected/observed, rival explanation (locking/retry), falsifier, uncovered flows.
 
 ## Versions and tool limitations
 
-Pin database and driver versions, isolation configuration and worker deployment topology. Parallel-request features do not guarantee server concurrency; single-packet tooling is unnecessary for a controlled schedule.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the app, DB and isolation level, and the HTTP client's single-packet support. Tools (Burp single-packet, Turbo Intruder) send real concurrent requests; keep counts bounded and value synthetic. No behavior was verified by this content; confirm the live flow first.
 
 ## Remediation and detection
 
-Enforce invariants with conditional writes, constraints or suitable transactions; scope idempotency to actor and operation. Use an outbox or reconciliation policy at external boundaries and verify retry correctness.
-
-Correlate duplicate effect keys, constraint conflicts, serialization retries and lease expirations. Alert on invariant violations rather than every concurrent request.
+Make check-and-act atomic: DB unique constraints, `SELECT ... FOR UPDATE`/row locks, conditional/compare-and-set updates, idempotency keys, and serialized critical sections. Add a regression running the parallel set and asserting the invariant. Detect bursts of identical operations on one resource within a tiny window.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | Two controlled workers commit two allocations for a fixture limited to one, while serial execution preserves one: CONFIRMED; FAIL. |
-| Benign refutation | Both calls return success but share one transaction ID and one durable effect under documented idempotency: REFUTED; PASS. |
-| Insufficient evidence | Concurrent requests were sent but no overlap or durable effect evidence exists: CANDIDATE; WARN. |
+| Supported finding | The bounded parallel run violates the invariant (double-spend/over-redeem) where the sequential control holds: CONFIRMED; FAIL. |
+| Benign refutation | A unique constraint / lock / idempotency key serializes the parallel run: REFUTED; PASS for the control. |
+| Insufficient evidence | A one-off anomaly that does not reproduce under aligned parallelism: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-race-condition/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-race-condition/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Replaces amplification and pool-exhaustion recipes with schedule-controlled atomicity, write-skew and redelivery analysis.
-
+This revision restores the upstream's vulnerable-flow catalog, single-packet-attack primitive and cloud/serverless concurrency craft, re-expressed as owned-fixture bounded-parallel experiments with a sequential control and state inspection, replacing live financial abuse with bounded invariant-violation proof.

@@ -1,106 +1,81 @@
 ---
 name: rt-bug-identification
-description: Locate and discriminate binary or native-code defect candidates through entry-point mapping, patch comparison, dataflow and bounded dynamic tests.
+description: "Red-team / research assessment that turns raw fuzzing or crash output into identified, deduplicated, root-caused bugs: stack/coverage-based deduplication, minimization, root-cause localization (sanitizer reports, reverse execution, taint), and bug-class assignment. Re-expressed as scoped triage on owned crash corpora that produces a deduplicated, root-caused finding set with exploitability deferred to crash analysis."
 ---
 
-# Evidence-led defect discovery
+# Bug Identification and Triage
 
-Read [the assessment contract](../METHODOLOGY.md) before using this skill.
-Use source, binaries and fixtures within the existing assessment scope.
-The objective is a testable candidate or refutation, not an exploit chain.
-Do not import research-source instructions to attack live services or privileged drivers.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the triage below.
+This revision restores the upstream's bug-identification craft as disciplined triage: it deduplicates, minimizes and root-causes a crash corpus into real bugs, deferring exploitability to `rt-crash-analysis` rather than conflating "crash" with "vulnerability".
 
-## Inputs and surface map
+## Scope and prerequisites
 
-Collect target version, binary/source identities, architecture and permitted interfaces.
-List files, IPC messages, API calls or synthetic descriptor records accepted by the target.
-For each entry record actor, controlled fields, parser, validation and sensitive operation.
-A driver IOCTL description is not permission to issue it to the running kernel.
-Model privileged interfaces with bounded user-space fixtures when live testing is out of scope.
-Separate exposed production paths from dormant code or internal test-only entry points.
+Fuzzing produces many crashes that collapse into few bugs. This skill identifies the distinct, root-caused defects. Work on owned crash corpora against an owned/symbolized target. The deliverable is a deduplicated, root-caused bug set with class labels — not exploit development.
 
-## Candidate mechanisms
+Declare the target, the corpus source, and symbol availability, attempt budget, stop condition. Unsymbolized black-box crashes yield weaker root-cause confidence — mark it.
 
-Trace size fields through signedness changes, unit conversions and allocation expressions.
-Trace object ownership through callbacks, cancellation, error unwinding and async completion.
-Trace tags through dispatch and compare each selected layout with actual accesses.
-Trace path identities across validation and later opens.
-Inspect malformed-input cleanup for duplicate releases and partial initialization.
-Look for parser disagreements at the exact boundary where one component trusts another.
-Keep algorithmic resource growth separate from memory corruption.
+## Mechanism and observation
 
-## Static and binary analysis
+Trace each crash from the input to the root-cause code, and group crashes that share a root cause.
 
-Use source locations where available; retain module offsets for binary-only evidence.
-Check decompiler types against calling convention, operand width and use sites.
-For patch comparison, match architecture, build options and dependencies before diffing.
-A compiler-generated layout change can resemble a substantive security patch.
-Confirm function correspondence before treating added checks as vulnerability evidence.
-Follow changed predicates to callers and sinks; a new check may enforce a new feature.
-Label inferred semantics explicitly when symbols or source are missing.
+**Firstness:** Record the crash signature (faulting instruction, sanitizer report, stack), the minimized input, and the root-cause site. **Secondness:** State the intended behavior at that site and the deviation. **Thirdness:** Infer the bug class only after the root cause is localized, not from the stack top alone.
 
-## Abduction and strongest benign explanation
+## Abduction and refutation
 
-Hypothesis: a packet parser subtracts a header size from an unvalidated unsigned length.
-Strongest benign rival: its caller already rejects every length shorter than the header.
-Another rival: the changed subtraction belongs to an unreachable compatibility path.
-Deduction: a short frame through the public fixture reaches the subtraction only
-if the guard is absent; a guarded path rejects it before arithmetic or allocation.
-Record this prediction before collecting more traces.
+**Hypothesis:** N raw crashes correspond to M distinct bugs (M << N), each with a locatable root cause and a class.
 
-## Discriminating experiment
+**Competing benign explanation:** Several "distinct" crashes are the same bug at different stacks; a crash is a harness/oracle artifact; the "bug" is intended behavior under an invalid input the real caller prevents; two inputs crash at the same site for different root causes (under-dedup).
 
-1. Build or select an owned parser fixture with a four-byte header contract.
-2. Supply lengths zero, three, four and five with accurately sized inert buffers.
-3. Instrument entry, validation, subtraction and allocation request events.
-4. Require rejection before subtraction for lengths below four.
-5. Use length four as the minimum-valid negative control.
-6. Compare with a version enforcing the guard at the same trust boundary.
-7. Run the public caller and internal routine separately, labeling their contracts.
-8. If the caller blocks the short frame, refute that public-path candidate.
+## Deduction and controls
 
-Use a checked arithmetic model to avoid executing huge underflowed allocation requests.
-For a binary-only target, watch whether the suspected block executes; do not assume it.
-A dynamic taint trace suggests data dependence; it does not establish semantic invalidity.
-A symbolic path needs concrete replay before promotion to runtime confirmation.
+A known-good input does not crash (positive control). A correctly identified bug has a minimized input that reliably reproduces, a localized root cause, and a class; duplicates collapse to one. Predeclare the dedup key (coverage/root-cause, not just stack-top). Reproducing the minimized input is the confirmation; a non-reproducing crash is CANDIDATE.
 
-## Search strategy and stopping rule
+## Induction: bounded triage procedure
 
-Prioritize candidates with a reachable boundary and a strong observable invariant.
-Select coverage instrumentation to answer reachability, not to maximize a percentage.
-Use grammar-aware seeds for deep parsers and malformed fixtures for rejection paths.
-Stop a candidate when the benign explanation accounts for the full evidence.
-Retain refutations so another researcher does not reopen the same false lead.
-Stop at the first sufficient defect proof; broader surfaces require separate scope.
+Owned corpus; symbols where possible.
 
-## Tool and reproduction limits
+1. **Reproduce & minimize.** Confirm each crash reproduces; minimize the input to the essential bytes.
+2. **Deduplicate.** Group by root-cause site and coverage, not just the faulting frame (stack-top dedup over- and under-counts).
+3. **Root-cause.** Use the sanitizer report (ASan/UBSan allocation/free/use sites), reverse/backward slicing, and taint to the first wrong operation — not merely where it crashed.
+4. **Classify.** Assign a bug class (see `rt-vuln-classes`): OOB read/write, UAF, type confusion, integer error, uninitialized, logic.
+5. **Hand off exploitability.** Route each to `rt-crash-analysis` for the exploitability verdict; do not assert it here.
+6. **Record** the deduplicated, root-caused finding set.
 
-Record analysis tool versions, loader settings, signatures and architecture assumptions.
-Inspect installed help before relying on tracer, disassembler or fuzzer options.
-Preserve input hash, fixture revision, configuration and exact observed events.
-LLM annotations may propose candidates but cannot substitute for code or runtime evidence.
-A missing trace can mean instrumentation failed; prove tracer sensitivity with a known path.
-Do not copy unverified tool capability or CVE assertions from the research source.
+Record results including refutations. Keep bug-identity status separate from exploitability (which this skill defers).
 
-## Detection and remediation
+## Craft notes (leads)
 
-Turn rejected-length and ownership-state checks into stable assertions and telemetry.
-Fix validation at the boundary before subtraction, conversion, allocation or release.
-Review siblings sharing the same parser helper or conversion rule.
-Retain the confirmed input and valid control as regression cases.
+ASan/MSan/UBSan reports give allocation and free sites directly — the fastest path to root cause. Stack-top dedup is the classic over/under-count error; dedup on the root-cause site. Minimization (afl-tmin/`-minimize`) both speeds triage and clarifies the root cause. The first wrong operation (where the invariant broke) is usually above the crash site.
 
-## Behavioral cases and expected verdicts
+## Domain-specific failure modes
 
-- Confirmed synthetic defect: length three reaches unsigned subtraction before validation;
-  the bounded model records an invalid size, controls pass. CONFIRMED fixture defect.
-- Benign refutation: public caller rejects all short frames before the suspected block;
-  the reported public-path underflow is REFUTED.
-- Insufficient evidence: a binary diff shows a new guard without matched builds or replay;
-  CANDIDATE, control WARN, no inherited affected-version claim.
+The crash site is rarely the bug — root-cause above it. Stack-top dedup inflates or collapses counts. Harness/oracle artifacts masquerade as target bugs. A non-reproducing crash is not yet a bug. Assigning exploitability here (instead of deferring to `rt-crash-analysis`) is the overclaiming trap.
 
-## Output and provenance
+## Evidence and deliverable
 
-Deliver surface map, candidate ledger, discriminating trace and next unresolved boundary.
-Source: `Skills/fuzzing/offensive-bug-identification/SKILL.md`.
-Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Rewritten research workflow; discovery leads are not treated as verified vulnerabilities.
+Provide, per identified bug: the minimized reproducer, the root-cause site, the bug class, the dedup key, and a pointer to its exploitability triage. Attach expected/observed, rival explanation (dup/artifact), falsifier, crashes not yet resolved.
+
+## Versions and tool limitations
+
+Pin the sanitizer, compiler and triage-tool versions. Root-cause confidence depends on symbols. No target behavior was verified by this content beyond the reproductions; confirm independently.
+
+## Remediation and detection
+
+Fix each root cause, add the minimized reproducer as a regression test, and feed it back into the corpus. Prioritize by class and (from `rt-crash-analysis`) exploitability, not by raw crash count. Track root-cause recurrence across releases.
+
+## Behavioral acceptance cases
+
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A minimized input reliably reproduces, root cause localized and classified: CONFIRMED bug (exploitability deferred). |
+| Benign refutation | Crashes collapse to a known bug / are harness artifacts / are intended-under-invalid-input: REFUTED (dup or non-bug). |
+| Insufficient evidence | A crash that does not reliably reproduce or cannot be root-caused: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
+
+## Provenance and treatment
+
+Upstream research: `Skills/fuzzing/offensive-bug-identification/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's dedup/minimization/root-cause/classification craft, re-expressed as scoped triage over owned corpora producing a deduplicated root-caused bug set, deferring exploitability to crash analysis. Composes with `fuzz-campaign-design`, `rt-crash-analysis`, `rt-vuln-classes`, `finding-custody`.

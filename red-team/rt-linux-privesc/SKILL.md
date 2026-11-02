@@ -1,110 +1,89 @@
 ---
 name: rt-linux-privesc
-description: "Assess Linux sudo, capabilities, service dependencies and namespace boundaries with effective configuration and harmless lab fixtures."
+description: "Red-team assessment of Linux local privilege-escalation boundaries: SUID/SGID and capabilities misuse, sudo misconfiguration and GTFOBins, writable paths in root-run scripts/cron, PATH and library hijacks, world-writable sensitive files, and kernel-exploit exposure. Re-expressed as scoped experiments on an owned host that prove one escalation vector against a planted root-run fixture with hardened-config controls instead of rooting a production system."
 ---
 
-# Linux Privilege Configuration Assessment
+# Linux Privilege-Escalation Boundary Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's Linux-privesc craft as scoped experiments on an owned host: it names the escalation vectors, proving one against a planted root-run fixture rather than rooting a production system.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Trace one low-privilege actor to one protected operation through an actual policy or service
-dependency. Do not treat root inside a user namespace as host-root authority.
+Local privesc moves from a low-privilege user to root via a misconfiguration. Work on an owned host; where possible prove the vector against a planted root-run fixture (a lab SUID binary, a lab sudo rule, a lab root cron) so the effect is contained. Prove the escalation once with a benign marker (a root-owned marker file / `id`), then stop.
 
-- sudo command and environment constraints.
-- capability and namespace scope.
-- privileged service dependency ownership.
+Declare the host, distro/kernel, attempt budget, stop condition. Enumeration-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Record real/effective IDs, supplementary groups, user namespace mappings, mount options and relevant
-LSM policy.
+- **SUID/SGID & capabilities** — misused SUID binaries, dangerous file capabilities (cap_setuid, cap_dac_override).
+- **sudo** — NOPASSWD rules, GTFOBins-abusable allowed commands, `sudo` CVEs.
+- **Writable root-run paths** — world-writable scripts/binaries executed by root cron/systemd, writable service units.
+- **PATH / library hijack** — relative PATH in root-run scripts, `LD_PRELOAD`/`LD_LIBRARY_PATH`, writable library dirs.
+- **Sensitive file exposure** — world-readable shadow/keys, writable `/etc/passwd`/sudoers.
+- **Kernel** — exploitable kernel version (version-bound; prove on a lab VM).
 
-Inspect the effective sudo rule including command arguments, run-as identity and environment
-handling; NOPASSWD alone is not an arbitrary-command grant.
+## Mechanism and observation
 
-For services and scheduled jobs, resolve executable/configuration dependencies and ownership. Use a
-disposable non-production fixture with a fixed-marker action.
+Pick one vector; trace the misconfiguration to root execution.
 
-## Discriminating laboratory procedure
+**Firstness:** Record the escalation achieved against the planted fixture (root marker written, root shell on the lab binary). **Secondness:** State the intended boundary (least privilege, no writable root-run paths, GTFOBins-safe sudo) and the deviation. **Thirdness:** Infer the vector only after the escalation is exercised under control.
 
-Abduction: a low-privilege user can alter a dependency consumed by a privileged job. Rival: the job
-reads a different path, a read-only mount prevents writes or namespace mapping confines the effect.
+## Abduction and refutation
 
-Deduction: the actor should fail to change the protected fixture input while the maintenance
-identity succeeds; the job's fixed marker should identify its actual namespace and effective UID.
+**Hypothesis:** A specific misconfiguration lets a low-priv user run code as root.
 
-Induction: verify effective write permission on the owned fixture, trigger its normal lifecycle and
-record the resulting marker and authority context.
+**Competing benign explanation:** The SUID binary is not GTFOBins-abusable; the sudo rule is tightly scoped; the root-run path is not actually writable by the user; `secure_path`/absolute paths defeat PATH hijack; the sensitive file is correctly permissioned; the kernel is patched.
 
-For a capabilities claim, establish executable applicability, bounding/ambient sets and namespace
-scope. Use a vendor diagnostic instead of a capability-enabled shell.
+## Deduction and controls
 
-For version-based candidates, check distributor package metadata and backported fixes. Kernel
-exploit execution is outside this skill's proof method.
+A low-priv user cannot reach root on a hardened host (positive control). A confirmed finding escalates via the vector against the planted fixture where a hardened config refuses. Predeclare the root marker. Least-privilege SUID/caps / scoped sudo / non-writable root paths / `secure_path` / patched kernel are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded procedure
 
-## Domain failure modes
+Owned host; planted root-run fixture where possible.
 
-- SUID on a nosuid mount, interpreter handling and privilege-dropping behavior can refute a
-  superficial scanner finding.
-- Container-engine socket access requires distinguishing rootful host control from rootless or
-  remotely scoped engines.
-- NFS export settings require client identity mapping, mount reachability and server-side permissions;
-  a configuration string alone does not prove a root path.
+1. **Enumerate.** SUID/SGID, capabilities, sudo rights (`sudo -l`), cron/systemd root jobs, writable paths, sensitive-file perms, kernel version (LinPEAS/linux-exploit-suggester as aids).
+2. **Pick one vector.** Choose the clearest misconfiguration against a planted fixture.
+3. **Exercise once.** e.g. abuse a GTFOBins sudo rule / writable root cron / SUID to write a root-owned marker; confirm root; stop.
+4. **Controls.** Harden the fixture (scope the sudo rule, fix perms, `secure_path`) and confirm the vector fails.
+5. **Kernel (lab only).** If testing a kernel exploit, do it on a lab VM snapshot.
 
-## Evidence and verdict
+Record results including refutations. Keep finding and control status separate.
 
-Provide effective policy excerpts, actor/namespace context, dependency paths, file and mount
-permissions, LSM outcomes and the minimal fixed-marker result.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+GTFOBins maps allowed/SUID binaries to escalation one-liners — the sudo/SUID finding is really "this binary should not be root-runnable by this user". Writable root-run cron/systemd paths and relative PATH in root scripts are recurring. Capabilities (cap_setuid on a binary) are a subtler SUID equivalent. Kernel exploits are version-bound and crash-prone — lab VM only.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Monitor changes to privileged job dependencies, sudo policy and engine-socket access. Prefer
-immutable owned dependencies, constrained delegation and least-privilege service identities.
+A SUID binary not in GTFOBins (and not otherwise abusable) is not a vector. A sudo rule that cannot be escaped is safe. A root-run path the user cannot actually write is a refutation. `secure_path` defeats PATH hijack. Kernel exploits can crash the host — never on production. Prove against a planted fixture to stay contained.
 
-## Recovery
+## Evidence and deliverable
 
-Restore the fixture and revoke test-only delegation. Verify no test timer, service or mounted
-resource remains and retain all privilege-transition evidence.
+Provide the vector, the misconfiguration, the root marker achieved against the planted fixture, and the hardened-config control result. Keep to the owned host. Attach minimal replay, expected/observed, rival explanation, falsifier, vectors not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record kernel and distribution package builds, sudo/systemd/runtime versions and security policy.
-Historical CVE version ranges must account for vendor backports.
+Pin distro, kernel and sudo versions — vectors are version-bound. Enumeration tools are aids, not verdicts. No host behavior was verified by this content; confirm on the owned host first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Minimize SUID/SGID and file capabilities, scope sudo rules (avoid GTFOBins-abusable binaries, set `secure_path`), remove writable root-run paths, correct sensitive-file permissions, and patch the kernel. Add a regression asserting the vector fails. Detect SUID execution anomalies, sudo misuse, and writes to root-run paths.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Restricted user alters an owned fixture input consumed by a host-privileged job; matched protected control denies writes | CONFIRMED privilege path; FAIL |
-| Observed UID 0 is confined to a mapped namespace and the host operation is denied | REFUTED host-root claim; PASS |
-| Scanner flags a SUID binary without mount or runtime context | CANDIDATE configuration exposure; WARN |
+| Supported finding | A vector escalates to root against a planted fixture where a hardened config refuses: CONFIRMED; FAIL. |
+| Benign refutation | Non-abusable SUID / scoped sudo / non-writable path / patched kernel defeats it: REFUTED; PASS for the control. |
+| Insufficient evidence | A suspicious config without a confirmed escalation: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/privesc/offensive-linux-privesc/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/privesc/offensive-linux-privesc/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains Linux authority semantics while removing root-shell recipes, kernel exploits and credential
-harvesting.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's SUID/sudo/cron/PATH/kernel craft, re-expressed as owned-host experiments against planted root-run fixtures with hardened controls, replacing production rooting with bounded, contained escalation proof. Composes with `rt-toctou`, `rt-advanced-redteam`.

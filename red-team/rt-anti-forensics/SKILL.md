@@ -1,111 +1,89 @@
 ---
 name: rt-anti-forensics
-description: "Test forensic pipeline integrity, timeline reconciliation and recovery using altered copies of synthetic evidence while preserving originals."
+description: "Blue/purple-team assessment of forensic-integrity controls and anti-forensic detectability: whether timestomping, log tampering/clearing, artifact wiping and secure-deletion attempts are detected, attributable and recoverable. Re-expressed as a detection-and-recovery measurement on an owned lab host that emulates anti-forensic actions under authorization and scores whether logging/EDR/forensic controls hold, rather than teaching evidence destruction."
 ---
 
-# Forensic Evidence Resilience
+# Forensic-Integrity and Anti-Forensic-Detectability Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the detection measurement below.
+This revision reframes the upstream's anti-forensics material toward its defensive purpose: understanding the techniques to detect them and to measure whether forensic-integrity controls hold. It emulates anti-forensic actions on an owned lab host to score detection and recovery, and does not provide an evidence-destruction playbook. Compose with `forensic-logging-design` and `detection-engineering`.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Evaluate whether investigators can detect missing or inconsistent evidence. Work on synthetic
-exports and disposable copies; never clear real logs, erase artifacts or patch telemetry providers.
+The question is defensive: if an adversary tried to hide activity, would the environment detect it, attribute it, and recover the evidence? Emulate the actions only on an owned, instrumented lab host that you are authorized to tamper with, with central logging in place. Never run these to hide activity on a system you do not own, and never to impede an actual investigation.
 
-- event-gap and custody checks.
-- cross-source timeline reconciliation.
-- backup and retention recovery.
+Declare the lab host, the logging/EDR stack, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Technique classes (as detection targets)
 
-Create an immutable baseline of synthetic events with sequence identifiers, timestamps and source
-digests. Preserve acquisition metadata separately.
+- **Timestomping** — altering MACB timestamps; detectable via `$STANDARD_INFORMATION` vs `$FILE_NAME` discrepancy, journal records.
+- **Log tampering/clearing** — clearing or editing event logs; detectable via clear events (e.g. 1102/104), central-log gaps, sequence-number breaks.
+- **Artifact wiping** — removing prefetch, shellbags, browser/history, bash history; detectable via absence-where-presence-is-expected and backups.
+- **Secure deletion** — overwriting files; detectable via slack/journal/shadow-copy remnants and central telemetry already shipped off-host.
+- **Tooling/process hiding** — detectable via EDR process telemetry independent of on-host logs.
 
-Select independent corroborating sources: host events, collector receipt times, file metadata or
-network flow records.
+## Mechanism and observation
 
-Define expected retention, rotation, time synchronization and collection delays before labeling a
-gap suspicious.
+Emulate one technique, then measure whether detection fired and whether evidence survives off-host.
 
-## Discriminating laboratory procedure
+**Firstness:** Record what the technique changed/removed on-host and what the central logging/EDR captured. **Secondness:** State the integrity invariant (actions are logged off-host; tampering is itself an event; evidence is recoverable) and the deviation. **Thirdness:** Infer a control gap only after an emulated action is shown to evade detection/recovery under control.
 
-Abduction: a missing event or inconsistent timestamp is being silently accepted as complete
-evidence. Rival: normal rotation, clock offset or parser normalization explains the discrepancy.
+## Abduction and refutation
 
-Deduction: the verifier should flag a copy with one deliberately omitted synthetic event while
-accepting the intact baseline and a documented rotation fixture.
+**Hypothesis:** An anti-forensic action can remove or alter evidence without being detected or recoverable (a forensic-integrity gap).
 
-Induction: ingest the controlled copies into an isolated analysis pipeline; compare gap detection,
-coverage warnings and evidence references.
+**Competing benign explanation:** Central logging already shipped the records off-host before tampering; the clear/edit is itself logged; EDR captured the process independently; file-system journals/shadow copies retain remnants; the tampering raises an integrity alert.
 
-Use a separate synthetic timestamp-disagreement fixture to test reconciliation across independent
-sources. Do not change actual filesystem timestamps to conceal activity.
+## Deduction and controls
 
-Restore the missing fixture event from the preserved backup and verify digest and sequence
-continuity; restoration must not silently overwrite the original observation.
+A normal action leaves complete, tamper-evident evidence (positive control = integrity holds). A confirmed gap shows an emulated anti-forensic action that leaves no detectable trace and no recoverable evidence where a hardened logging/forensic posture would retain both. Predeclare the detection signal and the recovery source. Off-host logging / tamper-evident audit / EDR independence / journal retention defeating the action are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded laboratory procedure
 
-## Domain failure modes
+Owned instrumented lab host; emulation under authorization.
 
-- A valid hash proves a file has not changed since hashing, not that acquisition was complete or
-  truthful.
-- Filesystem timestamps, journal records and collector timestamps have different semantics;
-  disagreement alone does not prove tampering.
-- A missing source must reduce the claimed reconstruction coverage. Do not fill gaps with inferred
-  events presented as observed facts.
+1. **Baseline.** Perform a normal action; confirm complete on-host and central evidence.
+2. **Emulate one technique** (e.g. a log clear or a timestamp alteration) on the lab host.
+3. **Measure detection.** Did a clear/integrity event fire? Did central logging retain the pre-tamper record? Did EDR capture it independently?
+4. **Measure recovery.** Can the evidence be reconstructed from journals/shadow copies/central store/backups?
+5. **Score.** PASS (detected and recoverable), WARN (one of the two), FAIL (neither).
+6. **Control.** Compare against a hardened posture (immutable off-host logging, tamper-evident chain) and confirm it retains.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from the control score. The goal is the score, not successful hiding.
 
-Output baseline and test-copy digests, transformation ledger, parser versions, sequence gaps, clock
-uncertainty and recovery results. Preserve original and reconstructed timelines as separate
-artifacts.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The durable defense is that evidence leaves the host immediately and the audit chain is tamper-evident — then on-host anti-forensics cannot erase what is already shipped. Timestomp detection relies on the two timestamp sets diverging and on the journal. Log-clear events are themselves high-signal. File-system journals and shadow copies are recovery sources. EDR provides an on-host-independent record. (See `tamper-evident-audit-chain`, `forensic-persistence`.)
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require explicit incomplete-evidence warnings, remote retention and independently protected custody
-records. Improve collection redundancy and restore testing rather than relying only on local logs.
+If logs ship off-host in real time, on-host tampering is largely moot — a PASS. A clear event that is itself logged defeats silent clearing. EDR independence means on-host wiping does not erase the central record. Running these techniques to actually impede an investigation is out of scope and unlawful; the only purpose here is measuring and improving detection.
 
-## Recovery
+## Evidence and deliverable
 
-Discard disposable test copies only after preserving results. Verify original evidence hashes and
-recovery-store access; no live audit record is removed.
+Provide the technique emulated, the detection signals observed (or their absence), the recovery sources that retained evidence, and the PASS/WARN/FAIL. Keep this to the owned lab. Attach minimal replay, expected/observed, rival explanation, falsifier, techniques not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record filesystem/export format, event schema, parser and backup tool versions. NTFS journal, ADS
-and Linux journal availability vary by acquisition method.
+Pin the OS, logging stack and EDR versions — detection and recovery behavior are product-specific. No host behavior was verified by this content; reproduce on the lab first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Ship logs off-host in real time to an append-only/immutable store, make the audit chain tamper-evident, deploy EDR with independent telemetry, retain file-system journals and shadow copies, and alert on log-clear/integrity events. Add a regression that an emulated clear is both alerted and recoverable from the central store.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| A deliberately incomplete synthetic export passes the pipeline as complete while intact control parses | CONFIRMED evidence-integrity validation gap; FAIL |
-| Documented rotation fully explains the gap and continuity is recovered from the archive | REFUTED tampering inference; PASS |
-| Only one mutable log exists and acquisition completeness is unknown | CANDIDATE gap; WARN |
+| Supported finding | An emulated anti-forensic action evades detection and recovery on the lab host where a hardened posture retains both: CONFIRMED integrity gap; control FAIL. |
+| Benign refutation | Off-host logging / clear-event / EDR / journal retains evidence and alerts: REFUTED; control PASS. |
+| Insufficient evidence | Detection fires but recovery is unverified (or vice versa): CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/forensics/offensive-anti-forensics/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/forensics/offensive-anti-forensics/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Reverses evidence-destruction guidance into tamper detection and recovery testing, keeping
-filesystem and telemetry distinctions.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision reframes the upstream's anti-forensic techniques as a defensive detection-and-recovery measurement on an owned lab, scoring forensic-integrity controls PASS/WARN/FAIL, rather than providing an evidence-destruction playbook. Composes with `forensic-logging-design`, `tamper-evident-audit-chain`, `forensic-persistence`, `detection-engineering`.

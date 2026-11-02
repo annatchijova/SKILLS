@@ -1,112 +1,90 @@
 ---
 name: rt-active-directory
-description: "Validate Active Directory ACL, delegation, GPO, certificate enrollment and trust-path claims with effective permissions and bounded test objects."
+description: "Red-team assessment of Active Directory authority paths in an authorized engagement: BloodHound/PowerView attack-path enumeration, coercion+relay (PetitPotam, PrinterBug, ESC8), Kerberoasting/ASREProasting, ACL abuse (GenericAll/WriteDacl/WriteOwner), Kerberos delegation (unconstrained/constrained/RBCD), and ADCS templates (ESC1-ESC8). Re-expressed as a scoped lab experiment that proves one authority-path edge with a planted principal and negative controls, emphasizing detection."
 ---
 
-# Directory Trust Path Assessment
+# Active Directory Authority-Path Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's AD craft as a scoped authority-path experiment: it names the real edges and primitives, and proves one of them against a planted principal in an authorized lab, with detection as a first-class deliverable, rather than running a full domain-takeover chain.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Analyze an authorized directory snapshot or a bounded lab forest. Confirm each authority edge
-separately; do not dump credentials, forge tickets or modify protected production identities.
+AD compromise is a graph of authority edges from a low-privilege principal to Domain Admin / DCSync. Carry the engagement's authorization: scope which hosts, which collection methods, and the stop condition (prove the edge, do not ransack the domain). Use planted synthetic principals/objects where possible and a lab DC you are authorized to touch. Collection and coercion generate noise and can disrupt production — throttle and get explicit sign-off.
 
-- effective directory ACL edges.
-- delegation and trust preconditions.
-- certificate template enrollment constraints.
+Declare target domain, functional level, attempt budget, stop condition. Source/config-only authorization yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Record forest/domain functional context, collection timestamp, replication state and object
-identifiers. A stale graph is not a current authorization oracle.
+- **Recon** — attack-path graph (BloodHound via SharpHound/bloodhound.py, PowerView, offline ADExplorer snapshot).
+- **Credential capture** — LLMNR/NBT-NS/mDNS poisoning → NetNTLMv2, NTLM relay (to LDAP/ADCS), Kerberoasting (SPN TGS), ASREProasting (no-preauth), LSASS/SAM (on owned host).
+- **ACL abuse** — GenericAll/GenericWrite, WriteDacl (grant DCSync), WriteOwner, AllExtendedRights, AddMember, targeted Kerberoast via WriteSPN.
+- **Delegation** — unconstrained (coerce DC auth → TGT), constrained (S4U2self/proxy), RBCD (write `msDS-AllowedToActOnBehalfOfOtherIdentity`).
+- **Coercion** — PetitPotam (MS-EFSRPC), PrinterBug (MS-RPRN), DFSCoerce, ShadowCoerce, WebDAV; chain coerce+relay.
+- **ADCS** — ESC1-ESC8 certificate-template and enrollment misconfigurations.
 
-For each edge, identify source principal, target object, required right, inheritance/deny behavior
-and additional authentication prerequisites.
+## Mechanism and observation
 
-Use a dedicated test OU and disposable principals. Certificate tests use an isolated CA and
-synthetic identities; never request a certificate for a real privileged subject.
+Pick one edge; trace the precondition (which right on which object) to the effect (which new authority).
 
-## Discriminating laboratory procedure
+**Firstness:** Record the concrete capability gained against a planted principal (a TGS obtained, an ACL edge exercised, a cert issued with a chosen UPN). **Secondness:** State the intended authority boundary and the deviation. **Thirdness:** Infer the authority-escalation class only after the edge is exercised under control.
 
-Abduction: a delegated principal can modify an object outside its intended scope. Rival: graph
-expansion ignored inheritance protection, deny ACEs or stale membership.
+## Abduction and refutation
 
-Deduction: a benign attribute write on the designated test object should fail for the restricted
-principal and succeed for the authorized owner.
+**Mechanism hypothesis:** A specific misconfiguration (an ACL edge, a delegation attribute, a vulnerable cert template) lets a low-privilege principal obtain authority it should not have.
 
-Induction: compare effective rights and one harmless test-object operation; capture DC identity,
-object GUID and replication timestamps.
+**Competing benign explanation:** SMB/LDAP signing is enforced (relay fails); the SPN account has a strong AES key (roast infeasible); the template requires manager approval or lacks client-auth EKU; the coercion target is patched; the "edge" requires rights the test principal does not actually hold.
 
-For certificate enrollment, compare template read/enroll permissions, subject naming, intended
-usage, approval requirements and effective issuance policy. Test only a synthetic subject in the
-isolated CA.
+## Deduction and controls
 
-For GPO or delegation paths, verify both control of the setting and applicability to the intended
-target. An editable policy that never applies is not a demonstrated compromise path.
+A principal acting within its rights succeeds (positive control); the escalation edge must fail if the misconfig is absent. A confirmed finding exercises the edge against a planted principal (e.g. WriteDacl → self-grant DCSync on a lab object) where a correctly-configured control object refuses. Predeclare the capability that confirms it. Signing enforced / template hardened / coercion patched are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded laboratory procedure
 
-## Domain failure modes
+Authorized lab; planted principals; throttled collection.
 
-- Graph reachability can concatenate edges whose prerequisites cannot coexist; record intermediate
-  identity changes and untested edges.
-- A certificate template label or ESC category does not prove issuance or usable authentication on the
-  installed CA/DC configuration.
-- Trust direction, selective authentication and SID filtering are separate constraints; a trust
-  relation alone does not establish cross-forest access.
+1. **Map.** Collect the graph (stealth/DC-only where required) and identify one short path to high authority.
+2. **Verify preconditions.** Confirm the test principal actually holds the claimed right and the target's control state (signing, template flags).
+3. **Exercise one edge (planted target).** e.g. Kerberoast a planted SPN account; or WriteDacl→DCSync on a lab object; or RBCD on a lab computer; or request an ESC1 cert with a planted UPN.
+4. **Prove capability, stop.** Demonstrate the new authority once against the planted object; do not pivot to the real DA.
+5. **Controls.** Show a correctly-configured sibling object refuses the same edge; confirm signing/approval/EKU where claimed.
+6. **Detection.** Record the telemetry each step produced.
 
-## Evidence and verdict
+Record results including refutations. Keep finding and control status separate.
 
-Output edge-by-edge claims with exact object IDs, effective rights, source timestamps, performed
-operations and denied controls. Keep source-confirmed paths separate from runtime-confirmed edges.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The highest-yield modern chains are coerce+relay to ADCS (ESC8) and RBCD via a writable computer object. AES-only Kerberoast is harder but worth attempting. Unconstrained delegation + coercion yields a DC TGT. ADExplorer enables offline graph analysis from any low-priv user. Each is an authority-boundary edge — demonstrate the edge, not a full breach.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require auditable changes to directory ACLs, delegation, GPO linkage and CA templates, with actor
-and object identities. Remove excessive rights at the granting edge and retest legitimate
-delegation.
+Signing enforcement silently defeats relay. A graphed edge may require rights the principal lacks — verify, do not assume the collector's inference. Collection and coercion are noisy and can disrupt production. A patched coercion vector or hardened template is a refutation. Proving one edge is the deliverable; chaining to DA is out of scope unless explicitly authorized.
 
-## Recovery
+## Evidence and deliverable
 
-Restore test-object attributes and permissions, retire synthetic certificates and verify replication
-of test cleanup. Preserve CA and directory audit artifacts.
+Provide the edge (precondition→effect), the planted principal/object, the capability obtained, the control object's refusal, and the detection telemetry. Keep real credentials/hashes out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered paths.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record collector and graph schema versions, DC/CA builds and certificate policy revisions. Validate
-category meanings against installed product behavior before testing.
+Pin domain functional level, DC OS/patch level, and ADCS configuration — edges and coercion vectors are version/patch-bound. BloodHound/impacket/Certipy/netexec default to active operations; run within scope against lab targets. No AD behavior was verified by this content; confirm the live configuration first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Enforce SMB/LDAP signing and channel binding, harden ADCS templates (remove ENROLLEE_SUPPLIES_SUBJECT/Any-Purpose, require approval), tier admin accounts, remove dangerous ACL edges and unconstrained delegation, patch coercion vectors, and use AES/strong SPN passwords. Add detections: Kerberoast TGS bursts, DCSync from non-DCs, ACL changes on privileged objects, coercion RPC calls, cert requests with unusual SANs. Add a regression that the control object refuses the edge.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Restricted principal changes a test object outside delegated scope; authorized and denied controls isolate the ACL edge | CONFIRMED directory authorization defect; FAIL |
-| Protected inheritance or effective deny blocks the graph's alleged edge | REFUTED path edge; PASS |
-| Offline graph shows a path but membership and CA policy are stale | CANDIDATE path; WARN |
+| Supported finding | One authority edge is exercised against a planted principal in the lab where a hardened control object refuses: CONFIRMED; FAIL (scope to the edge shown). |
+| Benign refutation | Signing enforced / template hardened / coercion patched defeats the edge: REFUTED for that edge; PASS for the control. |
+| Insufficient evidence | A graphed edge whose preconditions are not verified: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/active-directory/offensive-active-directory/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/active-directory/offensive-active-directory/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Keeps directory authority-path analysis distinct from protocol-tool interpretation, replacing
-credential and ticket abuse chains with test-object validation.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's attack-path, ACL, delegation, coercion and ADCS craft, re-expressed as a scoped authorized-lab experiment that proves one edge against a planted principal with detection telemetry, replacing full domain-takeover chains with bounded authority-edge proof. Compose with `rt-netexec` (protocol tooling) and `authorization-surface-mapping`.

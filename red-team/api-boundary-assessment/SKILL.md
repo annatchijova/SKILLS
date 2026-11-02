@@ -1,87 +1,95 @@
 ---
 name: api-boundary-assessment
-description: Assess authorization and input boundaries in owned APIs using controlled cross-principal replays. Use for REST, GraphQL, gRPC or WebSocket security reviews.
+description: "Red-team assessment of API security boundaries against the OWASP API Top 10: BOLA/IDOR, broken auth and token lifecycle, excessive data exposure, BFLA and mass assignment, REST verb/content-type tampering, SSRF via parameters, gRPC (reflection, metadata, BOLA) and WebSocket (origin, CSWSH) testing, plus versioning/misconfiguration. Re-expressed as scoped experiments on owned accounts with bounded sets and negative controls."
 ---
 
-# Api Boundary Assessment
+# API Security Boundary Assessment
 
-Use within the user's authorized scope. Carry existing authorization forward; a skill does not expand it. Record observation, expected behavior, hypothesis, falsifier and actual result. Distinguish CANDIDATE, CONFIRMED, REFUTED and NOT TESTED.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's API-security craft as scoped experiments mapped to the OWASP API Top 10, confirming each class on owned accounts with bounded request sets rather than enumerating real users.
 
-## Experiment
-Map actor, tenant, resource, action and transport. Provision two synthetic tenants and a lower-privilege role. Capture a legitimate request and establish the expected denial policy before replaying it with only the principal changed.
-Trace routing, middleware, resolver, repository and serialization: a missing handler check may be enforced upstream or by row-level policy.
+## Scope and prerequisites
 
-## Discriminating probes
-- Compare owner, unrelated tenant and restricted role responses by actual data and persisted effects, not status alone.
-- Test nested object ownership, list/export paths and writable fields separately. A readable field need not be writable.
-- GraphQL: verify resolver-level authorization and bounded alias/batch behavior with a small documented request budget.
-- gRPC: test method policy and metadata propagation. Reflection exposure alone is not an authorization break.
-- WebSocket: distinguish handshake authentication from per-message authorization; test a synthetic session after revocation.
-- For URL-consuming fields use a controlled callback fixture. Record whether redirect handling and final destination validation agree; never infer metadata access from a generic callback.
+Collect the API surface (specs, Swagger, gRPC reflection, WebSocket endpoints). Use owned accounts across roles and a disposable instance. Bound enumeration and rate-limit probes.
 
-## Refutation and outcome
-A 200 with redacted or caller-owned data refutes the claimed cross-tenant disclosure. A 403 with foreign fields can still disclose data. For writes, inspect state after denial.
-Deliver the actor/resource/action matrix, paired requests, sanitized responses, exact version, tested cells and omitted cells. Confirm only demonstrated unauthorized data or state transitions. Recommend a negative regression test and the enforcement layer that covers the class.
+Declare target, protocols, attempt budget, stop condition. Spec-only authorization yields a hypothesis marked NOT TESTED.
 
-## Required methodology and scoped setup
+## Attack surface and classes (OWASP API Top 10 2023)
 
-Read [the assessment methodology](../METHODOLOGY.md) before execution.
-Record the deployed route/schema revision, two synthetic tenant identities, allowed mutations and request budget.
-Use disposable records and disable external notifications; stop at a demonstrated boundary failure.
-Firstness records response fields and durable effects; Secondness records the policy matrix.
-Thirdness names the missing enforcement boundary only after the discriminator succeeds.
+- **BOLA/IDOR** — object-level authorization (see `rt-idor`).
+- **Broken auth** — missing login rate limits, token lifecycle (expired, post-password-change, malformed bearer accepted).
+- **Excessive data exposure** — endpoints returning more than the UI shows.
+- **BFLA** — function-level: admin methods reachable with a user token.
+- **Mass assignment** — unexpected writable properties.
+- **Verb/content-type tampering** — method override, content-type switch, parameter pollution (see `rt-parameter-pollution`).
+- **SSRF via parameters** (see `rt-ssrf`).
+- **gRPC** — reflection enumeration, metadata injection, BOLA/BFLA over gRPC.
+- **WebSocket** — origin validation, CSWSH.
+- **Misconfiguration** — version sprawl, exposed docs/debug, CORS, missing security headers.
 
-## Mechanism-specific experiment
+## Mechanism and observation
 
-**Abduction:** an alternate method or content type reaches a handler without the role or field policy enforced on the ordinary route.
-**Benign rival:** shared middleware, typed binding or database policy already rejects the forbidden action; the alternate route may only return a harmless generic response.
-**Deduction:** a restricted role must fail the same logical action through each supported transport, while the authorized fixture succeeds.
-**Induction:** compare one ordinary request and one supported alternate representation, preserving identity, object and intended action.
-Capture the selected handler, effective method and bound fields; inspect durable state after either success or denial.
-For mass assignment, use a synthetic server-owned property and verify whether it persisted, not whether it was echoed.
-A response echo without a state or permission change does not confirm assignment.
+Trace a request to the authorization/validation performed and the data returned.
 
-## Transport controls
+**Firstness:** Record the access or data obtained outside the account's intended scope (another owned object; an admin method succeeding with a user token; fields beyond the UI). **Secondness:** State the intended policy and the deviation. **Thirdness:** Infer the class only after a controlled request confirms it on owned accounts.
 
-- gRPC: compare a permitted and denied method using the same test identity; capture interceptor identity, application status and trailers.
-- Verify that client-supplied identity metadata cannot replace the authenticated principal; use inert test identity labels.
-- A successful HTTP transport status does not establish gRPC success, and reflection visibility alone is inventory.
-- WebSocket: establish a normal authorized message, then change only the referenced fixture or revoke its permission.
-- Record whether long-lived connections revalidate messages within the declared invalidation interval.
-- Validate cross-origin browser behavior with a dedicated test page and synthetic cookies; a command-line Origin header does not reproduce browser credential policy.
-- CORS: observe whether the test browser can read protected fixture data, rather than concluding from preflight headers alone.
-- Keep API version comparisons limited to routes identified in supplied specs or source, without speculative endpoint enumeration.
+## Abduction and refutation
 
-## Failure modes, evidence and versions
+**Mechanism hypothesis:** Authorization or validation is enforced inconsistently across objects, functions, verbs, protocols or versions, so one path grants access another denies.
 
-Include gateway policy, effective principal, handler ID, serializer projection and before/after fixture state.
-Distinguish field readability from writability and public response metadata from private data.
-Record client retries, redirects and automatic credential propagation that could invalidate paired requests.
-Pin gateway, framework, protobuf/gRPC and WebSocket library versions; verify tool options before replay.
-No operational tooling was executed during this rewrite; CLI success and scanner output are not target evidence.
+**Competing benign explanation:** Every path enforces the same checks; the admin method returns 403; the extra fields are not actually returned/accepted; an old API version is deprecated and gated; CORS reflects only allowlisted origins.
+
+## Deduction and controls
+
+A properly-scoped request succeeds (positive control); the out-of-scope request must be refused if controls hold. A confirmed finding obtains the out-of-scope access/data on owned accounts where the control refuses. Predeclare the confirming artifact. Consistent enforcement across paths is a PASS control.
+
+## Induction: bounded laboratory procedure
+
+Owned accounts across roles; bounded sets.
+
+1. **Baseline.** Authenticate per role; capture legitimate access and controls.
+2. **BOLA/BFLA.** Access another owned object (user token); call an admin method with a user token.
+3. **Token lifecycle.** Replay an expired/post-password-change token; send a malformed bearer.
+4. **Mass assignment / verb / content-type.** Inject non-user fields; tamper methods and content types.
+5. **gRPC/WebSocket.** Enumerate via reflection; test metadata injection and BOLA; test WS origin/CSWSH from an owned page.
+6. **Misconfig.** Enumerate versions; check exposed docs/debug, CORS, headers.
+7. **Control.** Confirm scoped requests behave and the out-of-scope path is refused.
+
+Record results including refutations. Keep finding and control status separate.
+
+## Craft notes (leads)
+
+Tooling: grpcurl (reflection), mitmproxy gRPC addon (`--mode reverse`), websocat (WS/origin), Burp/Arjun (discovery). CSWSH applies when the WS handshake trusts cookies without origin checks. Old API versions often lack newer authz fixes. Method-override headers can bypass method-based WAF rules.
+
+## Domain-specific failure modes
+
+A 200 is not access — confirm the body is out-of-scope data (see `rt-idor`). A deprecated version that is gated is a refutation. CORS reflecting only allowlisted origins is a PASS. Excessive-exposure requires the field to actually be returned, not merely present in a schema.
+
+## Evidence and deliverable
+
+Provide the endpoint/protocol, the account/role context, the out-of-scope access/data obtained, and the control refusal. Use owned accounts; keep real data out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered endpoints.
+
+## Versions and tool limitations
+
+Pin the API framework, gateway and gRPC/WS stack versions. Tools enumerate aggressively; bound them. No endpoint behavior was verified by this content; confirm the live API first.
 
 ## Remediation and detection
 
-Apply policy at the common resource/action boundary and bind only explicitly writable fields.
-Propagate authenticated identity through trusted server context, not caller-controlled metadata.
-Log permission decisions and mutation outcomes under the same request ID without bearer values.
-Validate a detection for denied message access and a regression assertion that forbidden fields remain unchanged.
-Restore fixture permissions and close test connections while retaining the evidence bundle.
+Enforce object- and function-level authorization uniformly across REST/gRPC/WS and versions, validate token lifecycle, allowlist writable fields, restrict verbs/content-types, validate URL parameters (SSRF), enforce WS origin, and deprecate old versions. Add regressions per class. Detect cross-scope access, admin-method calls by user tokens, and verb/content-type anomalies.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| A restricted synthetic role persists a server-owned property through an alternate serializer while the ordinary route denies it. | CONFIRMED; FAIL for the field boundary. |
-| A route returns 200 but projects only caller-owned data and leaves forbidden state unchanged under verified middleware policy. | REFUTED for the alleged foreign access; PASS for the tested case. |
-| A tool reports an administrative endpoint but no authenticated replay or state inspection occurred. | CANDIDATE; WARN. |
+| Supported finding | An out-of-scope object/function/data is obtained on owned accounts where the control refuses: CONFIRMED; FAIL. |
+| Benign refutation | Uniform enforcement refuses the out-of-scope path: REFUTED; PASS for the control. |
+| Insufficient evidence | A 200 with ambiguous body / unconfirmed field exposure: CANDIDATE; WARN. |
 
-Acceptance cases specify expected behavior; they are not executed target tests.
+These are authoring acceptance scenarios, not executed target tests.
 
-## Provenance
+## Provenance and treatment
 
-Exact upstream path: `Skills/api/offensive-api-security/SKILL.md`.
-Treatment: Strengthens the existing cross-transport boundary skill while routing object relationship detail, GraphQL execution and consumption accounting to distinct domain skills.
+Upstream research: `Skills/api/offensive-api-security/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Methodology adapted from Claude-Red `offensive-api-security` at commit `a8de813edc9f66f60d44cfe42d47750e89d9930b`. See [collection provenance](../PROVENANCE.md). This is a rewritten assessment workflow, not a verbatim upstream skill.
-
+This revision restores the upstream's OWASP-API-Top-10, gRPC and WebSocket testing craft, re-expressed as owned-account experiments with bounded sets and uniform-enforcement controls, replacing real-user enumeration with scoped boundary proof. Composes with `rt-idor`, `rt-parameter-pollution`, `rt-ssrf`, `token-trust-assessment`.

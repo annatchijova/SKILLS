@@ -1,117 +1,87 @@
 ---
 name: rt-lorawan-sub-ghz
-description: Validate LoRaWAN session/counter handling and proprietary sub-GHz command freshness using contained test networks and inert receivers.
+description: "Red-team assessment of LoRaWAN and generic sub-GHz security: OTAA vs ABP provisioning and key management, join-procedure and nonce/replay handling, AppKey/session-key exposure, and unauthenticated/replayable generic sub-GHz (OOK/FSK) control links. Re-expressed as a scoped experiment in an isolated RF lab against owned devices with synthetic keys and a hardened-provisioning control instead of attacks on others' networks."
 ---
 
-# LoRaWAN and sub-GHz freshness assessment
+# LoRaWAN / Sub-GHz Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the LoRaWAN/sub-GHz craft as a scoped experiment in an isolated RF lab against owned devices: it tests provisioning, join/replay, and generic sub-GHz control-link security with synthetic keys, with hardened provisioning as the control, rather than attacking others' networks.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a private network/application server, owned node and inert counter receiver inside RF containment. Use synthetic keys, no public network identifiers and no connected actuators.
+LoRaWAN security rests on key management (OTAA root/session keys vs ABP static keys) and join/replay handling; generic sub-GHz devices (remotes, sensors on OOK/FSK) often have unauthenticated, replayable links. Work on owned devices/gateway with synthetic keys in an isolated/attenuated RF lab; respect spectrum/duty-cycle law. Recover/inject only synthetic material.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned devices, the provisioning mode, the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- LoRa is a physical modulation; LoRaWAN adds activation, integrity, counters and key roles. Proprietary LoRa framing need not implement LoRaWAN.
+- **Provisioning** — ABP static session keys (no rotation) vs OTAA; AppKey storage/exposure; reused keys across devices.
+- **Join procedure** — DevNonce/JoinNonce replay handling (LoRaWAN 1.0 vs 1.1), join-accept replay.
+- **Session security** — frame-counter anti-replay; MIC validation.
+- **Generic sub-GHz** — OOK/FSK remotes/sensors with no authentication (capture-and-replay) or static codes.
 
-- OTAA and ABP have different session lifecycles; nonce, frame-counter and key semantics depend on the protocol revision.
+## Mechanism and observation
 
-- Repeated delivery across gateways or confirmed-message retries is not necessarily duplicate application processing.
+Observe join/uplink traffic or a generic sub-GHz control signal on the owned setup; test key exposure and replay.
 
-- For proprietary receivers, identical transmitted bits alone do not establish acceptance of a stale command; the receiver's freshness state is the oracle.
+**Firstness:** Record the provisioning mode, whether a synthetic key is exposed/reused, whether a join or uplink replays (counter handling), and whether a generic sub-GHz command replays. **Secondness:** State the secure baseline (OTAA with unique keys, nonce/counter anti-replay, authenticated sub-GHz with rolling codes) and the deviation. **Thirdness:** Infer a weakness only after a controlled test confirms it on the owned setup.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record session identifier, protocol version, counter, join state and application receipt ID. Contrast radio receptions with distinct accepted application operations.
+**Hypothesis:** The device uses static/reused keys (ABP), mishandles join/frame nonces (replayable), or a generic sub-GHz link is unauthenticated and replayable.
 
-**Abduction:** A server or receiver processes a previously accepted synthetic operation again after a device reboot that should preserve freshness state.
+**Competing benign explanation:** OTAA with unique per-device keys and proper nonce handling (1.1) prevents replay; frame counters enforce anti-replay; the sub-GHz link uses rolling codes/authentication; keys are stored in a secure element; another owned device was observed.
 
-**Competing benign explanation:** Multiple gateways reported the same reception but the application deduplicated it, or a new authorized session permits the new operation.
+## Deduction and controls
 
-**Deduction:** The same-session stale fixture increments the application counter twice after restart; a fresh operation succeeds and an unchanged-session stale control is rejected before restart.
+A hardened setup resists key exposure and replay (positive control). A confirmed finding exposes a synthetic key, replays a join/uplink, or replays a generic sub-GHz command on the owned setup where OTAA/anti-replay/rolling-codes do not. Predeclare the signal. OTAA + unique keys / nonce + frame-counter anti-replay / rolling codes are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated RF lab; owned devices; synthetic keys.
 
-1. Record session and persistent counter state, then send one normal test operation to establish a single application receipt.
+1. **Capture.** Record a join and some uplinks (LoRaWAN) or a generic sub-GHz control transmission (SDR).
+2. **Provisioning.** Determine OTAA vs ABP; check for reused/static synthetic keys and AppKey exposure.
+3. **Replay.** Replay a captured join/uplink and observe nonce/frame-counter handling; for generic sub-GHz, replay the captured command to the owned receiver.
+4. **Session integrity.** Confirm MIC/frame-counter behavior.
+5. **Control.** Confirm OTAA + anti-replay (or rolling codes) refuse the above.
 
-2. Use the vendor's offline integration harness to resubmit the previously accepted synthetic fixture without constructing over-air payloads.
+Record results including refutations. Keep finding and control status separate. Synthetic keys only; respect duty-cycle/spectrum limits.
 
-3. Restart only the disposable node or receiver using supported controls and repeat the same bounded fixture while retaining session identity.
+## Craft notes (leads)
 
-4. Compare transport delivery, network-server rejection and application-side deduplication; for proprietary protocols use an inert simulator with equivalent persistent state.
-
-5. Restore node/session configuration and confirm fresh traffic works without accepting the stale fixture.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+ABP's static session keys (no rotation) and reused AppKeys are the core LoRaWAN provisioning findings; OTAA with unique keys and 1.1 nonce handling is the control. Join/frame-counter replay depends on version and implementation. Generic sub-GHz (garage/remote/sensor) devices frequently use static codes with no authentication — a capture-and-replay class defeated by rolling codes. SDR (e.g. with a LoRa/sub-GHz front-end) is needed.
 
 ## Domain-specific failure modes
 
-- A join request is not simply an encrypted packet; avoid importing the source's blanket key and encryption descriptions.
+OTAA with unique keys and proper nonce handling defeats key-exposure/replay — the primary refutation. Rolling codes defeat generic sub-GHz replay. Frame counters enforce anti-replay. Reused keys across devices turn one exposure into many. Interacting with others' networks/devices is out of scope; respect duty-cycle law.
 
-- A counter reset under a new session is different from reuse under the same key context.
+## Evidence and deliverable
 
-- Region, modulation and decoder support constrain observations; inability to decode is not evidence of encryption strength.
+Provide the provisioning mode, the synthetic-key exposure/reuse (if any), the join/uplink or sub-GHz replay result, and the hardened-provisioning control. Keep to owned devices. Attach expected/observed, rival explanation (OTAA/rolling-code), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide protocol/session revision, counter persistence records, duplicate receipt identifiers, receiver state and harness fixture digests; omit key values.
+Pin the LoRaWAN version (1.0.x vs 1.1) and the device/gateway firmware and SDR front-end — replay and nonce behavior are version-specific. No device behavior was verified by this content; test the owned setup to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Validate alerts for rejected stale counters, repeated join state and application duplicates; correlate gateway copies instead of counting each as a new attack.
-
-Persist freshness state correctly, enforce session separation and application idempotency, use device-unique keys and document safe reactivation.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record LoRaWAN regional parameters, stack/server revisions and ABP/OTAA mode. Verify SDR/decoder support offline; do not copy regional frequency permissions from source tables.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Use OTAA with unique per-device root keys (not ABP), store keys in a secure element, enforce nonce and frame-counter anti-replay (prefer 1.1), and use authenticated/rolling-code links for generic sub-GHz. Add a regression that join/command replay is refused. Monitor for counter resets and duplicate joins.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A synthetic key is exposed/reused, or a join/uplink/sub-GHz command replays, on the owned setup where OTAA/anti-replay/rolling-codes do not: CONFIRMED; FAIL. |
+| Benign refutation | OTAA + unique keys / anti-replay / rolling codes refuses it: REFUTED; PASS for the control. |
+| Insufficient evidence | A capture that could not be decoded, or unclear provisioning: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Same-session stale fixture increments the application counter again only after restart, while fresh and pre-restart controls work. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Several gateways report one frame but the application records exactly one operation and rejects the stale fixture. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | Only undecoded RF samples exist; session identity and receiver effects are absent. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-lorawan-sub-ghz/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Separates LoRaWAN session semantics from proprietary receiver freshness and removes key extraction, downlink injection and access-control replay recipes.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-lorawan-sub-ghz/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's OTAA/ABP, join-replay and generic-sub-GHz craft as a scoped experiment against owned devices with synthetic keys and a hardened-provisioning control, replacing attacks on others' networks with bounded key-exposure and replay proof. Composes with `rt-z-wave`, `rt-zigbee-thread-matter`, `rt-iot`.

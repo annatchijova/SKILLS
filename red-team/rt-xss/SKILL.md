@@ -1,99 +1,100 @@
 ---
 name: rt-xss
-description: "Validate untrusted content rendering, sanitizer transitions and browser execution policy with inert markers and isolated browser fixtures."
+description: "Red-team assessment of cross-site scripting boundaries: stored, reflected, DOM, blind and LLM-generated-content XSS across HTML, attribute, JavaScript and URL contexts. Covers context-aware probing, framework sink inventory (React, Vue, Svelte, Angular, Next, Solid, Astro), CSP/sanitizer bypass, mXSS and polyglots, re-expressed as scoped experiments against owned fixtures with marker payloads and negative controls instead of victim-facing exploitation."
 ---
 
-# Browser Rendering Trust Boundaries
+# Cross-Site Scripting Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's XSS craft as scoped, marker-based laboratory experiments: it names the contexts, sinks and bypass families to test, without shipping victim-targeting payloads.
 
 ## Scope and prerequisites
 
-Assess whether untrusted data enters executable browser context. Reflected text or raw HTML alone does not prove script execution, and no session theft or external callbacks are part of this workflow.
+Identify where untrusted input is reflected into a rendered response or evaluated by the DOM, and in which output context it lands. Use owned test accounts and a disposable instance; inject a unique, inert marker (a benign DOM mutation or a callback to an owned collector), never a credential-stealing or victim-facing payload.
 
-Use an isolated browser profile, a local test origin, synthetic content and no real cookies. Obtain rendering code, sanitizer configuration and the expected allowed markup policy.
+Declare target, framework and version, permitted actions, attempt budget and stop condition. If only source is authorized, produce a context-based hypothesis and mark runtime verification NOT TESTED.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and injection classes
+
+- **Reflected** — input echoed in the immediate response (search, error, URL params). Needs a delivery assumption to matter; state it.
+- **Stored** — input persisted and rendered later to other sessions (comments, profiles, reviews). Highest impact, test with owned second account.
+- **DOM-based** — a client-side sink (`innerHTML`, `document.write`, `eval`, `location`) consumes a source (`location.hash`, `postMessage`) with no server round-trip.
+- **Blind** — execution happens in a context you cannot see (admin panel, log viewer); confirmed only by an owned out-of-band callback.
+- **LLM-generated-content XSS** — model output rendered as HTML; the injection enters via poisoned context/RAG data and lands in an unsanitized sink.
+
+Classify by output context before choosing a probe: HTML body, HTML attribute (quoted/unquoted), JavaScript string, URL/`href`, CSS, or a framework template binding. The escape required differs per context; a payload that fires in one is inert in another.
 
 ## Mechanism and observation
 
-Trace URL, stored and message inputs through decoding, sanitizer, template binding, DOM insertion and subsequent mutation. Include markdown or generated content only when it reaches a real rendering sink.
+Trace source to sink: which input, through what encoding/sanitizer, into which context.
 
-**Firstness:** Record raw response, parsed DOM and relevant sink calls. Compare with the content contract: literal text, permitted markup or explicitly trusted component.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the exact reflected bytes and the surrounding context (is the marker inside a quoted attribute, a script string, an HTML text node?). **Secondness:** State the expected encoding for that context and how the observation deviates. **Thirdness:** Infer the defect class only after a marker actually executes in a controlled view.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** A source reaches an executable DOM context without appropriate encoding, or post-sanitization mutation creates a prohibited node or attribute.
+**Mechanism hypothesis:** Input reaches a context-inappropriate sink without the encoding that context requires, or a sanitizer is bypassed by a mutation/polyglot.
 
-**Competing benign explanation:** The marker may be text-escaped, placed in an inert document, blocked by the enforced execution policy, or sanitized again before active insertion. A scanner can mistake reflection for execution.
+**Competing benign explanation:** The reflection is correctly entity-encoded and inert; the "execution" was the testing console, not the page; a CSP actually blocks the inline script despite the reflection; a framework auto-escapes and the raw value never reaches HTML.
 
 ## Deduction and controls
 
-An owner-provided inert rendering fixture is preserved as text or permitted markup; the unsafe path creates a prohibited active context while the safe binding control does not.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A context-appropriate encoded marker must stay inert; a true sink executes the marker where the encoded control does not. Predeclare the exact DOM event or callback that confirms execution. A marker that renders as visible text is a REFUTED injection for that context, not a finding. CSP, Trusted Types or a framework escape blocking execution is a PASS control, recorded separately.
 
 ## Induction: bounded laboratory procedure
 
-1. Render a plain marker and establish its source-to-sink path using browser instrumentation.
+Owned instance and owned viewer only; inert markers.
 
-2. Replay an approved inert sanitizer conformance fixture in the isolated page; inspect the live DOM after all framework mutations.
+1. **Baseline.** Submit a benign unique string; locate every reflection and its context.
+2. **Context probe.** Inject context-breaking characters inert to a correct encoder: `<>"'` in HTML, `"/>` in attributes, `';//` in JS strings, `javascript:` in URL sinks. Observe whether the context closes.
+3. **Execution marker.** Only where the context breaks, fire an inert proof: a benign DOM mutation or a callback to your collector — not `document.cookie` exfiltration.
+4. **Context-specific escalation (owned).** HTML: `<svg onload=...>`; attribute: `" autofocus onfocus=...`; JS string: break and chain; URL: `javascript:`/`data:` where the sink navigates.
+5. **Encoded control.** Submit the same payload where the app claims it encodes; confirm it is inert there.
+6. **Stored/blind.** For stored, view with a second owned account; for blind, wait on the owned OOB callback.
 
-3. Compare the same content through a text-only binding and the suspected insertion path.
+Record each result including refutations. Keep finding status (CANDIDATE/CONFIRMED/REFUTED/NOT TESTED) separate from control status (PASS/WARN/FAIL).
 
-4. If execution confirmation is needed, use an existing local test fixture that only toggles an in-memory boolean; it must read no cookies, issue no requests and alter no persistent state.
+## Framework sinks and modern bypass craft
 
-5. For stored content, render through two synthetic roles and the actual preview/final views; remove only the fixture content and reset the profile.
+Most XSS now lives in framework escape hatches, not raw string concatenation. Know the dangerous APIs per stack (leads; confirm the live version):
 
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+- React: `dangerouslySetInnerHTML`, `href={userInput}` with `javascript:`.
+- Vue: `v-html`. Angular: `bypassSecurityTrust*`, `[innerHTML]`. Svelte: `{@html}`. Solid: `innerHTML` in reactive statements. Astro: `set:html`. Next/Remix: unsanitized loader/Server-Action data, SSR hydration mismatches.
+
+Bypass families to test as discriminators between filter and renderer:
+- **CSP bypass** — JSONP endpoints, `base-uri`/`object-src` gaps, `unsafe-inline`, trusted-CDN script gadgets, nonce reuse.
+- **mXSS** — markup that mutates on DOM re-serialization (innerHTML round-trips) into an executable form the sanitizer did not see.
+- **Polyglot** — one payload valid across multiple contexts, to test context-detection failures.
+- **Sanitizer bypass** — DOMPurify config gaps, `<template>`/`<noscript>`/SVG/MathML foreign-content tricks; confirm the installed sanitizer version.
 
 ## Domain-specific failure modes
 
-A blocked execution attempt can still establish unsafe markup handling but not active execution under that policy. Browser extensions and devtools actions can contaminate evidence. Sanitization before later string concatenation may lose its guarantee.
+A reflection is not execution; a payload firing in the console is not firing in the page. Framework auto-escaping can make a "reflected" value inert. CSP/Trusted Types can neutralize an otherwise-valid injection — report the residual impact honestly. Self-XSS (fires only in the attacker's own session) is not a finding without a delivery mechanism.
 
 ## Evidence and deliverable
 
-Provide source/sink locations, raw and post-mutation DOM snapshots, browser build, sanitizer settings, CSP/Trusted Types enforcement mode and the local execution oracle if used.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide source, reflected context, the exact marker, the controlled execution event (or callback record), the encoded-control result, and any CSP/sanitizer that limited impact. Keep real session data out of portable output. Attach minimal replay, expected/observed, rival explanation, falsifier, and uncovered contexts.
 
 ## Versions and tool limitations
 
-Verify browser support and enforcement rather than assuming CSP, native Sanitizer API or Trusted Types availability. Report-only policy does not block. Framework escaping guarantees apply only to supported binding paths.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin framework, sanitizer and CSP versions. Scanner payloads may be stored and reach other users — only use owned accounts and inert markers. No tool or browser behavior was verified by this content; confirm installed versions and current browser behavior before claiming.
 
 ## Remediation and detection
 
-Use context-appropriate binding, maintained sanitizers for intentionally allowed markup and avoid mutation after sanitization. Restrict dangerous DOM sinks; deploy execution policies as defense in depth with regression fixtures.
-
-Correlate sanitizer rejection and browser policy reports with fixture IDs. A missing CSP report is not evidence of safety; verify report delivery with a known local control.
+Context-aware output encoding, Trusted Types + the native Sanitizer API, a strict nonce/hash CSP, framework-safe bindings, and no `innerHTML` of untrusted data. Add a regression asserting the marker renders inert. Detect via CSP violation reports and markers in logs correlated to the request ID.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A supplied local fixture toggles only its in-memory oracle through the untrusted sink, while text binding stays inert: CONFIRMED for browser execution in tested context; FAIL. |
-| Benign refutation | The reflected marker remains text and the suspect path never creates an active context: REFUTED for that execution claim; PASS. |
-| Insufficient evidence | A scanner reports reflection without a DOM trace or execution observation: CANDIDATE; WARN. |
+| Supported finding | An inert marker executes in a controlled owned view where the encoded control stays text: CONFIRMED; FAIL. |
+| Benign refutation | The reflection renders as entity-encoded text / CSP blocks it: REFUTED for the tested context; PASS for the control. |
+| Insufficient evidence | A reflection exists but no context break or execution is shown: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-xss/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-xss/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Retains reflected/stored/DOM, mutation and browser-policy mechanisms without payload catalogs, CSP evasion or session extraction.
-
+This revision restores the upstream's context taxonomy, framework sink inventory and CSP/mXSS/polyglot bypass craft, re-expressed as owned-fixture experiments with inert markers and encoded controls, replacing victim-facing cookie/session exfiltration with bounded execution proof.

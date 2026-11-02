@@ -1,98 +1,91 @@
 ---
 name: rt-mitigations
-description: Verify binary hardening configuration and measured enforcement using metadata, runtime state and harmless synthetic boundary probes.
+description: "Red-team / research assessment of exploit-mitigation effectiveness: understanding and measuring KASLR, KPTI, SMAP/SMEP, PAN, stack canaries, NX/DEP, CFI/CET shadow stacks, MTE, LAM, memory sealing, KDP/HVCI and hardened usercopy, including the conditions under which each is bypassable. Re-expressed as scoped experiments on an owned target that score whether a mitigation holds against a specific primitive (PASS/WARN/FAIL) rather than delivering bypass weaponization."
 ---
 
-# Hardening evidence and enforcement
+# Exploit-Mitigation Effectiveness Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before using this skill.
-Assess what a defense protects, where it applies and what evidence supports enforcement.
-Use metadata inspection and owned synthetic fixtures; do not develop bypasses.
-Do not disable host protections or change production policy to complete an experiment.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's mitigation craft as effectiveness measurement: it explains each mitigation and the precondition under which it is bypassable, scoring whether it holds against a given primitive on an owned target rather than shipping a bypass weapon. This is the defender-facing framing of the exploit-dev family.
 
-## Inputs and baseline
+## Scope and prerequisites
 
-Obtain the binary digest, loaded modules, architecture, OS build and deployment policy.
-Record compiler/linker flags when available and actual runtime configuration.
-Define the claimed guarantee before inspecting flags.
-Distinguish hardware capability, binary compatibility, configured policy and active enforcement.
-An unsupported feature is not an observed bypass.
-A setting absent from one module is not proof that every process lacks it.
+A mitigation does not make a bug unexploitable in the abstract; it raises a specific precondition (needs a leak, needs a controlled object, needs a specific primitive). The question is: against *this* primitive on *this* build, does the mitigation hold? Work on an owned target with a known primitive. The deliverable is a per-mitigation PASS/WARN/FAIL with the precondition, not a generic bypass.
 
-## Mechanism matrix
+Declare the target, architecture, and enabled mitigations, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-| Defense | Relevant boundary | Evidence and limit |
-|---|---|---|
-| NX/DEP | Page execution permissions | Mappings and policy; no claim about data writes |
-| ASLR/PIE | Address placement | Image type and fresh-process mappings; not proof of entropy |
-| RELRO | Relocation-related read-only regions | Program headers, binding mode and runtime permissions |
-| Stack protector | Instrumented stack-frame integrity | Selected function instrumentation, not every local object |
-| CFI/CFG | Permitted indirect-call targets | Metadata plus active policy and covered modules |
-| Shadow stack | Return-address consistency | Hardware/OS/process enablement, distinct from forward-edge CFI |
-| Memory tagging | Tagged pointer/allocation consistency | Allocation coverage and checking mode; detection is not universal |
-| Sandbox/seccomp | Resource and syscall authorization | Effective profile and harmless allowed/denied probes |
-| Kernel isolation | User/kernel access separation | Effective OS evidence, not merely a CPU feature flag |
+## Mitigation surface (and the precondition each needs to bypass)
 
-Keep stack exhaustion separate from stack-buffer overwrite when describing protection.
-Canaries do not guarantee detection of every out-of-bounds write.
-Memory tagging can have coverage gaps and asynchronous reporting.
-A CPU advertising a feature does not prove that a process uses it.
+- **ASLR/KASLR** — bypassed only with an info leak (or low entropy / brute on 32-bit).
+- **NX/DEP** — forces code reuse (ROP/JOP) instead of injected shellcode.
+- **Stack canary** — bypassed by a canary leak, a brute (forking servers), or a write that skips it.
+- **CFI / CET shadow stack** — breaks naive ROP/JOP; bypass needs CFI-valid gadgets or a shadow-stack gap.
+- **SMAP/SMEP/PAN** — block kernel use of user pages; bypass needs a kernel-space primitive or ret2dir-class.
+- **KPTI** — isolates page tables (Meltdown-era); bypass is side-channel/implementation-specific.
+- **MTE / LAM** — memory tagging / address masking; bypass needs tag leak or tag confusion.
+- **KDP / HVCI (Memory Integrity), memory sealing, RODATA, hardened usercopy** — protect specific structures; bypass needs a primitive outside the protected set.
 
-## Abduction and strongest benign explanation
+## Mechanism and observation
 
-Hypothesis: a synthetic worker violates its declared sandbox policy by opening a file.
-Strongest benign rival: that path is explicitly allowed, or the worker was launched
-without the profile and therefore is not the deployment claimed in the report.
-Deduction: a correctly attributed denied operation should fail with the expected policy
-result while a permitted operation succeeds in the same profile.
+Pair the primitive with the mitigation and test whether the precondition for bypass is reachable.
 
-## Discriminating experiment
+**Firstness:** Record whether the mitigation stopped the step (abort, non-control) or the bypass precondition was met (leak obtained, CFI-valid chain ran). **Secondness:** State what the mitigation is designed to prevent and the observed deviation. **Thirdness:** Infer "mitigation ineffective against this primitive" only after the bypass precondition is demonstrably met under control.
 
-1. Define a private test directory with two inert files, ALLOWED and DENIED.
-2. Record the synthetic profile's exact resource rule and attach it to the test worker.
-3. Verify the worker's identity and effective profile through supported platform evidence.
-4. Read ALLOWED to confirm the harness and file setup function.
-5. Attempt to read DENIED without any alternate access path or bypass technique.
-6. Record the return value, policy audit event and whether bytes were returned.
-7. Compare with a separate explicitly unconfined fixture process as a sensitivity control.
-8. Stop after the policy result; preserve logs and clean up only test-owned files.
+## Abduction and refutation
 
-For binary hardening, use an evidence matrix rather than inventing runtime proof.
-Inspect ELF/PE metadata with installed tools whose version and help were checked.
-Correlate headers with runtime mappings of the exact module.
-Repeated ASLR samples establish observed variation only; do not infer a probability bound.
-If active CFI or shadow-stack enforcement cannot be safely tested, report NOT TESTED.
-Do not create control-transfer payloads merely to complete a matrix cell.
+**Mechanism hypothesis:** The available primitive satisfies the precondition that bypasses the mitigation (e.g. an OOB read provides the ASLR leak).
 
-## Reproducibility and tool limits
+**Competing benign explanation:** No leak is available so ASLR holds; CET rejects the chain; the canary cannot be leaked; MTE tags are not leakable; the primitive is outside the protected structure set so KDP/HVCI is irrelevant (and the mitigation is effective for this primitive).
 
-Preserve tool versions, raw metadata, module IDs and policy export hashes.
-Document virtualization, compatibility layers and loader differences.
-Tools such as checksec summarize heuristics; inspect their underlying evidence.
-Debugger launch settings can affect randomization; capture them.
-A compiler flag in a build script is weaker evidence than the artifact actually deployed.
-Missing privileges to inspect effective policy produce WARN, not a guessed PASS.
+## Deduction and controls
 
-## Detection and remediation
+With the precondition met the step succeeds; without it the mitigation holds. A confirmed "ineffective" result shows the bypass precondition met on the owned target where a configuration lacking that precondition blocks it. Predeclare the precondition and the success signal. The mitigation blocking the step (no reachable precondition) is a PASS/WARN.
 
-Monitor policy-denial events, unexpected executable mappings and hardening drift.
-Bind alerts to binary/module identities and process policy, avoiding raw-address signatures.
-Enable supported defenses consistently across relevant modules and verify resulting artifacts.
-Repair the underlying memory or authorization defect even when a mitigation stops one effect.
-Retest valid operations so policy hardening does not silently break permitted behavior.
+## Induction: bounded laboratory procedure
 
-## Behavioral cases and expected verdicts
+Owned target; benign marker.
 
-- Confirmed synthetic defect: the attached fixture profile promises DENIED cannot be read,
-  yet bytes return while attribution and controls pass. CONFIRMED profile-enforcement defect.
-- Benign refutation: the supposedly denied resource is allowed by the documented policy;
-  the operation matches the contract. REFUTED bypass claim.
-- Insufficient evidence: metadata says CFG-compatible but effective process policy is absent;
-  enforcement NOT TESTED, control WARN; no universal protection or bypass verdict.
+1. **Inventory.** Enumerate enabled mitigations (`checksec`, kernel config) and the available primitive.
+2. **Pair & hypothesize.** For each relevant mitigation, state the precondition a bypass needs.
+3. **Test the precondition.** Attempt only to meet the precondition (obtain a leak, find a CFI-valid gadget) and reach the benign marker; stop there.
+4. **Score.** PASS (mitigation holds, precondition unreachable), WARN (precondition partially reachable / unverified), FAIL (precondition met, mitigation bypassed for this primitive).
+5. **Control.** Compare against a configuration where the precondition is removed.
 
-## Output and provenance
+Record results including refutations. Keep finding status separate from the per-mitigation control score.
 
-Deliver defense, claimed guarantee, configured state, effective evidence and untested scope.
-Source: `Skills/exploit-dev/offensive-mitigations/SKILL.md`.
-Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Rewritten reference; upstream platform defaults and mitigation-bypass recipes are not adopted.
+## Craft notes (leads)
+
+The recurring theme: modern mitigations convert "bug" into "bug + required precondition." ASLR needs a leak; NX needs code reuse; CET needs a shadow-stack gap; MTE needs a tag leak. Document the precondition, because the mitigation's effectiveness is exactly whether that precondition is reachable with the available primitive.
+
+## Domain-specific failure modes
+
+Claiming a mitigation is "bypassed" in general is wrong — bypass is always relative to a primitive and a precondition. A mitigation irrelevant to the primitive class (e.g. KDP when the target is unprotected) is neither PASS nor FAIL for that primitive; say so. Reaching the marker proves the precondition; going further is out of scope.
+
+## Evidence and deliverable
+
+Provide the primitive, each mitigation, its bypass precondition, whether the precondition was met, and the PASS/WARN/FAIL. Keep work on the owned target. Attach minimal replay, expected/observed, rival explanation, falsifier, mitigations not assessed.
+
+## Versions and tool limitations
+
+Pin architecture, kernel/compiler and mitigation versions — effectiveness is version- and config-specific (e.g. CET availability, MTE mode). No mitigation behavior was verified by this content; confirm the live configuration first.
+
+## Remediation and detection
+
+Enable the full stack (ASLR high-entropy, NX, canaries, Full RELRO, CFI/CET, MTE/LAM where available, HVCI/KDP, hardened usercopy) and, crucially, eliminate the preconditions (info leaks) that unlock bypasses. Add a regression asserting the precondition remains unreachable. Detect leak primitives and code-reuse execution.
+
+## Behavioral acceptance cases
+
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A bypass precondition is met on the owned target, reaching the marker, where removing it blocks the step: CONFIRMED mitigation-ineffective-for-this-primitive; control FAIL. |
+| Benign refutation | No reachable precondition (no leak / CET holds / no tag leak): REFUTED; control PASS. |
+| Insufficient evidence | Precondition partially reachable, not demonstrated: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
+
+## Provenance and treatment
+
+Upstream research: `Skills/exploit-dev/offensive-mitigations/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's mitigation catalog and bypass-precondition knowledge, re-expressed as owned-target effectiveness measurement scored PASS/WARN/FAIL per primitive, replacing bypass weaponization with precondition-reachability assessment. Composes with `rt-exploit-development`, `rt-basic-exploitation`, `control-effectiveness-vs-existence`.

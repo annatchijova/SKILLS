@@ -1,93 +1,92 @@
 ---
 name: rt-osint
-description: Build an evidence-bound organizational asset inventory from authorized public-source snapshots, distinguishing ownership, hosting and historical observations.
+description: "Red-team reconnaissance of an authorized target's externally-observable footprint: domains/subdomains, DNS and certificate transparency, exposed services, public code/credential leaks, cloud assets, and organizational metadata. Re-expressed as scoped, passive-first, privacy-respecting collection that builds an attack-surface map from authorized sources with provenance, not intrusive scanning or personal-data harvesting of individuals."
 ---
 
-# Organizational Exposure Research
+# OSINT Reconnaissance Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before selecting collection sources.
-Use this skill for organization-owned infrastructure and public artifact exposure.
-Use rt-osint-methodology for cross-source claim adjudication and timeline reconstruction.
-Personal profiling, face identification and credential-use experiments are outside this workflow.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the collection below.
+This revision restores the upstream's OSINT craft as scoped, passive-first collection: it names the sources that build an organizational attack-surface map with provenance, bounded by authorization and privacy, rather than intrusive scanning or profiling individuals. Compose with `attack-surface-triage` and `intel-source-evaluation`.
 
-## Mechanisms and preconditions
+## Scope and prerequisites
 
-- DNS relates a name to records at an observation time; it does not prove server ownership.
-- Certificate transparency records issuance claims, not current service or domain control.
-- ASN and shared-hosting associations identify providers, often shared by unrelated customers.
-- Public code metadata can reveal package/service names without establishing their deployment.
-- Search indexes and passive scanners may be stale, incomplete or copied from one another.
-- A public document can expose internal identifiers; importance depends on actual sensitivity.
+Reconnaissance maps the authorized target's external footprint before any active testing. Collect from public sources on the organization and its infrastructure within scope. Keep it passive-first (no active scanning unless authorized), and avoid collecting personal data about individuals beyond what the engagement requires. Record the provenance of each datum.
 
-## Observation and baseline
+Declare the target org/domains in scope, which sources are authorized, and the passive/active boundary. Active scanning without authorization is out of scope.
 
-Start from an authorized seed list of domains, organization IDs, repositories and time window.
-Define a specific question, such as whether an inventory misses an organization-controlled service.
-Record source query, collection time, source observation time, license/access constraint and artifact.
-Keep raw spelling and a normalized comparison value; use correct DNS suffix boundaries.
-Preserve original records and digests so a later reader can distinguish evidence from enrichment.
+## Collection surface
 
-## Abduction and deduction
+- **DNS & domains** — subdomain enumeration (passive: CT logs, passive DNS; active only if authorized), zone data, related domains.
+- **Certificate transparency** — hostnames and infrastructure from issued certs.
+- **Exposed services** — internet-wide scan data (Shodan/Censys-class) for the org's ranges — read, not scan, unless authorized.
+- **Public code & leaks** — org repos, leaked credentials/keys in public commits, paste sites, exposed buckets.
+- **Cloud assets** — enumerable buckets/endpoints tied to the org.
+- **Organizational metadata** — tech stack, email format, public staff roles relevant to the engagement (minimized).
 
-Hypothesis: a certificate SAN and passive DNS match identify an unmanaged organization asset.
-Benign rival: the address belongs to a shared CDN, an expired deployment or an unrelated tenant.
-Prediction: an independent owner-supplied inventory or deployment record links the exact hostname
-and service identifier at the relevant time; unrelated same-IP hosts lack that relationship.
-Shared IP, favicon similarity and a common certificate issuer do not satisfy the discriminator.
+## Mechanism and observation
 
-## Bounded collection procedure
+Build the surface map from corroborated sources.
 
-1. Use supplied exports first and define a maximum query count and artifact-size budget.
-2. Parse DNS, certificate and repository observations without visiting discovered endpoints.
-3. Normalize hostnames with explicit wildcard and internationalized-name handling.
-4. Join observations on exact identifiers and overlapping time intervals, retaining source IDs.
-5. Compare candidate assets with an owner-provided inventory or authoritative ownership record.
-6. Include known shared-hosting neighbors as negative controls for overbroad attribution.
-7. Inspect supplied public document/source metadata for exposure using a synthetic marker
-   or exact nonsecret identifier; never validate discovered credentials against services.
-8. Where public querying is authorized, use official/read-only interfaces and record coverage
-   limits. A third-party page crawler or public upload is an additional disclosure/action.
-9. Stop at the question's resolution or budget; unexplained relationships stay candidates.
-10. Retain the evidence graph and query ledger; do not expand scope automatically through pivots.
+**Firstness:** Record each asset/datum and its source (which CT log, which scan dataset, which repo). **Secondness:** State what is in-scope and expected vs what is unexpectedly exposed. **Thirdness:** Infer an exposure (e.g. a forgotten subdomain, a leaked key) only after corroboration, not from a single stale source.
 
-## Domain failure modes
+## Source discipline (compose with intel-source-evaluation)
 
-Substring domain matching can merge unrelated suffixes; distinguish a hostname from its URL path.
-Wildcard DNS can make guessed names appear valid without corresponding distinct applications.
-Expired certificates and historical DNS can describe different owners at different times.
-An API returning no results may mean pagination, quota or provider coverage, not absence.
-Two commercial results can derive from the same certificate feed and are not independent.
-An AI-generated entity label is a hypothesis requiring source confirmation.
-Local analysis is not automatically private if extensions or telemetry transmit artifacts.
+- Corroborate across independent sources; a single dataset can be stale or wrong.
+- Record provenance and timestamp for every datum — recon data ages.
+- Distinguish confirmed-live from historical (passive DNS/CT may list decommissioned hosts).
+- Minimize personal data; collect only what the authorized engagement needs.
 
-## Evidence, detection and remediation
+## Abduction and refutation
 
-Deliver nodes for exact assets and edges labeled resolves-to, issued-for, deployed-by or
-observed-at; do not replace them all with "owned by."
-For each candidate include time bounds, source diversity, contrary evidence and next check.
-Report exposure of a synthetic/internal marker separately from credential validity or compromise.
-Recommend inventory reconciliation, removal of unintended public artifacts and ownership review.
-For monitoring, compare new certificate/DNS/repository observations against approved changes;
-validate alerts using a known test asset and a benign shared-provider neighbor.
+**Hypothesis:** The org has an externally-observable exposure (forgotten host, leaked secret, misconfigured bucket) worth testing.
 
-## Versions and tool limits
+**Competing benign explanation:** The host is decommissioned (stale CT/passive-DNS record); the "leaked key" is revoked or a public/test key; the bucket is intentionally public; the asset belongs to a different org sharing infrastructure.
 
-Record parser, normalizer, API schema, dataset snapshot and pagination/coverage limitations.
-Inspect current installed tool capabilities before relying on passive-only collection modes.
-Do not import upstream service availability, pricing or model context-size claims.
-No external queries, person searches, public uploads or endpoint probes ran during authorship.
+## Deduction and controls
 
-## Behavioral acceptance
+A known in-scope asset is confirmable live (positive control). A real exposure is one corroborated as live and unexpected. Predeclare what "live and in-scope" means. A stale or revoked datum is a refutation, not a finding.
+
+## Induction: bounded collection procedure
+
+Authorized sources; passive-first.
+
+1. **Seed.** Start from the authorized domains/org.
+2. **Expand passively.** CT logs, passive DNS, scan datasets, public code/leak search, bucket enumeration — recording provenance.
+3. **Corroborate & age-check.** Confirm each asset is live and current (active confirmation only if authorized).
+4. **Scope.** Drop out-of-scope or other-org assets; minimize personal data.
+5. **Map.** Produce the attack-surface map with provenance, feeding `attack-surface-triage`.
+
+Record results including refutations (stale/other-org assets). Keep confirmed-live separate from historical.
+
+## Domain-specific failure modes
+
+Stale CT/passive-DNS records list dead hosts — age-check. Shared infrastructure attributes another org's assets to the target — verify ownership. A "leaked" key may be revoked/public. Active scanning without authorization crosses from recon into unauthorized testing. Over-collecting personal data is both out of scope and an ethics/privacy problem.
+
+## Evidence and deliverable
+
+Provide the attack-surface map: each asset, its source/provenance, live-vs-historical status, and scope/ownership confirmation. Minimize personal data. Attach the source list, collection date, passive/active boundary honored, and assets excluded as out-of-scope.
+
+## Versions and tool limitations
+
+Datasets (CT, passive DNS, scan data) have coverage and freshness limits — state them. No asset was actively confirmed by this content unless authorized and done; mark confirmation status.
+
+## Remediation and detection
+
+Reduce external footprint: retire forgotten hosts/subdomains, rotate leaked secrets, lock down public buckets, minimize metadata leakage, and monitor CT logs and public code for org assets/secrets. Detect recon-driven scanning against confirmed assets.
+
+## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Exact hostname links to owner deployment record and is absent from approved inventory | CONFIRMED inventory gap, bounded to that record; FAIL |
-| Shared IP candidate belongs to another tenant and lacks an owner deployment link | REFUTED ownership inference; no vulnerability verdict |
-| Only an old certificate SAN is available with no current ownership evidence | CANDIDATE asset relation; WARN |
+| Supported finding | A corroborated, live, in-scope exposure (forgotten host / active leaked secret / public bucket) with provenance: CONFIRMED exposure. |
+| Benign refutation | The asset is stale/decommissioned, revoked, intentionally public, or another org's: REFUTED. |
+| Insufficient evidence | A single stale-source datum not corroborated or age-checked: CANDIDATE; WARN. |
 
-## Provenance
+These are authoring acceptance scenarios, not executed target tests.
 
-Rewritten from `Skills/recon/offensive-osint/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain infrastructure, code-artifact and archival collection value; replace
-tool-directory breadth, people profiling and leak-service pivots with bounded asset evidence.
+## Provenance and treatment
+
+Upstream research: `Skills/recon/offensive-osint/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's DNS/CT/scan/leak/cloud collection craft, re-expressed as scoped, passive-first, privacy-respecting collection with provenance and corroboration, replacing intrusive scanning and personal profiling with a bounded attack-surface map. Composes with `rt-osint-methodology`, `attack-surface-triage`, `intel-source-evaluation`.

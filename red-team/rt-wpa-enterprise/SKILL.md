@@ -1,117 +1,87 @@
 ---
 name: rt-wpa-enterprise
-description: Validate EAP server trust, client certificate policy and assigned network roles with synthetic identities on a private 802.1X lab.
+description: "Red-team assessment of WPA-Enterprise (802.1X/EAP) trust: whether clients validate the RADIUS server certificate, evil-twin RADIUS credential (EAP identity/MSCHAPv2) capture, weak EAP method selection, and PMF. Re-expressed as a scoped experiment in an isolated RF lab with an owned client and synthetic domain credentials that measures server-cert validation with a hardened-supplicant control instead of harvesting real credentials."
 ---
 
-# Enterprise supplicant trust assessment
+# WPA-Enterprise (802.1X/EAP) Trust Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the WPA-Enterprise craft as a scoped server-cert-validation experiment in an isolated RF lab: it measures whether an owned client validates the RADIUS certificate before sending credentials, using synthetic credentials, rather than harvesting real ones.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an isolated AP, RADIUS service, private test CA and managed supplicant with disposable accounts. Prepare valid, wrong-name and untrusted-issuer server certificates without production identity material.
+WPA-Enterprise security hinges on the client validating the RADIUS server certificate; a client that does not can be lured to a rogue RADIUS (evil twin) that captures the EAP identity and MSCHAPv2 challenge/response for offline attack. Work on an owned client provisioned with synthetic domain credentials in an isolated RF lab. Capture only synthetic credentials; respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned client/profile, the EAP method, the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- Server trust requires the configured trust anchor and server identity policy; outer identity traffic does not reveal every inner EAP method.
+- **Missing/weak server-cert validation** — client sends credentials to any RADIUS claiming the SSID.
+- **Evil-twin RADIUS** — rogue AP + hostapd-wpe captures EAP identity + MSCHAPv2 for offline cracking.
+- **Weak EAP method** — EAP-MD5/LEAP/GTC exposure vs PEAP/EAP-TTLS vs certificate-based EAP-TLS.
+- **PMF** — management-frame protection enforcement.
 
-- PEAP/TTLS tunnel establishment and inner authentication are distinct events; test whether sensitive inner authentication begins before required trust checks pass.
+## Mechanism and observation
 
-- EAP-TLS client certificate acceptance depends on issuer, usage, identity mapping and status policy, not possession of any certificate.
+Stand up a rogue RADIUS in the lab; observe whether the owned client validates the cert before disclosing synthetic credentials.
 
-- Authentication success and authorization role assignment are separate boundaries; a valid test identity must receive only its mapped access.
+**Firstness:** Record whether the owned client connected to the rogue RADIUS and disclosed the synthetic EAP identity/MSCHAPv2 (and whether that challenge is then offline-crackable for the synthetic password). **Secondness:** State the secure baseline (client validates the CA/server cert and refuses) and the deviation. **Thirdness:** Infer a validation finding only after the owned client is controlled-lured.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record the deployed supplicant trust policy and the last completed EAP stage. Compare behavior with the expected server-name and trust-anchor requirements.
+**Hypothesis:** The client does not validate the RADIUS certificate, so a rogue RADIUS captures the (synthetic) credential material.
 
-**Abduction:** The managed supplicant starts inner authentication against a server certificate that violates its configured identity policy.
+**Competing benign explanation:** The client pins the CA/server cert and rejects the rogue RADIUS; EAP-TLS (mutual certs) has no crackable secret; the profile requires a specific server name; the capture is incomplete; PMF/other controls prevented the lure.
 
-**Competing benign explanation:** A user-approved test override or previously installed lab trust anchor explains the acceptance.
+## Deduction and controls
 
-**Deduction:** The clean managed profile accepts the valid certificate but reaches inner authentication with a wrong-name certificate; the untrusted-issuer control and profile export isolate the missing check.
+A hardened supplicant refuses the rogue RADIUS (positive control). A confirmed finding has the owned client disclose the synthetic EAP/MSCHAPv2 to the rogue RADIUS where a cert-validating supplicant refuses. Predeclare the disclosure signal. CA/server-cert pinning / EAP-TLS / server-name match are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated RF lab; owned client; synthetic credentials.
 
-1. Verify device time and profile deployment; record trusted test anchors and remove only test-owned cached exceptions.
+1. **Baseline.** Confirm the owned client's EAP profile and that it joins the legitimate lab RADIUS.
+2. **Rogue RADIUS.** Stand up hostapd-wpe-class rogue AP/RADIUS for the SSID in the lab (optionally nudge reassociation per `rt-deauth-disassoc`).
+3. **Observe validation.** Does the owned client check the cert and refuse, or disclose the synthetic EAP identity/MSCHAPv2?
+4. **Offline (synthetic).** If MSCHAPv2 is captured, confirm crackability of the synthetic password as a strength measurement.
+5. **Control.** Enable CA/server-cert validation (or EAP-TLS) and confirm the client refuses.
 
-2. Complete one valid-certificate authentication and confirm the expected restricted role.
+Record results including refutations. Keep finding and control status separate. Synthetic credentials only.
 
-3. Change only certificate identity, then only issuer, with normal client reconnects; log protocol stage without collecting reusable secret responses.
+## Craft notes (leads)
 
-4. Separately compare accepted and rejected synthetic client certificates against the RADIUS identity mapping; never export private keys.
-
-5. Restore server configuration and profile state; confirm access and log correlation for the valid test identity.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+hostapd-wpe captures EAP identities and MSCHAPv2 challenge/response; the MSCHAPv2 response is offline-crackable (asleap/hashcat) — hence the synthetic-password caveat. The root finding is almost always missing server-cert validation on the client, not a protocol break. EAP-TLS (mutual certificates) has no password secret to capture. Configure clients to validate the CA and the server name.
 
 ## Domain-specific failure modes
 
-- Missing XML fields can inherit defaults; configuration inspection alone cannot establish acceptance.
+A client that validates the cert refuses the rogue RADIUS — the primary refutation and the fix. EAP-TLS has no crackable secret. An incomplete EAP exchange yields nothing. Capturing real domain credentials is never appropriate — synthetic only, in an isolated lab. Attacking a live enterprise WLAN is out of scope.
 
-- Certificate prompts, tunnel establishment and completed inner authentication have different implications.
+## Evidence and deliverable
 
-- A TLS inspection bypass deliberately installed in the test client invalidates claims about an unmodified managed profile.
+Provide the EAP method, the client's validation behavior, the synthetic-credential disclosure (if any) and its crackability, and the cert-validation control result. Use synthetic credentials; keep them out of portable reports. Attach expected/observed, rival explanation (cert-validating/EAP-TLS), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide certificate fingerprints and public metadata, trust-profile revision, EAP stage, RADIUS role decisions and sanitized event correlation.
+Pin the supplicant and its cert-validation config and the EAP method — susceptibility is client-config-specific. No client behavior was verified by this content; test the owned client to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Collect supplicant validation failures and RADIUS authentication/role events; verify that wrong-name rejection is distinguishable from connectivity failure.
-
-Deploy enforceable server identity and CA policies, eliminate unintended user overrides and bind certificate identity to least-privilege network roles.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record OS/supplicant, MDM profile schema, TLS and RADIUS versions. Verify method support and certificate-name matching against the installed implementation.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enforce server-cert validation (pin CA + server name) on all supplicants, prefer EAP-TLS (mutual certs), avoid weak EAP methods (MD5/LEAP), enforce PMF, and use a managed-profile to prevent user override. Add a regression that the client refuses a rogue RADIUS. Detect rogue RADIUS/evil-twin via WIDS.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The owned client discloses synthetic EAP/MSCHAPv2 to the rogue RADIUS where a cert-validating supplicant refuses: CONFIRMED missing-validation; FAIL. |
+| Benign refutation | CA/server-cert validation or EAP-TLS makes the client refuse: REFUTED; PASS for the control. |
+| Insufficient evidence | A partial EAP exchange with no disclosure: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Wrong-name certificate reaches inner authentication under the unchanged managed profile while the valid path and issuer control behave as predicted. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Acceptance occurred only after an explicit lab override; the clean managed profile rejects the wrong-name certificate. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | Only EAP identity frames are available and no tunnel or client validation logs exist. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-wpa-enterprise/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Preserves EAP method, PKI and network-role boundaries while removing credential capture, certificate theft and domain pivots.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-wpa-enterprise/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's EAP/evil-twin-RADIUS craft as a scoped server-cert-validation experiment with synthetic credentials and a hardened-supplicant control, replacing real credential harvesting with bounded validation proof. Composes with `rt-evil-twin`, `rt-deauth-disassoc`, `token-trust-assessment`.

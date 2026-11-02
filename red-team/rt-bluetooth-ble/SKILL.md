@@ -1,117 +1,87 @@
 ---
 name: rt-bluetooth-ble
-description: Assess BLE GATT authorization, bonding lifecycle and application freshness using inert owned peripherals and companion fixtures.
+description: "Red-team assessment of Bluetooth Low Energy security: GATT service/characteristic enumeration and unauthenticated read/write, pairing/bonding mode and Just-Works vs authenticated pairing, link-layer sniffing, and replay/relay exposure. Re-expressed as a scoped experiment in a controlled RF setting against an owned BLE device that proves one boundary weakness with a negative control instead of attacks on others' devices."
 ---
 
-# BLE attribute and pairing authorization
+# Bluetooth Low Energy Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the BLE craft as a scoped experiment against an owned BLE device in a controlled RF setting: it enumerates GATT, tests pairing strength and unauthenticated access, and proves one weakness with a control, rather than attacking others' devices.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use a development peripheral exposing an inert test attribute, two owned centrals and disposable bonds. Substitute a simulator for locks, vehicles and medical actuators.
+BLE security spans GATT access control, pairing/bonding strength, and link-layer confidentiality. Work on an owned BLE device (and its owned companion app). Prove a weakness against the owned device; do not interact with others' BLE devices. Respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned device, the RF environment, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- GATT characteristic properties describe supported operations, not the complete authorization policy.
+- **GATT access control** — services/characteristics readable/writable without authentication; sensitive characteristics exposed.
+- **Pairing/bonding** — Just-Works (no MITM protection) vs Passkey/Numeric-Comparison/OOB; LE Secure Connections vs legacy.
+- **Link-layer** — sniffing (where unencrypted), connection-parameter abuse.
+- **Replay/relay** — replaying captured commands; relay/distance attacks on proximity auth.
 
-- Link encryption, pairing authentication, bonding and application authorization are distinct states.
+## Mechanism and observation
 
-- Just Works can provide encryption without authenticated peer confirmation; that alone does not prove application command acceptance.
+Enumerate GATT and test the access/pairing controls against the owned device.
 
-- A valid bond may outlive account logout or ownership transfer; application freshness and revocation need separate checks.
+**Firstness:** Record which characteristics are readable/writable without auth, the pairing method negotiated, and whether a captured command replays. **Secondness:** State the expected protection (authenticated pairing, access-controlled characteristics, LE Secure Connections) and the deviation. **Thirdness:** Infer a weakness only after a controlled read/write/replay confirms it on the owned device.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record characteristic UUID, ATT status, connection security and application identity. Compare accepted operations with the required role and ownership state.
+**Hypothesis:** The device exposes sensitive GATT without authentication, uses Just-Works pairing, or accepts replayed commands.
 
-**Abduction:** An unbonded central can change a test attribute whose application policy requires the owner's authenticated session.
+**Competing benign explanation:** Sensitive characteristics require authenticated/encrypted access; pairing uses Passkey/Numeric-Comparison with LE Secure Connections; commands carry anti-replay (nonce/counter); the device is not actually the target (another owned device).
 
-**Competing benign explanation:** The characteristic is intentionally public, or a cached bond/application session authorized the request.
+## Deduction and controls
 
-**Deduction:** A fresh unbonded central changes the protected marker, while a public read works and a separately protected attribute rejects it; the owner control succeeds.
+An unauthenticated client cannot read/write sensitive characteristics or replay commands on a hardened device (positive control). A confirmed finding reads/writes a sensitive characteristic without auth, or replays a command, on the owned device where authenticated access/anti-replay would prevent it. Predeclare the characteristic/command. Authenticated pairing / access control / anti-replay are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Controlled RF; owned device.
 
-1. Map documented public and protected attributes and record the initial marker state.
+1. **Enumerate.** Scan and connect (bluetoothctl/gatttool/nRF tools); map services and characteristics and their permissions.
+2. **Unauthenticated access.** Attempt to read/write sensitive characteristics without pairing.
+3. **Pairing.** Observe the negotiated pairing method; test whether Just-Works is accepted.
+4. **Replay.** Capture an owned command and replay it; check for anti-replay.
+5. **Control.** Confirm that authenticated pairing / access control / anti-replay refuse the above.
 
-2. Run the supported owner operation as a positive control, then use a fresh central without inherited bond or app session.
+Record results including refutations. Keep finding and control status separate. Owned device only.
 
-3. Submit one documented inert attribute operation and verify peripheral-side state, not merely the client write return code.
+## Craft notes (leads)
 
-4. Separately revoke the disposable bond or ownership and check a previously valid test session against a fresh authorized session.
-
-5. Restore the marker and intended bonds; verify the peripheral remains usable and ownership is correct.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+GATT characteristics often lack per-characteristic authentication, exposing control/sensitive data to any connected client — the most common BLE finding. Just-Works pairing provides no MITM protection. Legacy pairing (pre-4.2) is weak; LE Secure Connections (ECDH) is the control. Many IoT BLE commands lack anti-replay. Sniffing needs the device to transmit unencrypted (or a captured pairing).
 
 ## Domain-specific failure modes
 
-- Write-without-response success does not prove the peripheral accepted the value.
+A characteristic that requires authenticated/encrypted access is not an unauthenticated finding. Just-Works may be acceptable for non-sensitive devices — scope the impact. Anti-replay (counter/nonce) defeats replay. Interacting with others' BLE devices is out of scope. Sniffing encrypted LE SC traffic yields nothing.
 
-- Attribute handles can change after firmware updates; bind evidence to UUID and service version.
+## Evidence and deliverable
 
-- Discovery and public telemetry are not automatically confidentiality failures; apply the declared data policy.
+Provide the GATT map, the unauthenticated read/write (if any), the pairing method, the replay result, and the control outcome. Keep to the owned device. Attach expected/observed, rival explanation, falsifier, characteristics/commands not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide attribute/security-state matrix, ATT statuses, peripheral state receipts, pairing method and sanitized bond lifecycle logs.
+Pin the BLE version (4.x/5.x), pairing mode, and the sniffer/adapter. Capabilities are version/hardware-specific. No device behavior was verified by this content; test the owned device to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Log rejected sensitive operations, new bonds and post-revocation use; confirm events on the peripheral or gateway rather than assuming a universal BLE IDS.
-
-Enforce per-operation authorization, suitable pairing requirements and server-side ownership/freshness checks; revoke both transport and application state as appropriate.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record controller, host stack, peripheral firmware and companion build. Validate sniffer PHY and connection-following support; deprecated GATT tools may not model modern security states.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Require authenticated, encrypted access for sensitive characteristics, use LE Secure Connections with Passkey/Numeric-Comparison (avoid Just-Works for sensitive functions), add anti-replay (counter/nonce) to commands, and minimize exposed characteristics. Add a regression that unauthenticated access and replay are refused.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A sensitive characteristic is read/written without auth, or a command replays, on the owned device where hardening refuses: CONFIRMED; FAIL. |
+| Benign refutation | Authenticated access / LE SC pairing / anti-replay refuses it: REFUTED; PASS for the control. |
+| Insufficient evidence | A readable characteristic of unclear sensitivity, or Just-Works on a non-sensitive device: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh unbonded central changes the protected inert marker, with public-read, protected-deny and owner controls as predicted. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The attribute is documented public; the actual protected marker rejects the fresh central after cached bonding is removed. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | The central reports a successful write without a response and no peripheral state was collected. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-bluetooth-ble/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Keeps GATT, pairing and ownership mechanics while replacing key recovery, relay and actuator abuse with inert authorization tests.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-bluetooth-ble/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's GATT/pairing/sniffing/replay craft as a scoped experiment against an owned BLE device with authenticated-access and anti-replay controls, replacing attacks on others' devices with bounded boundary proof. Composes with `rt-bluetooth-classic`, `rt-iot`, `rt-crypto-attacks`.

@@ -1,89 +1,91 @@
 ---
 name: token-trust-assessment
-description: Test token validation and identity binding in application authentication. Use for JWT, JWKS, OAuth callback and stale-session reviews.
+description: "Red-team assessment of JWT and bearer-token trust boundaries: alg-none and RS256-to-HS256 confusion, weak-secret HMAC, kid injection (path traversal/SQLi), jku/x5u abuse, claim tampering, header injection, cross-token confusion, HMAC timing, and token-in-URL leakage. Re-expressed as owned-token experiments that prove a forged token is accepted against a negative control instead of attacking live sessions."
 ---
 
-# Token Trust Assessment
+# Token Trust Boundary Assessment (JWT)
 
-Use within the user's authorized scope. Carry existing authorization forward; a skill does not expand it. Record observation, expected behavior, hypothesis, falsifier and actual result. Distinguish CANDIDATE, CONFIRMED, REFUTED and NOT TESTED.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's JWT craft as scoped experiments on owned tokens: it names the signature, algorithm and claim attacks, confirming that a forged token is accepted by the verifier where a correct control rejects it, rather than hijacking real sessions.
 
-## Establish the contract
-Locate the actual token consumer and pinned library version. Record issuer, audience, intended token kind, allowed algorithms, key source, expiry policy and revocation semantics. Decode fixtures locally; never upload live tokens to online decoders.
-Do not assume every JWT is a three-part signed JWS: distinguish JWE and the application's supported formats.
+## Scope and prerequisites
 
-## Controlled validation
-Create synthetic keys and tokens. Begin with an accepted baseline. Mutate one dimension per case: signature, issuer, audience, expiration, not-before, algorithm, token kind or key identifier.
-Trace who selects the key and algorithm. Check that token-controlled headers cannot replace the configured trust source. A key lookup error is not proof of SSRF; use an isolated callback fixture to establish network access.
-Test rotation and cache isolation across issuers with the same key identifier. Replay after role revocation only against the documented invalidation contract.
-For OAuth flows, bind callback to the initiating session, client, redirect URI and authorization transaction; inspect state and PKCE enforcement where the flow requires them. Validate with synthetic accounts.
+Find where the app issues and verifies tokens. Use owned accounts and their own tokens; forge only tokens for owned identities. Confirm acceptance against an owned endpoint, not a victim's session.
 
-## Refutation and evidence
-An unsigned token that merely decodes is not accepted authentication. Prove access to a protected synthetic resource using the modified token, and denial with a bad-signature control.
-Do not call visible signed claims a confidentiality defect unless the application promised secrecy.
-Deliver a validation matrix, key provenance, sanitized token fixtures, consumer trace and regression assertions. Report missing runtime verification as a hypothesis, not confirmed bypass.
+Declare target, token type, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
-## Required methodology and laboratory boundary
+## Attack surface and classes
 
-Read [the assessment methodology](../METHODOLOGY.md) before execution.
-Use only synthetic signing keys, fixture accounts and a protected canary resource in an isolated consumer.
-Set a finite token-case budget and stop once the specific validation failure is demonstrated.
-Do not crack signing secrets, extract mobile credentials or upload tokens to third-party decoders.
-Firstness records consumer acceptance and resource access; Secondness records the consumer's configured trust policy.
-Thirdness distinguishes claim validation, key selection and lifecycle defects rather than calling every token anomaly an authentication bypass.
+- **Algorithm** — `alg:none` (and case/encoding variants), RS256→HS256 confusion (public key used as HMAC secret).
+- **Signature** — weak HMAC secret (brute force), missing verification, wrong key.
+- **Header injection** — `kid` (path traversal to a predictable file, SQLi), `jku`/`x5u` pointing at an attacker JWKS.
+- **Claims** — tamper `sub`/`role`/`exp`/`aud` and re-sign with a known/forged key.
+- **Confusion** — JWT where an API key is expected (or vice versa).
+- **Side channels** — HMAC verification timing; tokens leaked in URLs/logs; insecure mobile storage.
 
-## Discriminator: issuer-scoped key selection
+## Mechanism and observation
 
-**Abduction:** a shared JWKS cache indexes solely by key identifier and imports trust across issuers.
-**Benign rival:** the cache is scoped by issuer, and the resource consumer validates issuer/audience before honoring the principal.
-**Deduction:** two owned synthetic issuers using the same key identifier must remain separate trust domains.
-**Induction:** accept a normal fixture from the configured issuer, then inspect how a fixture from the second issuer resolves its key.
-Keep the consumer configuration fixed; record issuer, key-source identifier and protected canary response.
-Use a known invalid-signature fixture as a rejection control and a valid configured-issuer fixture as an acceptance control.
-If either control behaves unexpectedly, resolve the harness or configuration issue before assigning a verdict.
-Do not generate algorithm-confusion or key-injection attack chains; use the library's supplied conformance fixtures and inspect validation decisions.
+Decode the token; trace how the verifier selects the algorithm and key and what it checks.
 
-## Additional boundaries to measure independently
+**Firstness:** Record whether a modified/forged token for an owned identity is accepted (a protected response returns). **Secondness:** State the correct verification (fixed alg, pinned key, full claim checks) and the deviation. **Thirdness:** Infer the defect class only after a forged token is accepted under control.
 
-- Distinguish accepted token kind from merely parsed JWS or JWE structure; reject the wrong intended use under the application contract.
-- Check issuer, audience, expiration and not-before separately with synthetic fixtures and a recorded controlled clock.
-- Record configured clock tolerance rather than imposing an arbitrary universal number of seconds.
-- During rotation, identify cache expiry, refresh and stale-key behavior; a grace interval is not automatically a defect.
-- Treat role revocation according to the documented session contract; some designs retain short-lived access until expiry.
-- For sender-constrained tokens, inspect the declared proof or certificate binding with owned test keys and compare a mismatched fixture.
-- Key-header parsing errors do not establish network access or path traversal; those effects require independent sink evidence.
-- Signed claims are not inherently confidential; assess sensitive content against the application's privacy contract.
+## Abduction and refutation
 
-## Evidence, tools and failure modes
+**Mechanism hypothesis:** The verifier trusts token-supplied parameters (`alg`, `kid`, `jku`) or fails to verify the signature/claims, so a token the server did not issue is accepted.
 
-Retain validation decisions, consumer trace, key provenance, fixture digests and canary access results.
-Never store private signing keys or reusable tokens in the portable report.
-Pin JWT library, JWKS fetcher, cache and application versions, including validation options.
-A decoder or token editor cannot prove authorization; browser/client token refresh may replace the intended fixture silently.
-No runtime tool behavior was verified during this content rewrite.
-Route callback initiation and account linking to rt-oauth; a JWT validation result does not establish OAuth flow safety.
+**Competing benign explanation:** The library pins the algorithm and rejects `none`/confusion; `kid`/`jku` are ignored or allowlisted; the secret is strong; claims (`exp`,`aud`,`iss`) are fully validated; the endpoint rejects the forged token with 401.
+
+## Deduction and controls
+
+A legitimately-issued token is accepted (positive control); a forged/modified token must be rejected if verification holds. A confirmed finding has the forged owned-identity token accepted where the control rejects it. Predeclare the acceptance signal. Alg-pinning / strong secret / claim validation rejecting the forgery are PASS controls.
+
+## Induction: bounded laboratory procedure
+
+Owned identities only.
+
+1. **Baseline.** Use a legitimate token; confirm a protected response and decode the header/claims.
+2. **alg:none.** Strip the signature, set `alg:none` (+ case variants); submit; observe acceptance.
+3. **RS256→HS256.** If RS256, sign with the public key as HMAC secret; submit.
+4. **Weak secret.** For HMAC, attempt an offline dictionary crack of the owned token's signature; if found, forge claims.
+5. **kid/jku.** Test `kid` path traversal/SQLi and `jku`/`x5u` pointing at your owned JWKS.
+6. **Claim tamper.** Change an owned-identity claim (e.g. `role`) and re-sign with any key that the broken verifier would accept.
+7. **Control.** Confirm the verifier rejects each forgery when correctly configured.
+
+Record results including refutations. Keep finding and control status separate. Forge only owned identities; demonstrate acceptance, do not escalate to another user's data.
+
+## Craft notes (leads)
+
+jwt_tool automates inspection, the common attacks and HMAC cracking. `none` must be tried in multiple casings. RS256→HS256 requires the public key (often exposed at a JWKS endpoint). `kid` is a file/DB selector — traversal and SQLi both apply. `jku`/`x5u` acceptance of arbitrary URLs is a full forgery primitive. Tokens in URLs leak via logs/referrer; mobile storage (SharedPreferences/Keychain/backup) can leak them.
+
+## Domain-specific failure modes
+
+A decoded, tampered token that the server rejects is a refutation, not a finding. Alg-pinning libraries defeat none/confusion. A strong secret makes HMAC cracking infeasible (WARN, not FAIL). Acceptance must be shown by a protected response, not just a 200 error page.
+
+## Evidence and deliverable
+
+Provide the original token, the forgery, the attack class, the acceptance signal (protected response), and the control rejection. Forge only owned identities; keep real tokens out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, untested classes.
+
+## Versions and tool limitations
+
+Pin the JWT library and version — alg handling and `kid`/`jku` behavior are library-specific. jwt_tool performs real forgery attempts; use owned tokens. No verifier behavior was verified by this content; confirm the live library first.
 
 ## Remediation and detection
 
-Bind trusted algorithms, issuer, key source and token kind in server configuration.
-Scope key caches by the full trust context and make rotation failure behavior explicit.
-Record categorized validation failures without token bodies; validate alerts for wrong issuer and bad signatures.
-Add regression cases for key-identifier collision across issuers and accepted-versus-decoded tokens.
-Remove fixture credentials and restore clock/cache configuration while preserving sanitized evidence.
+Pin the algorithm server-side, reject `none`, never derive HMAC keys from public keys, allowlist `kid` and disable `jku`/`x5u` (or allowlist), validate all claims (`exp`,`nbf`,`aud`,`iss`), use strong secrets/rotation, and keep tokens out of URLs. Add a regression asserting each forgery is rejected. Detect `alg:none`, external `jku`, and anomalous `kid` values.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| A token from an untrusted synthetic issuer grants the protected canary because its key identifier collides in the shared cache; controls behave correctly. | CONFIRMED; FAIL for trust isolation. |
-| A malformed token decodes locally but the protected consumer rejects it and still accepts the valid control. | REFUTED for accepted authentication; PASS for that case. |
-| A decoded token contains an unusual algorithm or key header, but no consumer validation was observed. | CANDIDATE; WARN. |
+| Supported finding | A forged owned-identity token is accepted (protected response) where the control rejects it: CONFIRMED; FAIL. |
+| Benign refutation | Alg-pinning / strong secret / claim validation rejects the forgery: REFUTED; PASS for the control. |
+| Insufficient evidence | A tampered token with ambiguous (non-protected) response: CANDIDATE; WARN. |
 
-Acceptance cases specify expected behavior; they are not executed target tests.
+These are authoring acceptance scenarios, not executed target tests.
 
-## Provenance
+## Provenance and treatment
 
-Exact upstream path: `Skills/auth/offensive-jwt/SKILL.md`.
-Treatment: Strengthens JWT consumer and key provenance controls without secret cracking or mobile token extraction; OAuth transaction mechanics remain distinct in rt-oauth.
+Upstream research: `Skills/auth/offensive-jwt/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Methodology adapted from Claude-Red `offensive-jwt` at commit `a8de813edc9f66f60d44cfe42d47750e89d9930b`. See [collection provenance](../PROVENANCE.md). This is a rewritten assessment workflow, not a verbatim upstream skill.
-
+This revision restores the upstream's algorithm/signature/header/claim attack craft, re-expressed as owned-identity forgery experiments with verification controls, replacing live session hijacking with bounded acceptance proof. Composes with `rt-oauth`, `crypto-misuse-reasoning`.

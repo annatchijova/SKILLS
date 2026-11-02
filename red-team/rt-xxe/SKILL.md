@@ -1,99 +1,95 @@
 ---
 name: rt-xxe
-description: "Assess XML external resolution, parser configuration and bounded expansion behavior using synthetic resolver fixtures in isolated document pipelines."
+description: "Red-team assessment of XML external-entity boundaries: classic file read, blind/out-of-band and error-based XXE, parameter entities, and XXE reached through SAML, SVG, DOCX/XLSX, EPUB, SOAP and admission-webhook/CI XML. Covers parser-misconfiguration analysis, SSRF-via-XXE and billion-laughs DoS as bounded impact classes, re-expressed as owned-fixture experiments with planted files, owned OOB collectors and negative controls."
 ---
 
-# XML Resolver and Expansion Controls
+# XML External Entity Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's XXE craft as scoped experiments: it names the entry formats, entity techniques and parser misconfigurations to test, using planted fixture files and owned OOB collectors rather than production file reads or live internal pivots.
 
 ## Scope and prerequisites
 
-Validate XML parser and resolver behavior, including XML embedded in document formats. Do not read real local files, access cloud metadata or generate expansion bombs.
+Find every XML parse of untrusted input, including XML hidden inside other formats (SAML assertions, SVG, Office OOXML, EPUB, SOAP, RSS, `.docx`/`.xlsx`, admission-webhook payloads, CI artifacts). Use an owned instance; prove impact by reading a planted non-sensitive fixture file or hitting an owned OOB collector, never `/etc/passwd` on a real host or a real service-account token.
 
-Use the deployed parser in a disposable environment with an owned resolver serving a tiny marker document. Deny external egress and provide only synthetic filesystem fixtures if local resolution is explicitly in scope.
+Declare target, parser/library and version, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+- **In-band file read** — external entity expands into the response.
+- **Blind/OOB** — external DTD on an owned server triggers a parameter-entity exfil to your collector.
+- **Error-based** — a crafted parameter entity leaks file content inside a parser error.
+- **SSRF-via-XXE** — the entity URL points at an internal/metadata endpoint.
+- **DoS** — entity expansion (billion laughs / quadratic blowup). Out of scope if the engagement excludes DoS — check the rules.
 
 ## Mechanism and observation
 
-Trace format admission, decompression, XML parsing, DTD handling, entity resolution, XInclude, schema validation and transformations. Each processor can have independent resolver settings.
+Trace input XML to the parser and its entity-resolution settings.
 
-**Firstness:** Record resolver invocations and whether a marker is incorporated into the parsed result. Compare with the application's no-external-resolution policy and expansion limits.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record whether a declared entity expanded (fixture content returned, owned callback hit, or error leak). **Secondness:** State the secure baseline (a hardened parser resolves no external entities) and how this deviates. **Thirdness:** Infer the defect class only after a controlled entity actually resolves.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** A later validator or transformer enables external resolution despite the initial parser being restricted.
+**Mechanism hypothesis:** The parser resolves external/parameter entities on untrusted input, letting a declared entity read a local resource or fetch a URL.
 
-**Competing benign explanation:** A parser may recognize a declaration but reject resolution; a network observation may be schema retrieval explicitly allowed by contract rather than entity expansion.
+**Competing benign explanation:** The parser has external-entity resolution disabled and the entity is inert; the "leak" is the app echoing the raw payload; the callback was an unrelated fetch; the format is parsed by a non-XML library that ignores the DTD.
 
 ## Deduction and controls
 
-The ordinary XML control parses successfully. The owner-provided external-reference fixture either fails before resolution or reaches only approved synthetic resources, with no unexpected marker incorporation.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+A document with only internal entities parses normally (positive control); an external-entity document must be inert if resolution is disabled. A confirmed XXE returns planted-fixture content or hits the owned collector where the internal-only control does not. Predeclare the fixture string or callback. A parser that ignores the external entity is a PASS control.
 
 ## Induction: bounded laboratory procedure
 
-1. Parse a tiny normal fixture through the complete pipeline and capture each processor's configuration.
+Owned instance; planted fixtures and owned collector only.
 
-2. Replay an owner-provided harmless external-reference conformance fixture against the isolated resolver; log both attempted and completed resolutions.
+1. **Baseline.** Submit well-formed XML with an internal entity; confirm normal parsing and that the app reflects entity values.
+2. **Classic read (owned).** Declare an external entity pointing at a planted non-sensitive fixture file; observe whether it expands into the response.
+3. **Blind/OOB.** Host an external DTD on your owned server defining a parameter entity that exfils to your collector; submit XML referencing it; watch the collector.
+4. **Error-based.** Use a parameter entity that forces the fixture content into a parser error message.
+5. **Alternate entry.** Repeat through SVG upload, OOXML (`.docx`/`.xlsx` with injected XML), SAML `Content-Type`/response, SOAP — the parser, not the wrapper, is the sink.
+6. **SSRF-via-XXE (owned lab).** Point the entity at an authorized internal/metadata endpoint to demonstrate the reachability class.
+7. **Control.** Confirm the internal-only document is inert.
 
-3. Compare with external resolution disabled at the actual processor, keeping the input and pipeline otherwise identical.
+Record results including refutations. Keep finding and control status separate. If DoS is out of scope, describe billion-laughs risk from configuration rather than executing it.
 
-4. Exercise DTD, XInclude and schema-location handling separately where supported; use small non-recursive fixtures.
+## Parser and format craft
 
-5. Set a deliberately low lab node/size limit and verify bounded rejection without a resource-exhaustion document; restore configuration and preserve logs.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Domain knowledge to carry (leads; confirm the live library):
+- Resolution defaults differ by library and version — Java (`DocumentBuilderFactory`, SAXParser, older defaults unsafe), .NET (`XmlDocument`/`XmlReader` legacy), PHP (`libxml_disable_entity_loader` history), Python (`lxml`/`xml.etree` behavior), Go. Pin the exact one.
+- Parameter entities (`%`) enable blind exfil via an external DTD when general entities are filtered.
+- PHP wrappers (`php://filter`) inside an entity can base64 a source file for in-band read.
+- CDATA, namespace tricks and encoding (UTF-16/UTF-7) are filter-evasion families — test as filter-vs-parser differentials.
+- High-value reached endpoints (bound, do not harvest): local files, internal HTTP, cloud metadata, and in Kubernetes an admission webhook parsing annotation XML → service-account token.
 
 ## Domain-specific failure modes
 
-No outbound callback may mean network denial rather than parser rejection. A gateway validating XML shape does not establish downstream resolver safety. SAML signatures and XML parsing order require separate analysis and cannot be inferred from one resolver test.
+A reflected payload is not entity expansion. External-entity resolution disabled makes the document inert regardless of the payload's cleverness. Some stacks parse the wrapper format without a DTD-aware XML parser, so the XML sink never fires. OOB needs outbound DNS/HTTP from the parser host; a blocked egress refutes reachability, not the parser flaw.
 
 ## Evidence and deliverable
 
-Provide parser/validator/transformer versions and flags, fixture digests, resolver event order, parsed marker result, configured size limits and network control status.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the entry format, the entity construction, the planted-fixture content returned or the owned-callback record, the parser/library and version, and whether resolution was enabled. Keep real file contents out of portable output. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered formats.
 
 ## Versions and tool limitations
 
-Defaults vary across parser versions, wrappers and entrypoints; verify the actual factory settings. Do not generalize behavior from one XML library to an office renderer, SVG processor or SOAP stack.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the XML library and version — entity-resolution defaults are version-bound. Scanners may trigger DoS expansion; keep expansion bounded and respect DoS scope. No parser behavior was verified by this content; confirm the installed library first.
 
 ## Remediation and detection
 
-Disable unneeded DTD/entity processing, restrict resolvers and schema sources, and independently constrain each transformation stage. Bound decompressed size and node expansion before expensive downstream work.
-
-Log rejected external resolution and size-limit events with document IDs, avoiding document contents. Correlate resolver attempts with egress denials so parser failure is not confused with network containment.
+Disable external-entity and DTD processing on every untrusted XML parse (library-specific hardening), prefer non-XML formats or a hardened parser, and validate wrapper formats before XML parse. Add a regression asserting an external-entity document is inert. Detect outbound requests from the parser host to file/metadata/collector-shaped URLs correlated to the request ID.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A supposedly restricted transform resolves the synthetic external marker and incorporates it into output: CONFIRMED for resolution-policy failure; FAIL. |
-| Benign refutation | The pipeline rejects resolution before contacting the collector while normal XML still parses: REFUTED; PASS. |
-| Insufficient evidence | No callback is observed but an egress firewall may have blocked it and parser logs are missing: CANDIDATE; WARN. |
+| Supported finding | A planted fixture returns in-band or the owned collector is hit where the internal-only control is inert: CONFIRMED; FAIL (scope to what was read/reached). |
+| Benign refutation | The external entity does not resolve / parser ignores the DTD: REFUTED for the tested entry; PASS for the control. |
+| Insufficient evidence | Payload reflected but no expansion or callback: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-xxe/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-xxe/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves multi-parser, entity, include and schema resolution analysis without local-file extraction, metadata pivots or exponential-expansion recipes.
-
+This revision restores the upstream's entry-format map, parameter-entity and error-based techniques, parser-misconfiguration knowledge and SSRF/DoS impact classes, re-expressed as owned-fixture experiments with planted files and owned collectors, replacing production file reads and live token theft with bounded reachability proof.

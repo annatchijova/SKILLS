@@ -1,96 +1,59 @@
 ---
 name: rt-osint-methodology
-description: Adjudicate public-source relationships and timelines using provenance, competing explanations and controlled synthetic media or transaction datasets.
+description: "Methodology for disciplined OSINT in an authorized engagement: scoping and legal/ethical boundaries, the collection cycle (plan, collect, process, corroborate, analyze, report), source reliability grading, provenance and freshness tracking, and privacy minimization. Re-expressed as a process contract that governs rt-osint collection with explicit source-evaluation and scope limits rather than a tool list."
 ---
 
-# Open-Source Evidence Correlation
+# OSINT Methodology
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before proposing a relationship or timeline.
-Use this skill to evaluate a defined claim across supplied public-source artifacts.
-Asset collection belongs in rt-osint; correlation does not grant further collection authority.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract across the collection cycle below.
+This revision restores the upstream's OSINT-methodology material as a process contract: it governs how `rt-osint` collection is planned, corroborated, graded and bounded, rather than listing tools. Compose with `intel-source-evaluation` and `claim-provenance-discipline`.
 
-## Mechanisms and preconditions
+## Scope and prerequisites
 
-- Reposts and syndicated feeds create apparent corroboration without independent observation.
-- Entity resolution can confuse shared identifiers, handle changes and unrelated namesakes.
-- Upload, capture, publication and event timestamps measure different moments.
-- Media metadata can be edited or stripped; transformations change forensic signals.
-- On-chain transactions establish transfers under a chain's semantics, not human ownership.
-- Infrastructure/code similarity may reflect a common supplier rather than a common actor.
-No number of weak correlated signals automatically proves attribution.
+Methodology turns raw collection into a defensible intelligence picture. Carry the engagement's authorization and legal boundary; collect only what the objective needs; respect privacy for individuals. Every datum carries a source, a reliability grade, and a timestamp.
 
-## Observation and baseline
+Declare the intelligence requirements (what the engagement needs to know), the authorized sources, and the privacy/legal boundary before collecting.
 
-State one falsifiable claim, its time window and the exact objects being linked.
-Inventory originals, derivatives, source publishers, capture methods and transformation history.
-Represent time as intervals with precision, timezone and clock uncertainty.
-Represent relationships explicitly: repost-of, same-key, transfer-to or matches-landmark.
-Keep identity, intent, sponsorship and technical capability as separate claims.
+## The collection cycle
 
-## Abduction and deduction
+1. **Plan.** Derive specific intelligence requirements from the engagement objective; identify authorized sources; set the passive/active boundary.
+2. **Collect.** Gather from `rt-osint` surfaces, recording provenance and timestamp per datum.
+3. **Process.** Normalize, deduplicate, and structure (asset inventory, relationships).
+4. **Corroborate.** Confirm each significant datum across independent sources; flag single-source claims.
+5. **Analyze.** Build the picture (attack surface, relationships) and the gaps; separate fact from inference.
+6. **Report.** Deliver with provenance, reliability grades, freshness, and scope/privacy notes; feed `attack-surface-triage`.
 
-Hypothesis: two published artifacts independently document the same event.
-Benign rival: one is a cropped/re-encoded copy of the other with a misleading publication time.
-Prediction: original-source lineage or shared unique frame defects show dependence;
-independent capture evidence survives comparison and aligns within the stated time interval.
-Choose a discriminator that could reject the proposed relationship, not a collection quota.
+## Source reliability grading
 
-## Bounded laboratory/review procedure
+Grade each source and each datum (in the spirit of an admiralty-style scale): source reliability (reliable → unreliable) and information credibility (confirmed → doubtful). Record both. A high-confidence claim needs a reliable source and corroboration; a single doubtful source is a lead, not a fact.
 
-1. Work with supplied, authorized artifacts or synthetic datasets; hash originals before analysis.
-2. Build a claim-to-source graph and collapse known repost/feed dependencies for evidence counting.
-3. For images, compare stable nonpersonal landmarks and geometry with reference material;
-   avoid identifying individuals or locating private residences from media.
-4. Compare metadata from two parsers where interpretation matters; preserve disagreement.
-5. For chronology, distinguish upload from capture and test alternate timezone/clock assumptions.
-6. Use synthetic original/crop/re-encode pairs as controls for similarity and metadata claims.
-7. For transaction evidence, record chain ID, block hash/height, transaction index, contract
-   and event semantics. Compare provider interpretation with the supplied receipt/state evidence.
-8. Treat bridge mint/burn, fees, wrappers and aggregation as explicit transformations;
-   equal amounts and close times alone do not prove a cross-chain link.
-9. For infrastructure linkage, test a shared-provider alternative using known unrelated fixtures.
-10. Stop at the budget or when no available observation can discriminate; retain uncertainty.
-11. Produce a bounded decision and evidence needed to reopen it; preserve originals and derivatives.
+## Method discipline
 
-## Domain failure modes
+Run the cycle through the methodology: observe the datum (Firstness), compare to the expected/known baseline (Secondness), infer the intelligence conclusion (Thirdness); and refute the benign explanation (stale record, misattribution, intentional publication) before asserting an exposure. Use CANDIDATE/CONFIRMED/REFUTED/NOT TESTED for intelligence claims, with the source grade attached.
 
-Error-level analysis and deepfake scores cannot alone prove fabrication or authenticity.
-Valid content credentials can attest signed history without proving the depicted event is true.
-Missing metadata is common after export and does not establish deliberate concealment.
-Shadow analysis needs location, geometry, date and uncertainty; do not report false precision.
-Zero-knowledge proof usage does not imply that all rollup transaction data is private.
-Finality and challenge windows are chain/version-specific; do not impose one universal interval.
-Vendor wallet labels are inherited claims; a transaction counterparty is not necessarily owner.
-An IOC shared with a vendor report does not establish actor identity or state sponsorship.
+## Provenance and freshness (compose with claim-provenance-discipline)
 
-## Evidence and response
+- Every datum: source, collection method, timestamp.
+- Recon data ages — mark live-vs-historical and re-confirm before acting.
+- Never launder a single unverified source into a confident claim; the grade travels with the datum into the report.
 
-Deliver a relationship ledger with claim, source IDs/digests, time interval, dependence group,
-supporting/contrary observations, discriminator, result and falsifier.
-Use CONFIRMED only for the bounded relationship demonstrated; keep identity hypotheses separate.
-For security monitoring, provide observable indicators with validity windows and false-positive
-controls, not unqualified actor labels. Validate the detector against unrelated shared-provider data.
-Remediate analytic failures through lineage preservation, explicit temporal joins and removal
-of unsupported labels from derived reports; preserve the original record of the correction.
+## Privacy and legal boundary
 
-## Versions and limits
+- Collect the minimum personal data the objective requires; prefer organizational over individual data.
+- Stay within the authorized sources and the passive/active boundary; unauthorized active collection is out of scope.
+- Document the boundary honored in the report.
 
-Record media/parser, chain data, normalization and graph-tool versions and dataset provenance.
-Inspect current schema and chain semantics before interpreting receipts or content credentials.
-Do not create deceptive personas, run hostile samples or submit confidential artifacts to services.
-No media investigation, blockchain query or actor attribution campaign ran during authorship.
+## Domain-specific failure modes
 
-## Behavioral acceptance
+The dominant errors: single-source confidence (no corroboration), stale data treated as live, misattribution across shared infrastructure, and scope/privacy creep (collecting individuals' data beyond need). Treating OSINT output as fact without grades and provenance makes downstream decisions unaccountable.
 
-| Case | Expected verdict |
-|---|---|
-| Original lineage and unique frame evidence show two reports reuse one capture | CONFIRMED source dependence; FAIL if counted as independent |
-| Distinct original captures and timing controls refute the proposed repost relationship | REFUTED dependence claim; preserve separate observations |
-| Similar wallet amounts or shared infrastructure lack independent linking evidence | CANDIDATE relationship; WARN, no ownership/actor attribution |
+## Deliverable
 
-## Provenance
+A graded, provenance-tracked intelligence product: the requirements, the corroborated findings with source grades and freshness, the gaps, and the scope/privacy boundary honored. The output drives `attack-surface-triage`; it is not raw dumps.
 
-Rewritten from `Skills/recon/offensive-osint-methodology/SKILL.md` at
-`a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treatment: retain source correlation, chronology, media and transaction semantics; replace
-deceptive personas, personal tracking and arbitrary attribution thresholds with falsifiable joins.
+## Provenance and treatment
+
+Upstream research: `Skills/recon/offensive-osint-methodology/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's OSINT-process material as a collection-cycle contract with source grading, provenance/freshness and privacy minimization, replacing a tool list with a defensible methodology. Composes with `rt-osint`, `intel-source-evaluation`, `claim-provenance-discipline`, `attack-surface-triage`.

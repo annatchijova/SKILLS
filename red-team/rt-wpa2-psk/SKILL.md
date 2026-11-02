@@ -1,117 +1,81 @@
 ---
 name: rt-wpa2-psk
-description: Validate WPA2 personal key provisioning and synthetic handshake evidence without recovering production credentials.
+description: "Red-team assessment of WPA2-Personal key strength and provisioning: 4-way-handshake and PMKID capture in an isolated RF lab, offline crackability of a synthetic PSK as a key-strength measurement, and provisioning-policy validation. Re-expressed as a scoped experiment against an owned AP with operator-supplied synthetic PSKs (one deliberately weak, one strong) that measures crackability without recovering production credentials."
 ---
 
-# WPA2 personal key-policy validation
+# WPA2-Personal Key-Strength Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the WPA2-PSK craft as a scoped key-strength experiment in an isolated RF lab: it captures a handshake/PMKID for an owned AP and measures offline crackability of synthetic PSKs, with a strong PSK as the control, rather than recovering production credentials.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an owned AP/client and synthetic PSKs supplied by the operator, including one deliberately weak fixture and one independently generated secret. Never import real credential captures into external services.
+WPA2-PSK security rests on PSK entropy: a captured handshake enables an offline dictionary/brute attack whose feasibility is the PSK's strength. Work on an owned AP in an isolated/shielded RF lab, provisioned with operator-supplied synthetic PSKs — one deliberately weak, one strong. Crack only the synthetic PSK; never capture or crack a production/third-party network's key. Respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned AP, the synthetic PSKs, the RF isolation, attempt/time budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Mechanism and observation
 
-- PSK provisioning quality is distinct from four-way-handshake correctness; a transcript alone does not prove a weak secret.
+Capture the material that enables offline attack (4-way-handshake EAPOL, or PMKID from the first message where the AP supports it) for the owned network, then measure crackability.
 
-- A valid EAPOL verification fixture binds the SSID, peer addresses, nonces and integrity check to one known lab secret.
+**Firstness:** Record a valid capture (handshake/PMKID) and whether the synthetic weak PSK was recovered offline within budget, and the strong one was not. **Secondness:** State the policy (high-entropy PSK → offline attack infeasible) and the deviation. **Thirdness:** Infer a key-strength finding only after the controlled crack result is in.
 
-- PMKID availability depends on implementation and negotiation; an empty conversion can mean missing capture data.
+## Abduction and refutation
 
-- Fast-transition and caching paths require separate evidence; do not infer recoverable master-key material from roaming.
+**Hypothesis:** The provisioning policy permits (or deploys) a low-entropy PSK that is offline-crackable from a single captured handshake.
 
-## Observation and competing explanations
+**Competing benign explanation:** The deployed PSK is high-entropy and uncrackable in budget; the capture is incomplete/mixed-session (no real attack material); PMKID is unavailable (depends on implementation) and no handshake was captured; the weak value was only an example config while deployment generates unique strong keys.
 
-**Firstness / Secondness:** Record provisioning rule output and transcript completeness. Contrast a claim of weak generated keys with the documented entropy and uniqueness requirements.
+## Deduction and controls
 
-**Abduction:** The provisioning workflow accepts a prohibited low-entropy test secret or repeats a key across distinct lab devices.
+A high-entropy PSK resists offline cracking within budget (positive control). A confirmed finding recovers the synthetic weak PSK from a lab capture where the strong PSK is not recovered. Predeclare the crack-success and budget. A strong PSK surviving the attack is the PASS control; provisioning that rejects the weak fixture is also a control.
 
-**Competing benign explanation:** The visible value is an example configuration, while deployment generates unique secrets and rejects the fixture.
+## Induction: bounded procedure
 
-**Deduction:** The actual lab provisioning path accepts the prohibited fixture; a compliant secret succeeds and a deliberately invalid configuration is rejected by the same path.
+Isolated RF lab; owned AP; synthetic PSKs.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+1. **Provision.** Configure the lab AP with the synthetic weak PSK; associate the owned client.
+2. **Capture.** Obtain a valid 4-way handshake (a reconnect, optionally nudged per `rt-deauth-disassoc` within DoS scope) or a PMKID; verify the capture is complete.
+3. **Crack (synthetic).** Run a bounded offline attack (hashcat-class) against the capture using an owned wordlist; recover the synthetic weak PSK.
+4. **Strong-PSK control.** Reprovision with the strong synthetic PSK; repeat; confirm it is not recovered in budget.
+5. **Provisioning.** Test whether the provisioning path accepts the prohibited weak fixture.
+6. **Stop.** Do not attempt any production/third-party key.
 
-## Bounded laboratory procedure
+Record results including refutations. Keep the key-strength finding separate from the provisioning control. Synthetic keys only.
 
-1. Snapshot the lab configuration and identify where generation, validation and per-device assignment occur.
+## Craft notes (leads)
 
-2. Submit the synthetic weak and compliant fixtures through the supported provisioning interface; cap attempts to the defined case set.
-
-3. Associate the owned client normally, without induced disconnects; retain only the synthetic session transcript needed for validation.
-
-4. If validating transcript parsing, compare verification using the supplied correct secret with one supplied wrong secret; do not run guessing campaigns.
-
-5. Restore the original lab secret and prove authorized reconnection; report policy failure independently of transcript-parser behavior.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+The handshake (EAPOL) or a PMKID from the first message gives the offline material; PMKID availability depends on the AP implementation. Cracking speed is hardware-bound (GPU) — budget matters. The real finding is PSK entropy and the provisioning policy that allows weak keys, not the capture technique. A PMKID is not the PSK; a capture failure is not proof of strength.
 
 ## Domain-specific failure modes
 
-- Offline verification of a known lab key does not measure the cost of recovering an unknown production key.
+A high-entropy PSK is uncrackable in practice — a PASS (WARN at most on the method). An incomplete/mixed handshake yields no attack material. PMKID absence can mean no capture, not a strong key. Capturing or cracking a production/third-party network is out of scope and illegal. Offline cracking of a known lab key measures nothing about an unknown production key's cost beyond the entropy argument — state that.
 
-- Handshake labels from conversion tools can hide incomplete or mixed-session frames.
+## Evidence and deliverable
 
-- A PMKID is not the PSK, and a capture failure is not evidence that a network resists every offline test.
+Provide the capture (handshake/PMKID validity), the weak-PSK recovery and budget, the strong-PSK control result, and the provisioning-policy outcome. Use synthetic keys only; keep them out of portable reports. Attach expected/observed, rival explanation (incomplete capture), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide the provisioning rule, synthetic case identifiers, accepted/rejected outputs, transcript digest and parser controls without exporting secret values.
+Pin AP firmware (PMKID behavior), supplicant, and cracking hardware/wordlist. Crackability is entropy- and hardware-dependent. No network behavior was verified by this content; test the owned lab to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Audit key provisioning exceptions, shared-key assignments and rotation events; distinguish collection traffic from offline analysis that has no network event.
-
-Generate unique high-entropy credentials under a documented policy, restrict overrides and rotate exposed credentials through the normal lifecycle.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record AP/supplicant and parser versions and the exact supported transcript format. Confirm FT/PMKID behavior on the actual implementation before making a claim.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Enforce high-entropy PSKs (or move to WPA3-SAE / Enterprise), unique per-deployment keys under policy, reject weak fixtures in provisioning, and rotate exposed keys. Prefer WPA3 (SAE resists offline attack by design — see `rt-wpa3-sae`). Detect mass deauth (handshake-capture precursor) via WIDS.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The synthetic weak PSK is recovered from a lab capture within budget where the strong PSK is not: CONFIRMED weak-key/provisioning; FAIL. |
+| Benign refutation | The PSK is high-entropy and uncrackable in budget / provisioning rejects the weak fixture: REFUTED; PASS for the control. |
+| Insufficient evidence | An incomplete capture or no PMKID/handshake: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | The deployed provisioning path accepts the prohibited synthetic key while valid and invalid configuration controls behave correctly. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | Only the example file contains the weak value; actual provisioning rejects it and assigns distinct generated keys. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | A partial production handshake exists but provisioning behavior and secret provenance are unavailable. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-wpa2-psk/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Preserves PSK, EAPOL, PMKID and roaming distinctions while replacing password recovery with synthetic provisioning and parser validation.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-wpa2-psk/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the WPA2-PSK handshake/PMKID and offline-cracking craft as a scoped key-strength experiment against an owned AP with synthetic PSKs and a strong-key control, replacing production-credential recovery with bounded crackability measurement. Composes with `rt-deauth-disassoc`, `rt-wpa3-sae`, `rt-wpa-enterprise`.

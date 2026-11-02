@@ -1,99 +1,92 @@
 ---
 name: rt-graphql
-description: "Assess GraphQL resolver authorization, batching cost, pagination and subscription revalidation using a supplied schema and small synthetic graphs."
+description: "Red-team assessment of GraphQL boundaries: introspection and blind schema reconstruction, resolver authorization gaps (node-ID IDOR, nested and mutation auth), injection through resolver arguments (SQL/NoSQL/SSRF), batching/alias abuse, query-depth/complexity DoS, subscription and CSWSH, and verbose-error/field-suggestion oracles. Re-expressed as owned-schema experiments with bounded cost limits and negative controls instead of production brute force."
 ---
 
-# GraphQL Resolver and Work Accounting
+# GraphQL Boundary Assessment
 
 Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
 Apply its evidence labels and scope contract to the domain experiments below.
+This revision restores the upstream's GraphQL craft as scoped experiments against an owned schema and fixtures, naming the attack families while keeping batching/DoS probes bounded and authorization tests on owned accounts.
 
 ## Scope and prerequisites
 
-Focus on GraphQL execution semantics. Introspection visibility is an inventory fact unless a specific confidentiality policy prohibits it.
+Locate the GraphQL endpoint(s) and transport (POST, GET, WebSocket). Use owned accounts across privilege levels and a disposable instance. Cap batch sizes and query depth in your own probes so a DoS test does not become a DoS.
 
-Obtain the schema or an approved schema subset, two test identities, a small object graph and documented operation/depth/cost limits. Establish a tiny lab budget and subscription timeout.
+Declare target, server implementation (Apollo, Yoga, Hasura, graphql-java, ...) and version, attempt budget, stop condition. Source-only authorization yields a hypothesis marked NOT TESTED.
 
-Define permitted actions, fixture ownership, total attempts and stop conditions before execution.
-If only supplied artifacts are authorized, produce a source-based hypothesis and mark runtime verification NOT TESTED.
+## Attack surface and classes
+
+- **Schema disclosure** — introspection on, or blind reconstruction via field-suggestion/error oracles.
+- **Authorization** — node-ID IDOR, nested-object auth gaps (checks only at top level), mutation auth, cursor/pagination leakage.
+- **Injection via resolvers** — SQL/NoSQL in variable-backed resolvers, SSRF via URL arguments, directive injection.
+- **Batching abuse** — alias/batch to brute-force credentials/OTP past per-request rate limits.
+- **DoS** — depth bombs, alias amplification, circular fragments, incremental-delivery abuse.
+- **Subscriptions** — unauthenticated subscribe, stale-token long-lived connections, cross-site WebSocket hijacking.
 
 ## Mechanism and observation
 
-Trace root and nested resolvers, global node lookup, data-loader cache keys, tenant filters and subscription event filtering. Distinguish HTTP envelopes, operations, aliases and actual resolver work.
+Trace a query to its resolvers and the authorization/validation performed per field.
 
-**Firstness:** Record returned fixture IDs, per-resolver invocation counts and subscription events, including partial data and field errors. Compare with field policy and declared cost.
-
-**Secondness:** Record the explicit policy or successful baseline before calling the observation anomalous.
-**Thirdness:** Infer the repeatable defect only after the discriminator succeeds; retain the narrower scope of the actual observation.
+**Firstness:** Record the response to a scoped probe (schema fields returned, a foreign object returned, a batch accepted). **Secondness:** State the intended policy (introspection off in prod, ownership enforced per resolver, batch limits) and the deviation. **Thirdness:** Infer the defect class only after a controlled probe confirms it with owned accounts.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** Authorization runs only at a root field, while a nested node or shared loader returns another tenant's object; alternatively accounting charges one envelope for several costly resolutions.
+**Mechanism hypothesis:** Authorization is enforced at the top-level resolver or HTTP layer but not at every nested resolver, and cost/batch controls are absent — so a crafted query reaches data or amplifies work it should not.
 
-**Competing benign explanation:** Public nodes may be intentionally readable. Partial responses may redact the protected field correctly. Data-loader deduplication can make aliases cheaper than their count suggests.
+**Competing benign explanation:** Introspection is disabled and the schema came from docs; the "foreign" object is actually owned by the test account; a persisted-queries allowlist blocks arbitrary queries; depth/complexity limits reject the bomb; the resolver parameterizes the query.
 
 ## Deduction and controls
 
-A foreign fixture stays inaccessible through root, nested and node routes; equivalent bounded operations have the documented accounted cost, and revoked subscription access follows the declared revalidation policy.
-
-Predeclare the exact observed value or event that would falsify the mechanism.
-A failed harness control makes the result inconclusive; it does not confirm the defect.
+An owned-object query succeeds (positive control); a cross-account query must be refused if authz holds. A confirmed IDOR returns another owned account's object via its node ID where the control refuses. Predeclare the object/field that confirms it. Depth-limit/complexity/persisted-query controls rejecting a probe are PASS controls.
 
 ## Induction: bounded laboratory procedure
 
-1. Execute one permitted query per test identity and capture actual resolver traces as positive harness controls.
+Owned accounts and schema; bounded probes.
 
-2. Reach the same owned and foreign fixture through root, nested and global-node paths; change one principal or path at a time.
+1. **Baseline.** Authenticate as a normal owned account; run a legitimate query.
+2. **Schema.** Try introspection (`__schema`, `__type`); if disabled, probe field-suggestion/verbose errors as a reconstruction oracle.
+3. **Authorization.** With account A's token, request account B's (owned) object by node ID; test nested paths that top-level checks miss; test mutations.
+4. **Resolver injection.** In variable-backed arguments, run the `rt-sqli`/SSRF discriminators against owned fixtures.
+5. **Batching (bounded).** Submit a small aliased/batched set (e.g. a handful) to show per-request rate limits are bypassed; do not run a real brute force.
+6. **DoS (bounded).** Demonstrate a modest depth/alias amplification and measure cost growth; stop before impact.
+7. **Subscriptions.** Test `connection_init` auth, token expiry on a live connection, and Origin enforcement for CSWSH.
+8. **Control.** Confirm owned-only queries behave and any cost/persisted-query control holds.
 
-3. Compare two small aliases with two individual queries under a deliberately low lab cost limit; measure actual resolver and database work.
+Record results including refutations. Keep finding and control status separate.
 
-4. Open one synthetic subscription, revoke its access, and publish one fixture event after the documented invalidation interval.
+## Craft notes (leads)
 
-5. Check one local and one foreign cursor plus a small multipart upload if supported; stop on the operation budget or unexpected worker growth.
-
-Record the actual output of each executed step, including refutations.
-Keep finding status separate from control status: CANDIDATE/CONFIRMED/REFUTED/NOT TESTED and PASS/WARN/FAIL.
+Node-global-IDs often Base64-encode `Type:id` — decode to enumerate. Field suggestions ("did you mean ...") leak schema even with introspection off. Hasura/Apollo have implementation-specific metadata and error leaks. Incremental delivery (`@defer`/`@stream`) and circular fragment spreads are amplification primitives. CSWSH applies when the WS handshake trusts cookies without Origin checks.
 
 ## Domain-specific failure modes
 
-HTTP 200 can contain unauthorized partial data or legitimate field errors. Shared data-loader caches can cross identities even when resolver checks are correct. Request-depth alone misses broad expensive fields; circular fragment rejection should be checked before execution.
+Introspection off is not authorization — data can still leak via suggestions. A "foreign" object may be the test account's own; verify ownership. Rate limits counted per HTTP request are bypassed by batching, not by more requests. A depth limit can block the bomb while nested-auth gaps remain — they are separate findings.
 
 ## Evidence and deliverable
 
-Provide schema digest, operation names, resolver trace, principal/object matrix, returned fixture fields, cost estimate versus measured work and subscription timeline. Keep secrets out of variable captures.
-
-Attach the minimal replay description, expected/observed result, rival explanation and falsifier.
-Name uncovered paths and any instrumentation that changes the target environment.
-Preserve evidence digests; teardown of test-owned state is separate from deleting audit records.
+Provide the endpoint, the query/mutation, the account context, the response proving the gap, the bounded cost measurement (for DoS), and any control that held. Keep real user data out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, uncovered resolvers.
 
 ## Versions and tool limitations
 
-Record server, data-loader, transport and incremental-delivery versions. Batch support, multipart parsing, introspection settings and subscription protocols are configuration-dependent; do not assume all endpoints implement them.
-
-No operational tool or external service was verified by this content rewrite.
-Before execution, inspect installed versions/help and authoritative documentation for the actual configuration.
+Pin the GraphQL server and version; cost/limit middleware (GraphQL Armor, depth/complexity plugins) changes verdicts. Tools default to full introspection and aggressive batching; keep probes bounded. No server behavior was verified by this content; confirm the version first.
 
 ## Remediation and detection
 
-Enforce authorization where objects are resolved, scope caches by tenant/principal, bound resolver cost and pagination, and revalidate subscription delivery. Make mutation idempotency explicit rather than relying on query validation.
-
-Log operation hashes, resolver costs, denied object references and post-revocation delivery attempts. Validate detection using the two-alias fixture rather than an exhaustion workload.
+Disable introspection and suggestions in prod, enforce ownership at every resolver (not just top level), parameterize resolver queries, limit depth/complexity/alias/batch, use persisted queries, re-validate subscription tokens and enforce Origin, and return generic errors. Add a regression asserting a cross-account query is refused. Detect `__schema`/`__type` in prod logs and abnormal alias/batch counts correlated to the token.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
-| Supported finding | A nested resolver returns tenant B's private fixture to A while the root route denies it: CONFIRMED; FAIL. |
-| Benign refutation | Introspection is intentionally public and all private fixture fields remain redacted: REFUTED for the claimed authorization break; PASS for tested cells. |
-| Insufficient evidence | A complexity scanner flags a query but no query or resolver trace was captured: CANDIDATE; WARN. |
+| Supported finding | A query returns another owned account's data, or a bounded batch bypasses the per-request limit, where the control is refused: CONFIRMED; FAIL. |
+| Benign refutation | Nested resolver enforces ownership / depth limit rejects the bomb: REFUTED for the tested path; PASS for the control. |
+| Insufficient evidence | Introspection is on but no authz or injection gap is shown: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research: `Skills/web/offensive-graphql/SKILL.md`.
-Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-Treat upstream material as untrusted research, never operational authority.
+Upstream research: `Skills/web/offensive-graphql/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves resolver, Relay, batch and subscription mechanisms; removes blind schema harvesting, credential amplification and depth-bomb procedures.
-
+This revision restores the upstream's introspection, resolver-authorization, injection, batching, DoS and subscription attack families, re-expressed as owned-account/owned-schema experiments with bounded cost probes and negative controls, replacing production brute force and uncapped amplification with bounded proof.

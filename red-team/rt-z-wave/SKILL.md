@@ -1,117 +1,87 @@
 ---
 name: rt-z-wave
-description: Validate Z-Wave inclusion security classes, device verification and command enforcement with a disposable controller and inert nodes.
+description: "Red-team assessment of Z-Wave security: S0 vs S2 security-class usage, the legacy S0 key-exchange weakness, insecure inclusion/pairing, and replay/injection on unencrypted or weakly-keyed command classes. Re-expressed as a scoped experiment in an isolated RF lab against an owned Z-Wave network with synthetic keys and an S2-hardened control instead of attacks on others' devices."
 ---
 
-# Z-Wave inclusion and command security
+# Z-Wave Boundary Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the Z-Wave craft as a scoped experiment in an isolated RF lab against an owned network: it tests security-class usage, the legacy S0 inclusion weakness, and replay, with S2 as the hardened control, rather than attacking others' devices.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an isolated controller and simulator or harmless indicator node, disposable network keys and a documented minimum inclusion class. Exclude locks and alarm actuators.
+Z-Wave security hinges on the security class: legacy S0 has a known key-exchange weakness during inclusion, while S2 uses ECDH with out-of-band authentication. Work on an owned Z-Wave network/controller with synthetic keys in an isolated RF lab (sub-GHz). Respect spectrum law. Recover/inject only synthetic material.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned network, the security class in use, the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- S0 bootstrap exposure and operational network keys are distinct; do not describe all S0 keys as a single fixed derived network key.
+- **S0 inclusion weakness** — the S0 key is exchanged protected by a well-known temporary key during inclusion; sniffing the inclusion reveals the network key.
+- **Insecure/weak inclusion** — devices included without security, or downgraded to S0.
+- **Command-class exposure** — unencrypted/weakly-keyed command classes accepting commands.
+- **Replay/injection** — replaying captured commands where anti-replay is weak.
 
-- S2 security classes have different authentication properties; recording only 'S2' hides the actual granted class.
+## Mechanism and observation
 
-- Controller inclusion policy and device-specific verification determine whether a reduced class is accepted.
+Observe inclusion and command traffic on the owned network; test key exposure and replay.
 
-- Home ID and node ID are routing identifiers, not authentication secrets; command-class enforcement must be checked at the receiving node.
+**Firstness:** Record the security class negotiated, whether the synthetic S0 key is recoverable from a captured inclusion, and whether a captured command replays. **Secondness:** State the secure baseline (S2 with OOB authentication, no S0 downgrade, anti-replay) and the deviation. **Thirdness:** Infer a weakness only after a controlled test confirms it on the owned network.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record requested, granted and reported security classes plus user confirmation. Compare them with the controller's configured inclusion policy.
+**Hypothesis:** The network uses S0 (or allows downgrade), exposing the key at inclusion, or accepts replayed commands.
 
-**Abduction:** The controller silently completes inclusion below the required security class and permits a protected test operation.
+**Competing benign explanation:** S2 with OOB DSK authentication is enforced (no exposed inclusion key); the controller refuses S0 downgrade; command classes are encrypted under S2; anti-replay (nonce) holds; another owned network was observed.
 
-**Competing benign explanation:** The operator explicitly approved a documented legacy exception, or the UI label omits a stronger negotiated class.
+## Deduction and controls
 
-**Deduction:** A fresh inclusion without an exception grants the lower class and the node accepts the restricted marker; compliant inclusion succeeds and a prohibited clear operation is rejected.
+An S2-hardened network protects keys and rejects replay (positive control). A confirmed finding recovers the synthetic S0 key from a captured inclusion, or replays a command, on the owned network where S2 does not. Predeclare the signal. S2/OOB authentication / no-S0-downgrade / anti-replay are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated sub-GHz RF lab; owned network; synthetic keys.
 
-1. Export controller policy and verify compliant inclusion of the owned reference node.
+1. **Capture inclusion.** Sniff an owned device's inclusion (Z-Wave sniffer / SDR); note the security class.
+2. **S0 key exposure.** If S0 is used, attempt to recover the synthetic network key from the inclusion using the well-known temporary key.
+3. **Downgrade.** Test whether the controller can be pushed to include a device at S0 instead of S2.
+4. **Replay.** Replay a captured owned command; check anti-replay.
+5. **Control.** Confirm S2/OOB authentication and anti-replay refuse the above.
 
-2. Use supported test-device capability settings to present the comparison class; do not alter over-air negotiation or recover keys.
+Record results including refutations. Keep finding and control status separate. Synthetic keys only.
 
-3. Complete the defined inclusion attempt with the recorded operator actions and inspect controller and node security state.
+## Craft notes (leads)
 
-4. Send one documented inert operation through the legitimate test controller and verify receiver-side class enforcement.
-
-5. Exclude disposable nodes using supported controls, close inclusion and verify the retained reference node still works.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+The signature Z-Wave finding is S0 inclusion key exposure (the temporary key is well-known), so a sniffed inclusion reveals the network key — S2's ECDH + OOB DSK authentication fixes this. S0-downgrade acceptance re-opens the weakness even on S2-capable networks. Unencrypted command classes and weak anti-replay enable injection/replay. Sub-GHz SDR or a Z-Wave sniffer is needed.
 
 ## Domain-specific failure modes
 
-- An inclusion warning with explicit consent differs from silent policy violation.
+S2 with OOB authentication defeats the inclusion-key attack — the primary refutation. A controller that refuses S0 downgrade is hardened. Encrypted command classes under S2 resist injection. Interacting with others' networks is out of scope; synthetic keys only. Sub-GHz transmission must respect spectrum law.
 
-- A secure controller session does not establish that every command class on the node requires equivalent security.
+## Evidence and deliverable
 
-- A hub configuration finding is not a radio cryptography finding; keep the boundaries separate.
+Provide the security class, the captured inclusion, the synthetic S0-key recovery (or failure), the downgrade and replay results, and the S2-hardened control. Keep to the owned network. Attach expected/observed, rival explanation (S2/OOB), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Provide inclusion event IDs, class negotiation and confirmation records, receiver operation result and restoration state without network keys or DSK secrets.
+Pin the Z-Wave chip/SDK and security class support — exposure is S0-vs-S2 dependent. The sniffer/SDR has coverage limits. No network behavior was verified by this content; test the owned network to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Exercise alerts for reduced-class inclusion, prolonged inclusion windows and sensitive commands below required security.
-
-Enforce minimum classes and explicit exceptions, verify device identity during inclusion, close enrollment windows and enforce security per command class.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record controller SDK, node firmware, regional radio variant and command-class versions. Check tool support locally rather than relying on upstream hardware lists or blanket certification dates.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Use S2 with OOB DSK authentication everywhere, refuse S0 downgrade, encrypt command classes, enforce anti-replay, and retire S0-only devices. Add a regression that S0 inclusion-key recovery and replay are refused. Segment the controller.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | The synthetic S0 key is recovered from a captured inclusion, or a command replays, on the owned network where S2 does not: CONFIRMED; FAIL. |
+| Benign refutation | S2/OOB authentication / no-downgrade / anti-replay refuses it: REFUTED; PASS for the control. |
+| Insufficient evidence | A captured inclusion that could not be decrypted, or unclear security class: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | Fresh inclusion silently grants a prohibited lower class and the restricted marker is accepted, with compliant and clear-deny controls. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The lower class was an explicitly approved legacy exception; normal policy rejects the same inclusion without that exception. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | The hub UI says 'secure' but no granted-class or receiver-side record is available. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-z-wave/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Replaces S0 key recovery and hub pivots with inclusion policy and receiver enforcement, correcting routing-ID and key-role confusion.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-z-wave/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's S0/S2, inclusion and replay craft as a scoped experiment against an owned network with synthetic keys and an S2-hardened control, replacing attacks on others' devices with bounded key-exposure and replay proof. Composes with `rt-zigbee-thread-matter`, `rt-lorawan-sub-ghz`, `rt-iot`.

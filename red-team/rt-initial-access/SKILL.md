@@ -1,109 +1,88 @@
 ---
 name: rt-initial-access
-description: "Validate mail, download and remote-access ingress controls with inert files and dedicated accounts, distinguishing delivery from execution and authorization."
+description: "Red-team assessment of initial-access exposure in an authorized engagement: phishing/social delivery, public-facing exploitation, valid-account abuse, exposed services and supply-chain entry. Re-expressed as a scoped exposure-and-detection exercise that maps and tests entry vectors against owned/consented assets with a benign marker and detection measurement, not a live intrusion or mass phishing playbook."
 ---
 
-# Ingress Control Validation
+# Initial-Access Exposure Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the exercise below.
+This revision restores the upstream's initial-access craft as a scoped exposure-and-detection exercise: it maps the entry vectors and tests one against consented assets with a benign marker, measuring detection, rather than running a live intrusion or mass phishing campaign.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Test one ingress boundary at a time: mail to endpoint, browser download to application, or dedicated
-user to a remote-access service. Do not infer code execution from delivery.
+Initial access is the first foothold from outside. Test only against assets in the engagement scope, with the client's authorization and (for social vectors) consented recipients or an approved simulation. Prove reach with a benign marker (an owned-collector callback, a tracked test credential), never real credential theft at scale or malware delivery.
 
-- download-origin metadata propagation.
-- attachment handling and application policy.
-- remote-access authentication gates.
+Declare the scoped assets, the vectors authorized (especially social), attempt budget, stop condition. Recon-only authorization yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Attack surface and classes
 
-Define the expected treatment of an inert attachment or download, including quarantine, origin
-metadata and application restrictions.
+- **Phishing / social delivery** — credential-capture or payload links to consented recipients (see `rt-phishing`, `rt-social-engineering`).
+- **Public-facing exploitation** — a vulnerable exposed app/service (route to the relevant web/infra skill).
+- **Valid accounts** — leaked/sprayed credentials (lockout-safe; see `rt-netexec`).
+- **Exposed services** — RDP/SMB/VPN/management interfaces reachable from outside.
+- **Supply chain** — a dependency/update path (see `rt-supply-chain`).
 
-Choose an owned mailbox, an owned download endpoint or an isolated remote-access tenant. All fixture
-files contain public dummy text.
+## Mechanism and observation
 
-Capture the effective client and gateway policies. Administrative delivery exemptions must be
-explicit because they change the tested boundary.
+Map exposure first, then test one vector to a benign foothold marker.
 
-## Discriminating laboratory procedure
+**Firstness:** Record the reachable entry and whether the benign marker achieved a foothold signal (callback, authenticated session on a test account). **Secondness:** State the intended perimeter (no external exploitation, MFA on accounts, no exposed management) and the deviation. **Thirdness:** Infer an initial-access path only after a controlled test reaches the marker.
 
-Abduction: origin classification is lost during an approved file workflow. Rival: the file came from
-a trusted internal source or the receiving filesystem cannot represent that metadata.
+## Abduction and refutation
 
-Deduction: matched inert files arriving through external and internal lab routes should retain
-distinguishable origin classification when policy requires it.
+**Hypothesis:** An external entry vector reaches a foothold on a scoped asset.
 
-Induction: transfer the paired fixtures through the actual mail/download client, inspect their
-recorded metadata, and capture the gateway disposition.
+**Competing benign explanation:** The exposed service requires MFA/VPN and the test credential fails; the public app is patched; the phishing link is blocked by mail security and sandboxing; egress controls stop the callback; the "exposure" is a decoy/honeypot.
 
-Exercise application policy only with a harmless vendor test artifact; record whether opening,
-execution or child-process creation is the actual tested action.
+## Deduction and controls
 
-For remote access, compare one permitted and one disallowed dedicated account with valid test
-credentials. A failed transport handshake is not an authorization result.
+A normal external user cannot gain a foothold (positive control = perimeter holds). A confirmed path reaches the benign marker via the vector where perimeter controls would stop it. Predeclare the foothold signal. MFA / patching / mail security / egress control defeating the vector are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded procedure
 
-## Domain failure modes
+Scoped/consented assets; benign marker.
 
-- Mail scanners may open links automatically; a landing-page hit does not demonstrate a user action.
-- Archive extraction, copying and filesystem changes can alter metadata independently of a security
-  defect; isolate each transformation.
-- A gateway exception, audit-only rule or unsupported client can explain delivery. Report the
-  effective configuration before alleging a bypass.
+1. **Map exposure.** Enumerate external surface (services, apps, accounts, delivery paths) within scope.
+2. **Select one vector.** Choose the highest-likelihood authorized vector.
+3. **Test to a marker.** e.g. a consented phishing simulation capturing a tracked test credential; or a public-app PoC reaching an owned callback; or a lockout-safe spray against a test account. Stop at the foothold signal.
+4. **Measure detection.** Did mail security/EDR/NDR/auth logging catch it?
+5. **Control.** Confirm the perimeter control (MFA, patch, egress) defeats the vector.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from detection/control status. Do not expand the foothold; initial access is the deliverable.
 
-Provide the ingress route, fixture digests, client policy, pre/post metadata, gateway decision and
-endpoint event. Keep delivery, opening, execution and access outcomes separate.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The highest-yield modern vectors are valid-account abuse (leaked creds + no MFA) and public-facing exploitation of an unpatched edge device. Phishing effectiveness depends on mail security and user training — measure both. Exposed management interfaces (RDP/VPN/panels) are recurring footholds. Each vector routes to a specialized skill for depth.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require provenance and disposition visibility across gateway and endpoint. Remediate missing origin
-propagation or policy coverage, then retest the same transformation and a sibling supported client.
+MFA defeats most valid-account paths — a PASS. A patched edge service refutes the exploitation vector. Mail security + sandboxing blocks many phishing payloads. Egress control stops the callback even if delivery succeeds. A consented simulation is required for social vectors; real mass phishing is out of scope.
 
-## Recovery
+## Evidence and deliverable
 
-Delete only test inbox items and fixture files, revoke dedicated sessions and verify any temporary
-routing exception has been removed.
+Provide the vector, the exposure mapped, the benign foothold marker, the detection result, and the perimeter-control outcome. Use consented assets/recipients; keep real credentials out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, vectors not tested.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Record browser, mail client, archive handler, filesystem, remote-access service and gateway builds.
-Do not inherit historical claims about file formats or default policies.
+Pin the exposed service/app and mail-security versions. No perimeter behavior was verified by this content; confirm the live exposure first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+MFA everywhere, patch external services, remove exposed management interfaces (VPN/ZTNA-gate them), mail security + sandboxing + user training, egress control, and supply-chain controls. Add detections for external exploitation, impossible-travel/auth anomalies, and phishing clicks. Add a regression that the vector is refused.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| External fixture loses required origin metadata only at the supported extraction step; internal control remains distinguishable | CONFIRMED provenance gap; FAIL |
-| Policy explicitly trusts the internal route and external fixture remains restricted | REFUTED bypass hypothesis; PASS |
-| Gateway delivered the fixture but no endpoint evidence was collected | CANDIDATE downstream exposure; WARN |
+| Supported finding | A vector reaches a benign foothold marker on a scoped asset where perimeter controls would stop it: CONFIRMED; FAIL (scope to the foothold). |
+| Benign refutation | MFA/patch/mail-security/egress defeats the vector: REFUTED; PASS for the control. |
+| Insufficient evidence | A reachable surface without a confirmed foothold: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-initial-access/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-initial-access/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Preserves ingress-chain reasoning while replacing infection chains, credential stuffing and
-weaponized documents with inert probes.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision restores the upstream's initial-access vector map, re-expressed as a scoped exposure-and-detection exercise with a benign marker and perimeter controls, replacing live intrusion and mass phishing with bounded foothold proof. Composes with `rt-phishing`, `rt-social-engineering`, `rt-netexec`, `rt-supply-chain`, `rt-advanced-redteam`.

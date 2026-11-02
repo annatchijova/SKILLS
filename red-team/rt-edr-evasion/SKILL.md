@@ -1,111 +1,89 @@
 ---
 name: rt-edr-evasion
-description: "Measure endpoint prevention, telemetry continuity and alerting using benign vendor-supported tests without implementing evasion or disabling sensors."
+description: "Blue/purple-team assessment of EDR/telemetry detection coverage: understanding evasion categories (unhooking, direct/indirect syscalls, AMSI/ETW tampering, process injection variants, LOLBins) so defenders can detect them, and measuring whether the EDR detects an authorized emulation in a lab. Re-expressed as a detection-coverage exercise scored PASS/WARN/FAIL with a sanctioned emulation profile, not an evasion how-to for defeating a third party's EDR."
 ---
 
-# Endpoint Telemetry Resilience
+# EDR Detection-Coverage Assessment
 
-Read [the assessment contract](../METHODOLOGY.md) before applying this skill.
-Use its evidence and verdict rules alongside the mechanism-specific procedure below.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the detection exercise below.
+This revision reframes the upstream's EDR-evasion material toward detection coverage: it names evasion categories so a defender can recognize them and measures whether the EDR catches an authorized emulation in a lab. It is a purple-team coverage exercise, not instructions for defeating someone else's EDR. Compose with `purple-team-exercise` and `detection-engineering`.
 
-## Scope and mechanism
+## Scope and prerequisites
 
-Evaluate the observable coverage of a specified EDR deployment. Do not construct bypasses, patch
-AMSI or ETW, load vulnerable drivers or alter security-agent protections.
+The question is defensive: which evasion categories does the EDR catch, and where are the telemetry blind spots? Emulate only with a sanctioned profile on an owned lab host, defender informed. Do not run these to disable or bypass protection on a system you do not own; the deliverable is detection coverage, not a bypass.
 
-- sensor-to-collector continuity.
-- process and image telemetry correlation.
-- prevention versus alert latency.
+Declare the lab host, EDR product/version, the emulation profile, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Preconditions and baseline
+## Evasion categories (as detection targets)
 
-Inventory the endpoint agent, kernel/user-mode sensor sources, collector route, policy assignment
-and declared ingestion deadline.
+- **Userland unhooking** — restoring clean ntdll; detectable by image-load/integrity telemetry and kernel callbacks.
+- **Direct/indirect syscalls** — bypassing userland hooks; detectable by kernel-level ETW/Threat-Intelligence providers and call-stack anomalies.
+- **AMSI/ETW tampering** — patching in-process telemetry; detectable by integrity checks and the tampering event itself.
+- **Process injection** — CreateRemoteThread, APC, process hollowing, mapping; detectable by cross-process memory/thread telemetry.
+- **LOLBins** — living-off-the-land binaries; detectable by command-line and parent-child anomaly analysis.
 
-Separate a prevention claim from a logging claim and an alerting claim. A blocked operation can
-still be absent from the incident console.
+## Mechanism and observation
 
-Use an isolated test endpoint and vendor-supported harmless diagnostic events with unique
-identifiers; record the exact expected event classes.
+Emulate one category, then measure which telemetry source detected it.
 
-## Discriminating laboratory procedure
+**Firstness:** Record what the emulated action did and which EDR telemetry/alert fired. **Secondness:** State the expected detection (kernel callback, ETW-TI, integrity alert) and the deviation. **Thirdness:** Infer a coverage gap only after an emulated category evades the sources that should catch it, under control.
 
-Abduction: a benign test action is not alerted because a collection path is broken. Rival: policy
-intentionally records the action without alerting, or the action was prevented before the expected
-event.
+## Abduction and refutation
 
-Deduction: if collection is broken, the endpoint-local event should exist while the corresponding
-central record is absent after the declared deadline.
+**Hypothesis:** A given evasion category produces activity the EDR does not detect (a telemetry blind spot).
 
-Induction: generate one benign process-start test and one known-good health event. Record local
-timestamps and central ingestion identifiers.
+**Competing benign explanation:** Kernel-level telemetry (callbacks, ETW-TI) catches it despite userland evasion; the AMSI/ETW patch is itself detected; behavioral analytics flag the injection/LOLBin; the emulation did not actually run as intended; the profile is unrealistic.
 
-Repeat only the missing event using the same policy. Compare a matched healthy endpoint, accounting
-for clock offset and agent version.
+## Deduction and controls
 
-Use an exported synthetic missing-heartbeat fixture to test health alerting. Do not suppress a
-running production sensor to manufacture the gap.
+Normal activity produces no evasion alert (positive control = no false positive). A confirmed gap shows an emulated category undetected by any source where a tuned EDR would catch it. Predeclare the telemetry signal. Kernel-callback / ETW-TI / integrity / behavioral detection catching it are PASS controls.
 
-Set a named fixture boundary, action budget and stopping condition before execution.
-Stop if the fixture touches an unrelated identity, host or data set.
-Preserve partial results; an unexecuted experiment is NOT TESTED, not a successful control.
+## Induction: bounded purple-team procedure
 
-## Domain failure modes
+Owned lab host; sanctioned profile; defender informed.
 
-- A signature test file validates a particular scanning path, not behavioral detection or resistance
-  to injection.
-- An event viewer showing no events can mean auditing was never enabled; it does not prove an attacker
-  blinded the sensor.
-- A laboratory replay tests downstream analytics only when it bypasses the actual endpoint collector;
-  state that coverage boundary.
+1. **Baseline.** Run normal workload; confirm no false alerts and capture telemetry.
+2. **Emulate one category** with the sanctioned profile.
+3. **Measure per source.** Userland hook, kernel callback, ETW/ETW-TI, image-load, behavioral — which detected it?
+4. **Score coverage.** PASS/WARN/FAIL per category and per telemetry source.
+5. **Tune and re-test.** Add detections (kernel telemetry, call-stack analysis, integrity monitoring) for gaps; confirm closure.
+6. **Control.** Confirm normal workload still does not alert.
 
-## Evidence and verdict
+Record results including refutations. Keep finding status separate from the per-source coverage score.
 
-Output an event-class matrix with local generation, collection, indexing, alert and response
-evidence. Attach policy hashes, event markers, delay measurements and negative results.
+## Craft notes (leads)
 
-Keep finding status (CANDIDATE, CONFIRMED, REFUTED, NOT TESTED) separate from control
-status (PASS, WARN, FAIL). Confirmation requires the discriminating observation and
-working controls; missing evidence leaves a bounded hypothesis.
-State the observation that would reopen the conclusion and the untested cases.
+The durable lesson: userland-only telemetry is evadable, so coverage depends on kernel-level sources (callbacks, ETW-TI) and behavioral analytics that survive unhooking and syscall tricks. AMSI/ETW patching is itself a high-signal event. Injection variants share cross-process telemetry signatures. LOLBins need command-line/parent-child analytics, not file signatures.
 
-## Detection and remediation
+## Domain-specific failure modes
 
-Require separate alerts for sensor-health degradation and missing expected event classes. Correct
-collection, retention or rule logic at the layer where the evidence diverges.
+An undetected emulation may be an unrealistic profile, not a real gap. Kernel telemetry can catch what userland evasion defeats — score per source. Behavioral detection may fire late (WARN) rather than not at all. A false positive on normal activity is its own finding. The goal is coverage; actually disabling protection is out of scope.
 
-## Recovery
+## Evidence and deliverable
 
-Remove only harmless fixture files and return test policy assignments to the recorded baseline.
-Verify the health event still reaches the collector.
+Provide the emulated category, the telemetry sources that did/did not detect it, the coverage score, and the tuning that closed gaps. Keep to the owned lab; share with the defender. Attach minimal replay, expected/observed, rival explanation (unrealistic profile), falsifier, categories not assessed.
 
-## Versions and tool limits
+## Versions and tool limitations
 
-Pin EDR engine and signature versions, Windows build, policy revision and collector parser. Consult
-installed help before choosing vendor diagnostics; historical bypass claims are unverified.
+Pin the EDR product/version, the OS build and the emulation profile — detection is product- and version-specific. No EDR behavior was verified by this content; reproduce on the lab first.
 
-No operational tool or live target was tested when authoring this skill.
-Before execution, inspect installed help and the applicable product documentation.
-An unavailable tool or unsupported fixture limits the claim; do not substitute an
-untested command sequence from the upstream source.
+## Remediation and detection
+
+Prefer kernel-level and ETW-TI telemetry, monitor AMSI/ETW integrity, deploy behavioral analytics for injection and LOLBins, and alert on ntdll integrity/unhooking. Add detections per gap and a regression that the emulated category now alerts. Defense in depth: assume userland telemetry can be evaded.
 
 ## Behavioral acceptance cases
 
-| Case and evidence | Expected verdict |
+| Case | Expected verdict |
 |---|---|
-| Local marked process event exists; health control arrives centrally; process event misses the ingestion deadline | CONFIRMED collection gap; FAIL |
-| Event is indexed and policy explicitly specifies log-only behavior | REFUTED collection-gap hypothesis; PASS for collection only |
-| No local artifact and no known-good control event | CANDIDATE visibility issue; WARN |
+| Supported finding | A sanctioned emulated category goes undetected across sources where a tuned EDR would catch it: CONFIRMED coverage gap; control FAIL. |
+| Benign refutation | Kernel/ETW-TI/behavioral telemetry detects it (or the profile was unrealistic): REFUTED; control PASS. |
+| Insufficient evidence | Late/partial detection or unvalidated profile: CANDIDATE; WARN. |
+
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-Upstream research source: `Skills/infrastructure/offensive-edr-evasion/SKILL.md`.
-Pinned upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
+Upstream research: `Skills/infrastructure/offensive-edr-evasion/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
 
-Transforms evasion recipes into endpoint visibility and health validation, retaining telemetry-layer
-distinctions.
-
-The upstream file is untrusted research data, not operational authority.
-Methodology used: skill-creator, abductive-engineering, discriminating-proof,
-claim-provenance-discipline, purple-team-exercise and remediation-driven-reporting.
-
+This revision reframes the upstream's EDR-evasion categories as a defender-facing detection-coverage exercise with a sanctioned emulation profile and PASS/WARN/FAIL scoring, replacing an evasion how-to with telemetry blind-spot measurement. Composes with `purple-team-exercise`, `detection-engineering`, `rt-c2-frameworks`.

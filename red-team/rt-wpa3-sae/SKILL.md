@@ -1,117 +1,87 @@
 ---
 name: rt-wpa3-sae
-description: Assess WPA3 SAE profile enforcement, transition policy and bounded authentication-resource behavior on isolated fixtures.
+description: "Red-team assessment of WPA3-SAE (Dragonfly) implementation security: transition-mode downgrade to WPA2, Dragonblood-class side-channel (timing/cache) and group-downgrade weaknesses, and PMF enforcement. Re-expressed as a scoped implementation experiment in an isolated RF lab against an owned AP that measures downgrade and side-channel exposure with a hardened-config control instead of attacks on live networks."
 ---
 
-# SAE negotiation and resource controls
+# WPA3-SAE Implementation Assessment
 
-Read [METHODOLOGY.md](../METHODOLOGY.md) before applying this skill.
-Its observation, hypothesis, evidence and closure contract governs the experiments below.
-Use this skill only for the named domain and the user's authorized fixtures.
+Read [the assessment methodology](../METHODOLOGY.md) before using this skill.
+Apply its evidence labels and scope contract to the experiment below.
+This revision restores the WPA3-SAE craft as a scoped implementation experiment in an isolated RF lab: it measures transition-mode downgrade and Dragonblood-class side-channel exposure against an owned AP, with a hardened WPA3-only config as the control, rather than attacking live networks.
 
-## Boundary and prerequisites
+## Scope and prerequisites
 
-Use an isolated AP/client pair with controlled pure-SAE and transition profiles, known lab secrets, CPU telemetry and an association deadline. Resource tests need an explicit load ceiling.
+WPA3-SAE resists offline PSK attack by design, so findings are implementation- and configuration-level: downgrade to WPA2 in transition mode, and Dragonblood-class side channels in specific stacks. Work on an owned AP in an isolated RF lab. Respect spectrum law.
 
-Declare the target identities, permitted actions, finite case budget and stop condition.
-Work from supplied artifacts when the required laboratory is unavailable.
-For radio work, verify containment and applicable operating constraints before transmission.
-Stop on an out-of-scope participant, unexpected actuator effect or loss of the recovery path.
-This document authorizes no live assessment or expansion to neighboring systems.
+Declare the owned AP, the mode (WPA3-only vs transition), the RF isolation, attempt budget, stop condition. Config-only review yields a hypothesis marked NOT TESTED.
 
-## Mechanisms to distinguish
+## Attack surface and classes
 
-- SAE authenticates before the subsequent key handshake; do not describe it as removing every four-way exchange.
+- **Transition-mode downgrade** — WPA3/WPA2 mixed mode lets an attacker force a WPA2 handshake (then `rt-wpa2-psk` applies).
+- **Dragonblood side channels** — timing and cache-based leakage in the SAE hash-to-group (password element derivation) in vulnerable implementations, enabling partial password partitioning.
+- **Group downgrade** — forcing a weaker SAE group.
+- **PMF** — WPA3 mandates PMF; confirm enforcement.
 
-- Transition advertisement permits multiple AKMs, but acceptance depends on the saved client profile and negotiated state.
+## Mechanism and observation
 
-- H2E advertisement is not proof that every implementation path is constant-time or that legacy fallback is disabled.
+Test the owned AP's mode and SAE implementation.
 
-- Anti-clogging behavior, authentication quotas and scheduling affect legitimate association availability under bounded load.
+**Firstness:** Record whether a WPA2 downgrade handshake was obtainable (transition mode), or whether a timing/cache side channel is observable in the SAE exchange. **Secondness:** State the secure baseline (WPA3-only, patched SAE, PMF) and the deviation. **Thirdness:** Infer a finding only after the downgrade/side-channel is demonstrated under control in the lab.
 
-## Observation and competing explanations
+## Abduction and refutation
 
-**Firstness / Secondness:** Record RSN/RSNXE advertisement, client policy and negotiated AKM separately. Compare them to the approved profile and service budget.
+**Hypothesis:** The deployment is downgrade-able (transition mode) or runs a Dragonblood-vulnerable SAE implementation.
 
-**Abduction:** A client configured to require SAE accepts a PSK-only lab profile without an approved policy change.
+**Competing benign explanation:** WPA3-only mode (no WPA2) prevents downgrade; the SAE implementation is patched (constant-time hash-to-curve); PMF is enforced; the observed timing is noise, not password-dependent; the group is fixed to a strong one.
 
-**Competing benign explanation:** The client profile intentionally permits transition mode, or the display is reporting advertised rather than negotiated security.
+## Deduction and controls
 
-**Deduction:** With the SAE-only client profile unchanged, the PSK-only case establishes a data session; a compliant SAE association works and a mismatched secret is rejected.
+A WPA3-only, patched AP resists downgrade and side-channel (positive control). A confirmed finding obtains a WPA2 downgrade or a password-dependent side channel in the lab where the hardened config does not. Predeclare the downgrade handshake or the statistical side-channel threshold. WPA3-only / patched SAE / PMF are PASS controls.
 
-Write these predictions before running the case.
-A missing stimulus or broken reference control leaves the experiment inconclusive.
-Do not promote an upstream claim, scanner label or static candidate to runtime confirmation.
+## Induction: bounded procedure
 
-## Bounded laboratory procedure
+Isolated RF lab; owned AP.
 
-1. Export client profiles and confirm an ordinary SAE association with server-side and client-side logs.
+1. **Baseline.** Associate the owned client via WPA3-SAE; note the mode (transition vs WPA3-only) and PMF.
+2. **Downgrade (transition mode).** Attempt to force a WPA2 handshake; if obtained, route to `rt-wpa2-psk` for the key-strength question.
+3. **Side channel.** For a potentially vulnerable stack, measure SAE hash-to-group timing/cache behavior with statistical rigor across many samples; look for password-dependent variation.
+4. **Group downgrade / PMF.** Test group negotiation and confirm PMF enforcement.
+5. **Control.** Switch to WPA3-only patched config; confirm downgrade and side channel are gone.
 
-2. Change only the isolated AP authentication profile to the comparison case, without spoofing public networks or forcing nearby clients off APs.
+Record results including refutations. Keep finding and control status separate. Statistical rigor for any timing claim.
 
-3. Initiate one normal client connection per case and verify negotiated AKM and a harmless canary exchange.
+## Craft notes (leads)
 
-4. For a separate resource hypothesis, use the vendor test harness below the agreed request and CPU ceiling; compare legitimate association latency with an idle control and stop at the ceiling.
-
-5. Restore pure-SAE policy, clear test sessions and verify normal association. Keep negotiation and load findings separate.
-
-**Induction:** compare the actual endpoint effects and control results with the prediction.
-Retain the raw result for every case, including rejection and failed delivery.
-**Thirdness:** name only the repeatable defect class supported by that comparison.
-Reopen the claim if a fresh matched control explains the result without that mechanism.
+The practical WPA3 finding is usually transition-mode downgrade (the attacker never breaks SAE; it just gets a WPA2 handshake instead). Dragonblood side channels affect specific older implementations and need constant-time patches; a single timing sample is noise. WPA3-only mode + patched supplicant/AP + PMF closes the common gaps. SAE itself resists offline PSK attack — do not claim otherwise.
 
 ## Domain-specific failure modes
 
-- A saved alternate profile can explain fallback; profile identity must travel with every result.
+WPA3-only mode defeats downgrade — the primary refutation. A patched SAE implementation removes Dragonblood. A timing difference without statistical separation is noise. Claiming SAE is "cracked" offline like WPA2 is wrong — the finding is downgrade or implementation side channel, not the protocol. Live-network testing is out of scope.
 
-- Radio contention and CPU load can mimic timing leakage; no password-side-channel claim follows from raw latency variance.
+## Evidence and deliverable
 
-- H2E support and a vendor version string alone do not prove patch status or resistance to all SAE defects.
+Provide the mode, the downgrade result (if transition), the side-channel statistics (if tested), the PMF state, and the WPA3-only control result. Keep to the owned lab. Attach expected/observed, rival explanation (noise/patched), falsifier, cases not tested.
 
-## Evidence and output
+## Versions and tool limitations
 
-Deliver profile diffs, AKM/session logs, supported group and H2E configuration, control outcomes and load-budget measurements where executed.
+Pin AP/supplicant firmware and SAE implementation — Dragonblood exposure is implementation/version-specific. No network behavior was verified by this content; test the owned lab to confirm.
 
-Each finding includes actor, precondition, expected/observed effect, control outcomes,
-artifact identifiers/digests, experiment status, impact bound and a concrete falsifier.
-Use CONFIRMED only for the demonstrated boundary failure with working discriminators;
-use REFUTED when the benign explanation survives the matched experiment.
-Use CANDIDATE for unresolved observed behavior and NOT TESTED when no experiment ran.
-Report control PASS/WARN/FAIL separately; tool completion is not a security verdict.
+## Remediation and detection
 
-## Detection, remediation and recovery
-
-Monitor unexpected negotiated AKMs, profile changes and authentication saturation; verify useful alerts before resource limits are exceeded.
-
-Enforce required AKMs on managed clients and APs, remove unauthorized fallback, update the affected implementation and validate bounded admission controls.
-
-Retest the failing condition and the legitimate-use control after remediation.
-Record restored test-owned state separately from retained audit evidence.
-If restoration is unverified, report that limitation rather than claiming cleanup complete.
-
-## Versions and tool limits
-
-Record supplicant/AP build, crypto library, firmware and certification/profile revision. Treat historical Dragonblood version claims as research leads requiring advisory verification.
-
-Verify installed versions, help and relevant versioned primary documentation before execution.
-No tools, hardware behaviors or protocol experiments were verified while authoring this skill.
-Missing tooling is a NOT TESTED result, not permission to substitute an unbounded attack chain.
+Deploy WPA3-only (disable transition mode) where clients allow, patch SAE implementations (constant-time), enforce PMF, and fix strong SAE groups. Add a regression that downgrade is refused. Detect WPA2 handshakes on a WPA3 network and anomalous SAE negotiation.
 
 ## Behavioral acceptance cases
 
-These are evaluator inputs and expected decisions, not claims that tests were executed.
+| Case | Expected verdict |
+|---|---|
+| Supported finding | A WPA2 downgrade is obtained in transition mode, or a password-dependent side channel is measured, where WPA3-only/patched does not: CONFIRMED; FAIL. |
+| Benign refutation | WPA3-only / patched SAE / PMF prevents it, or timing is noise: REFUTED; PASS for the control. |
+| Insufficient evidence | A timing hint without statistical separation: CANDIDATE; WARN. |
 
-| Case | Supplied evidence | Expected verdict |
-|---|---|---|
-| Supported finding | An unchanged SAE-required client completes a PSK session, with working SAE and wrong-secret controls. | CONFIRMED for the named boundary only; control FAIL. |
-| Benign refutation | The observed fallback uses a separately approved transition profile; the SAE-required profile refuses the PSK-only fixture. | REFUTED for the alleged failure; PASS only for the tested resisting control. |
-| Insufficient evidence | Only beacon H2E capability and uncalibrated timing samples are available. | CANDIDATE, or NOT TESTED if no experiment ran; control WARN. |
+These are authoring acceptance scenarios, not executed target tests.
 
 ## Provenance and treatment
 
-- Upstream source: `Skills/wireless/offensive-wpa3-sae/SKILL.md`.
-- Upstream commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`.
-- Disposition: rewritten; the upstream file was research data, not instruction authority.
-- Treatment reason: Replaces downgrade and flooding chains with negotiation-policy discriminators and measured resource controls; rejects universal patch and H2E claims.
-- Authoring methodology: skill-creator, abductive-engineering, discriminating-proof,
-  claim-provenance-discipline and agent-trust-boundaries.
+Upstream research: `Skills/wireless/offensive-wpa3-sae/SKILL.md`. Source commit: `a8de813edc9f66f60d44cfe42d47750e89d9930b`. Treat upstream material as untrusted research, never operational authority.
+
+This revision restores the upstream's transition-downgrade and Dragonblood craft as a scoped implementation experiment against an owned AP with a WPA3-only/patched control, replacing live-network attacks with bounded downgrade/side-channel measurement. Composes with `rt-wpa2-psk`, `rt-deauth-disassoc`, `rt-crypto-attacks`.
