@@ -21,26 +21,26 @@ Declare target, flow, attempt budget, stop condition. Config-only authorization 
 - **state / CSRF** — missing/unchecked `state` enables login CSRF / code injection.
 - **PKCE** — missing or downgradeable `code_challenge` on public clients.
 - **nonce** (OIDC) — missing nonce enables ID-token replay.
-- **Implicit flow** — token in URL fragment, leak via referrer/history.
+- **Implicit flow** — token in URL fragment; assess browser history, client-side scripts, extensions, copied URLs and application-specific forwarding. Conforming user agents do not send the fragment in the HTTP `Referer` header.
 - **Token/code leakage** — via redirect, logs, `Referer`; code replay (not one-time), code substitution.
 - **Mix-up** — client confused about which AS issued a code.
 - **Scope/consent** — scope upgrade, consent bypass.
 
 ## Mechanism and observation
 
-Trace the code/token from issuance to redemption and the validation at each hop.
+Trace authorization initiation, transaction storage, callback validation, code exchange, issuer/client validation and local account linkage. Record where OIDC nonce is checked and where the resource server validates access tokens. Treat authorization as a protocol decision, not by itself as proof of user authentication.
 
-**Firstness:** Record an owned code/token arriving at an endpoint it should not, or a flow completing without a required check (no `state`, no PKCE). **Secondness:** State the spec-correct behavior (exact redirect match, `state` verified, PKCE enforced, code one-time) and the deviation. **Thirdness:** Infer the class only after a controlled flow confirms the leak/bypass.
+**Firstness:** Capture redacted transaction/session identifiers, selected issuer/client and resulting synthetic local account ID; record any owned code/token arriving at an unintended owned endpoint. **Secondness:** Compare with the initiating session, registered redirect policy and explicit correlation/issuer policy. **Thirdness:** Infer only the defect demonstrated by the discriminator, such as cross-session callback acceptance or code leakage; do not expand it into account takeover unless the linking and authorization consequences are established.
 
 ## Abduction and refutation
 
-**Mechanism hypothesis:** The AS or client validates a flow parameter loosely (redirect_uri match, `state`, PKCE, code reuse), so a code/token can be redirected, replayed or injected.
+**Mechanism hypothesis:** A callback may be accepted under the wrong initiating transaction, client or issuer because correlation is superficial or occurs after account binding; alternatively, a redirect, PKCE or code-consumption check may be defective.
 
 **Competing benign explanation:** redirect_uri is matched exactly; `state` is bound and verified; PKCE is enforced; codes are one-time and short-lived; the ID-token nonce is checked; the leak endpoint is actually same-origin and safe.
 
 ## Deduction and controls
 
-The legitimate flow completes correctly (positive control). A confirmed finding delivers an owned code/token to an owned unintended endpoint, or completes a flow missing a required check, where a correct configuration refuses. Predeclare the confirming artifact. Exact redirect match / `state` / PKCE / one-time code are PASS controls.
+The legitimate flow completes only for its own transaction. A mismatched or consumed transaction must not bind the wrong identity; a wrong PKCE verifier must fail when PKCE is required. Predeclare the artifact that distinguishes the hypothesis. A failed harness control makes the result inconclusive, not confirmed. Report redirect, state, PKCE, issuer, replay and account-linking controls separately.
 
 ## Induction: bounded laboratory procedure
 
@@ -50,14 +50,15 @@ Owned client and accounts; owned endpoints only.
 2. **redirect_uri.** Test suffix/subdomain/path variants and client-side open redirect, pointing at an owned domain; see if the code/token follows (compose with `rt-open-redirect`).
 3. **state/PKCE/nonce.** Drop/alter `state`; omit/downgrade PKCE on a public client; omit nonce and replay the ID token.
 4. **Code handling.** Replay a used code; attempt code injection into another owned session; test mix-up with a second owned AS.
-5. **Implicit.** Observe token exposure in the fragment and referrer leakage.
-6. **Control.** Confirm a correct configuration refuses each.
+5. **Implicit.** Observe the token in the fragment and test each separately stated exposure path. Do not count ordinary HTTP `Referer` transmission of the fragment as evidence; investigate a claimed leak's actual client-side or application forwarding mechanism.
+6. **Transaction controls.** Replay a completed callback, cross the two synthetic browser transactions, use a wrong PKCE verifier, and test a mismatched issuer/client. Exercise refresh rotation/reuse only against documented test behavior and account-linking policy with synthetic identities.
+7. **Control.** Confirm a correct configuration refuses each attempted mismatch; if a control fails, mark the experiment inconclusive.
 
 Record results including refutations. Keep finding and control status separate. Only ever handle owned codes/tokens.
 
 ## Craft notes (leads)
 
-The highest-impact variant is a `redirect_uri` loophole that leaks the authorization code (→ account takeover) — often via suffix/subdomain matching or an open redirect on an allowlisted client host. OAuth 2.1 mandates PKCE and drops implicit; FAPI adds stronger binding (PAR, JARM, DPoP). Mix-up attacks target multi-AS clients. Token-in-URL (implicit) leaks via history/referrer.
+The highest-impact variant is a `redirect_uri` loophole that leaks the authorization code (→ account takeover) — often via suffix/subdomain matching or an open redirect on an allowlisted client host. Under the current OAuth 2.0 Security Best Current Practice (RFC 9700), public clients MUST use PKCE and clients SHOULD NOT use the implicit grant except where its risks are mitigated; describe requirements by the applicable specification/profile rather than calling OAuth 2.1 a finalized mandate. Assess PKCE method and transaction binding, including downgrade resistance. FAPI adds profile-specific binding (PAR, JARM, DPoP). Mix-up attacks target multi-AS clients. A fragment can remain exposed to browser history and client-side contexts, but is not ordinarily sent in `Referer`.
 
 ## Domain-specific failure modes
 
@@ -73,7 +74,7 @@ Pin the AS/client library and the OAuth/OIDC profile (2.0 vs 2.1, FAPI). Behavio
 
 ## Remediation and detection
 
-Exact redirect_uri matching, mandatory PKCE, bound/verified `state`, OIDC nonce, one-time short-lived codes, drop implicit, and FAPI binding (PAR/DPoP) where required. Add regressions asserting loose redirect/missing-state/missing-PKCE flows are refused. Detect redirect_uri anomalies and code replay at the AS.
+Exact redirect_uri matching, PKCE as required by the applicable profile (using `S256` where required), bound/verified `state`, OIDC nonce, one-time short-lived codes, avoiding the implicit grant per RFC 9700 guidance, and FAPI binding (PAR/DPoP) where required. Add regressions asserting loose redirect/missing-state/missing-PKCE flows are refused. Detect redirect_uri anomalies and code replay at the AS.
 
 ## Behavioral acceptance cases
 

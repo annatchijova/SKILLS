@@ -70,7 +70,7 @@ Pin the OS version, app version and device root state — behavior is platform- 
 
 ## Remediation and detection
 
-Store secrets in Keystore/Keychain, never tokens/PII in the clear or in backups; make components non-exported or permission-gated and validate deeplinks; enforce TLS + pinning; enforce all authorization server-side; and treat client-side trust checks as non-authoritative. Add regressions asserting storage is protected and components are gated. Detect rooted/tampered clients server-side as signal, not as the control.
+Store high-value secrets using the platform Keystore/Keychain where appropriate; exclude bearer tokens and sensitive data from unprotected backups/logs and verify the platform backup policy and encryption for the tested OS. Do not turn this into an absolute ban on all PII or protected backup. Make components non-exported or permission-gated and validate deeplinks; enforce TLS and server-side authorization; use certificate pinning only with a rotation and recovery plan. Treat client-side trust checks as non-authoritative. Add regressions for the named storage, backup and component policies. Detect rooted/tampered clients server-side as signal, not as the control.
 
 ## Behavioral acceptance cases
 

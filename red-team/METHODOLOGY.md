@@ -22,6 +22,8 @@ Each result carries target/version, source location or captured artifact, actor 
 
 Use CANDIDATE, CONFIRMED, REFUTED or NOT TESTED for findings. Keep control status separate: PASS means the specified control resisted the specified test; WARN means a guarantee remains unverified or degraded; FAIL means the asserted control failed. No tested case establishes universal safety.
 
+Every CONFIRMED label must state the exact proposition confirmed and its system scope. Distinguish a behavior confirmed on a deliberately vulnerable fixture, a behavior confirmed on the assessed target/version/configuration, and an impact inferred from that behavior. A fixture validates the experiment and mechanism; it does not confirm that a different target has the same defect. PASS/WARN/FAIL describe only the named control against the named test, not the overall finding or system.
+
 Never turn source assertions, CVE matches, scanner severity or tool exit status into confirmed exploitability. Derive impact from demonstrated reachability and effects. If a numeric decision is required, specify a deterministic rule and exact arithmetic; otherwise report qualitative, evidence-bound impact without invented scores.
 
 ## Closure

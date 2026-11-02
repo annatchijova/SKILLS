@@ -19,7 +19,8 @@ Declare the owned network, stack (Zigbee/Thread/Matter), the RF isolation, attem
 
 - **Insecure join / key transport** — a device joining receives the network key encrypted with a link key; the well-known default Zigbee Trust-Center link key exposes the network key if used.
 - **Open commissioning** — permit-join left open; weak install codes.
-- **Thread/Matter commissioning** — commissioning credential strength, PASE/CASE handshake posture, out-of-band secret.
+- **Thread commissioning** — Thread-specific commissioning credentials and commissioner/joiner authorization, including PSKc derivation and the applicable Joiner credential flow. Do not label Thread commissioning as Matter PASE/CASE.
+- **Matter commissioning** — Matter-specific commissioning and operational-session establishment, including PASE/CASE and the setup passcode/out-of-band commissioning path as applicable to the Matter version and role.
 - **Replay / injection** — replaying captured commands where anti-replay/frame-counter is weak.
 
 ## Mechanism and observation
@@ -32,7 +33,7 @@ Observe a join/commissioning on the owned network and test key exposure and repl
 
 **Hypothesis:** The network uses the default/weak link key or open commissioning, exposing the network key, or accepts replayed commands.
 
-**Competing benign explanation:** Unique per-device install codes and non-default link keys are used (join is secure); permit-join is closed; Thread/Matter use strong commissioning with OOB secrets; frame counters enforce anti-replay; another owned network was observed.
+**Competing benign explanation:** Zigbee uses an appropriate install-code/link-key and Trust Center policy; its join window is closed; Thread uses its configured commissioner/joiner credentials and authorization; Matter uses its configured commissioning and session-security flow; replay protection is enforced by the relevant protocol state. Another owned network may have been observed. Assess each protocol's controls separately.
 
 ## Deduction and controls
 
@@ -44,7 +45,7 @@ Isolated RF lab; owned network; synthetic keys.
 
 1. **Capture a join/commissioning** on the owned network (802.15.4 sniffer).
 2. **Key transport.** Attempt to decrypt the network-key transport using the default Trust-Center link key; succeeds only if the default/weak key is used.
-3. **Commissioning posture.** Check permit-join state and install-code/credential strength (Zigbee); PASE/CASE and OOB secret posture (Thread/Matter).
+3. **Commissioning posture.** For Zigbee, inspect permit-join, Trust Center link-key policy and install-code handling. For Thread, inspect the commissioner/joiner commissioning credential flow and PSKc-related configuration. For Matter, inspect the version-appropriate PASE/CASE and setup-passcode/OOB commissioning behavior. Do not transfer controls or findings across protocol families.
 4. **Replay.** Replay a captured owned command; check frame-counter anti-replay.
 5. **Control.** Confirm unique install codes / non-default keys / closed join / anti-replay refuse the above.
 
@@ -52,7 +53,7 @@ Record results including refutations. Keep finding and control status separate. 
 
 ## Craft notes (leads)
 
-The signature Zigbee finding is use of the well-known default Trust-Center link key, which lets a sniffed join reveal the network key — install codes/unique link keys are the fix. Open permit-join is a commissioning finding. Thread and Matter use stronger commissioning (ECDH-based PASE/CASE, OOB passcodes); findings there are weak passcodes or misconfiguration, not a default key. Frame counters provide anti-replay.
+The signature Zigbee finding is use of the well-known default Trust-Center link key, which can expose network-key transport in the applicable join flow; verify the exact profile and captured exchange. Open permit-join is a commissioning exposure, not by itself proof of unauthorized joining. Thread commissioning uses Thread-specific commissioner/joiner credentials and PSKc-related flows. Matter defines PASE/CASE for its own commissioning/session procedures. Assess anti-replay behavior using the relevant protocol's counters and state rather than assuming a single shared frame-counter control.
 
 ## Domain-specific failure modes
 
@@ -68,7 +69,7 @@ Pin the stack (Zigbee version/profile, Thread, Matter) and the 802.15.4 sniffer.
 
 ## Remediation and detection
 
-Use unique per-device install codes and non-default link keys, close permit-join except during commissioning, prefer Thread/Matter with strong OOB passcodes, enforce frame-counter anti-replay, and segment IoT. Add a regression that the default-link-key decryption and replay are refused.
+Apply protocol-specific commissioning controls: appropriate Zigbee install-code and Trust Center link-key policy; secured Thread commissioner/joiner credentials; and Matter setup-passcode and commissioning controls for the deployed version. Limit join/commissioning windows, verify each protocol's anti-replay behavior, and segment IoT. Add separate regressions for each protocol and attack path.
 
 ## Behavioral acceptance cases
 

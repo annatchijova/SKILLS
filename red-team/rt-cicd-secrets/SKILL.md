@@ -67,14 +67,14 @@ Pin the CI platform, runner image and cloud metadata version/mitigations. No pip
 
 ## Remediation and detection
 
-Least-scope tokens and short-lived OIDC with tight claim conditions, secret masking plus never echoing secrets, ephemeral isolated runners, IMDSv2 + hop limit, restricted egress, and scanning logs/artifacts for secret shapes. Add a regression asserting the canary stays contained. Detect secret-shaped strings in logs/artifacts and runner egress to unexpected hosts.
+Use least-scope tokens and short-lived OIDC with tight claim conditions, secret masking plus never echoing secrets, ephemeral isolated runners, and restricted egress. Treat IMDSv2 and hop limit as controls against specific metadata request paths, not proof that a CI step cannot reach metadata; verify runner/container network topology, role policy and reachable endpoints. Scan logs/artifacts for secret shapes. Add a regression asserting the canary stays contained through the tested paths. Detect secret-shaped strings and runner egress to unexpected hosts.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
 | Supported finding | The planted canary surfaces (decoded) in a log/artifact/collector where a hardened pipeline contains it: CONFIRMED; FAIL (scope to the exposure shown). |
-| Benign refutation | Masking catches all encodings / token minimal / metadata blocked / OIDC tight: REFUTED; PASS for the control. |
+| Benign refutation | The tested encodings are masked, the token is minimally scoped, or the declared network/identity control blocks the tested metadata path: REFUTED for that path. Do not claim all encodings or all runner paths from a finite test. |
 | Insufficient evidence | A reachable channel but no canary exposure: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.

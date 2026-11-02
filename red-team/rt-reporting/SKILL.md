@@ -19,6 +19,7 @@ Each finding carries:
 
 - **Title & class** — concise, with the vulnerability class.
 - **Status** — CONFIRMED / CANDIDATE / REFUTED / NOT TESTED (from the assessment), and for controls PASS / WARN / FAIL. Never present a CANDIDATE as CONFIRMED.
+- **Confirmation scope** — for CONFIRMED, name the exact proposition and whether it was demonstrated on a planted fixture or the assessed target (including version/configuration). Keep impact inference separate. A fixture result does not confirm a defect in another system.
 - **Location** — exact endpoint/host/file/parameter.
 - **What & mechanism** — the source→sink path and the broken invariant.
 - **Reproduction** — minimal steps/inputs; the benign marker used; the negative control result.
@@ -37,6 +38,7 @@ Each finding carries:
 
 ## Writing discipline (compose with daubert-defensible-writing)
 
+- Preserve Peirce's triad in every reported finding: Firstness is the direct observation, Secondness is its comparison with the stated baseline, and Thirdness is the scoped inference supported by the discriminator. Do not relabel impact inference as observation.
 - Separate fact (what was observed) from inference (what it implies).
 - Admit uncertainty without weakening a sound conclusion; a documented limitation is an asset.
 - No overclaiming under persuasion pressure ("make it sound solid") — that is exactly where inflation enters.

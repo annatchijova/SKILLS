@@ -21,7 +21,7 @@ Declare the runtime and the container config, attempt budget, stop condition. Co
 - **Privileged / device access** — `--privileged`, host devices, `/dev` access.
 - **Host mounts** — host filesystem, `/`, or sensitive paths mounted in.
 - **Socket exposure** — Docker/containerd/CRI-O socket mounted (control the host runtime).
-- **cgroup/namespace escapes** — `release_agent` (CAP_SYS_ADMIN), shared PID/net/IPC namespaces, kernel-exploit-class.
+- **cgroup/namespace exposure** — shared PID/net/IPC namespaces or version/configuration-specific cgroup interfaces. The legacy `release_agent` route is specific to cgroup v1 and requires additional writable/mount and execution preconditions; cgroup v2 does not provide `release_agent`. Kernel-exploit-class escapes are separately version-bound.
 
 ## Mechanism and observation
 
@@ -43,24 +43,25 @@ A hardened container cannot reach the host (positive control = isolation holds).
 
 Owned misconfigured container; owned host; planted marker.
 
-1. **Detect & enumerate.** Confirm containerization and read the posture: `/proc/self/status` CapEff (decode with capsh), mounts, `/var/run/docker.sock` presence, namespace sharing. (deepce/amicontained/CDK are enumeration aids.)
-2. **Pick one misconfig.** e.g. mounted Docker socket → start a container mounting host `/`; or CAP_SYS_ADMIN → `release_agent` cgroup escape; or host-mounted path → read/write the planted marker.
-3. **Prove reach, stop.** Touch the planted host marker once; do not establish host persistence.
-4. **Controls.** Re-run in a hardened container (dropped caps, non-privileged, no socket/mount, seccomp/AppArmor, user-ns) and confirm the escape fails.
+1. **Detect & enumerate.** Record image digest, runtime configuration, UID mappings, effective capabilities, mounts, namespace identifiers, seccomp mode and LSM profile from authorized inventories. Decode `CapEff` against this kernel's capability limit. Have the lab operator provide a host-side reference so container-only observations do not masquerade as host evidence.
+2. **Pick one misconfiguration and verify its preconditions.** A mounted runtime socket or host path can expose host resources according to its permissions. Consider a `release_agent` path only after confirming cgroup v1, the relevant hierarchy and mount permissions, required capabilities, and a reachable trigger; do not apply it as a generic CAP_SYS_ADMIN escape.
+3. **Prove reach, stop.** Read only the operator-owned canary through the declared path. For a write claim, alter only a test-owned marker and independently verify its change from the host. Do not establish host persistence.
+4. **Controls.** Repeat with the suspect bind/socket/capability removed or constrained while keeping relevant settings fixed. A read-only or no-bind control must be interpreted for the particular operation being tested.
+5. **Other surfaces.** Assess runtime-socket authority through its configured API policy and a benign endpoint; do not mount host root or create privileged sibling containers merely to demonstrate reach. For CVE leads, inspect vendor package/backport status and interface reachability; a version banner is not confirmation.
 
 Record results including refutations. Keep finding and control status separate.
 
 ## Craft notes (leads)
 
-The most common real escapes are a mounted container runtime socket (instant host control) and `--privileged`/CAP_SYS_ADMIN enabling `release_agent` or direct device access. A host filesystem mount is a direct read/write primitive. Shared PID namespace exposes host processes. Kernel-exploit escapes are version-bound. `CapEff: 0000003fffffffff` means all caps (privileged).
+An exposed container-runtime socket can grant substantial host control according to the socket and daemon policy; a host filesystem mount grants only the access its mount and permissions allow. Shared PID namespace exposes process visibility subject to other controls. Kernel-exploit escapes are version-bound. `CapEff` is a hexadecimal effective-capability bitmask: decode it against the running kernel's `CAP_LAST_CAP` and the capability definitions. The value `0000003fffffffff` is not a version-independent synonym for every capability being enabled.
 
 ## Domain-specific failure modes
 
-A non-privileged container with dropped caps and no mounts/sockets simply cannot escape — a PASS. Touching the container's own overlay is not host reach. User namespaces remap root to unprivileged on the host. Seccomp/AppArmor can block the specific syscall even when a cap is present. Prove the planted host marker, not a shell.
+A non-privileged container with dropped caps and no host mounts or sockets has fewer common configuration-based escape paths; this does not rule out runtime, kernel, device, or other vulnerabilities. Scope a PASS to the tested vectors and configuration. Touching the container's own overlay is not host reach. User namespaces can remap container identities; verify the actual mapping and applicable controls. Seccomp/AppArmor can block a specific syscall even when a capability is present. Prove the planted host marker, not a shell.
 
 ## Evidence and deliverable
 
-Provide the posture (caps/mounts/sockets/namespaces), the escape class used, the planted host marker touched, and the hardened-container control result. Keep host data out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, untested configs.
+Provide the posture (caps/mounts/sockets/namespaces), the exact object and effective identity, the host-side canary provenance and observed operation, and the corresponding constrained-configuration result. A successful canary read confirms that mount/read boundary only, not arbitrary host execution. Keep host data out of portable reports. Attach minimal replay, expected/observed, rival explanation, falsifier, untested configs.
 
 ## Versions and tool limitations
 

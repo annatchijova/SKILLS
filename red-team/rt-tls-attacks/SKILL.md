@@ -37,14 +37,14 @@ Enumerate the accepted configuration and compare to a secure baseline.
 
 ## Deduction and controls
 
-A modern handshake succeeds with strong parameters (positive control). A confirmed finding shows the server accepting the weak protocol/cipher/extension where a hardened config would refuse. Predeclare the accepted indicator (e.g. "SSLv3 + CBC accepted"). Refusal of legacy protocols / HSTS preload / patched build are PASS controls; an offered-but-not-negotiated weak cipher may be WARN.
+A modern handshake succeeds with strong parameters (positive control). A confirmed configuration exposure shows the exact weak protocol/cipher/extension accepted on the assessed endpoint. A claim that a named attack (BEAST, DROWN, POODLE, FREAK, CRIME or Heartbleed) is exploitable additionally requires that attack's protocol, client, key-reuse, implementation and oracle preconditions plus a bounded effect demonstration. For example, `TLS 1.0 + CBC accepted` alone does not establish BEAST exploitability. Refusal of the tested legacy configuration / applicable HSTS behavior / patched build are controls for their stated properties; an offered-but-not-negotiated weak cipher may be WARN.
 
 ## Induction: bounded procedure
 
 Owned endpoints.
 
 1. **Enumerate.** Run testssl.sh (and sslscan/tlsx for breadth) for full protocol/cipher/vuln output in JSON.
-2. **Confirm per class.** POODLE (SSLv3+CBC accepted), DROWN (SSLv2 or shared RSA key with an SSLv2 host), FREAK (export ciphers), BEAST (TLS 1.0 CBC negotiated), CRIME (TLS compression), Heartbleed (vulnerable OpenSSL + heartbeat).
+2. **Assess per class.** Check the configuration leads (such as SSLv3+CBC, export ciphers, TLS 1.0+CBC, TLS compression, or an SSLv2 endpoint sharing an RSA key) and then verify each named attack's additional prerequisites against the pinned client/server build. A configuration match alone remains exposure/candidate evidence, not demonstrated exploitability. Heartbleed requires an actually affected, unpatched implementation and reachable heartbeat path.
 3. **Key reuse.** Extract the certificate modulus; hash and compare across scoped hosts to find shared keys (DROWN cross-host).
 4. **Certificate.** Validate chain, host, expiry, signature strength, HSTS.
 5. **Score.** Record each control PASS/WARN/FAIL; separate "accepted/negotiable now" from "offered but legacy-client-only".

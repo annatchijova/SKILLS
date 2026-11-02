@@ -15,6 +15,8 @@ Use this when a pile of leads (scanner output, a reported finding, a hunch) need
 
 ## The fast checklist
 
+Peirce's triad is applied with a deliberate limit here: Firstness records the lead as observed, Secondness compares it with the documented baseline and trust boundary, and Thirdness is deferred because this triage gate does not run the discriminating experiment. Therefore this skill may produce only an abductive candidate, a refutation supported by inspected evidence, or a route to testing; it never claims experimental confirmation.
+
 For each lead, in order (seconds to minutes, not hours):
 
 1. **Classify the flow.** Source (where untrusted input enters) → Transformation (what processes it) → Boundary (what trust line it crosses) → Sink (where it acts) → Privilege (what authority it reaches). A lead with no path from source to a consequential sink is low priority.

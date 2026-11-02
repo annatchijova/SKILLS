@@ -27,7 +27,7 @@ Declare the target and instrumentation availability per stage.
 
 ## Method per stage
 
-Run each exercise through the methodology: observe (coverage/oracle signal), contrast (expected vs observed), infer the bug class; abduce, deduce a checkable consequence, induce on the owned target; refute the benign explanation (harness limitation, oracle bug, intended differential) before marking a stage complete. Use CANDIDATE/CONFIRMED/REFUTED/NOT TESTED per finding and report coverage honestly.
+Run each exercise through Peirce's triad: Firstness records the coverage/oracle observation, Secondness compares it with the harness and expected behavior, and Thirdness infers only the bug class supported after controls. Abduce a mechanism, deduce a checkable consequence, induce on the owned target, and refute the benign explanation (harness limitation, oracle bug, intended differential) before marking a stage complete. Use CANDIDATE/CONFIRMED/REFUTED/NOT TESTED per finding and report coverage honestly.
 
 ## Domain-specific failure modes
 

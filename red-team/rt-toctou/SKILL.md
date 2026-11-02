@@ -32,11 +32,11 @@ Trace the resource from the check to the use and whether the identity is re-vali
 
 **Mechanism hypothesis:** The program re-resolves the resource by name at use, so a concurrent swap makes it use a different object than it checked.
 
-**Competing benign explanation:** The program opens once and operates on the file descriptor (handle), so the name swap is inert; it uses `O_NOFOLLOW`/`openat` + `fstat` on the fd; the directory is not attacker-writable; the double-fetch copies once; the window is too small to win without widening and never wins.
+**Competing benign explanation:** The program opens once and operates on that file descriptor (handle), so a later name swap is inert; it safely constrains path resolution and verifies the opened object; the directory is not attacker-writable; the double-fetch copies once; or the window is too small to win without widening and never wins. `openat` alone does not prevent symlink traversal; `O_NOFOLLOW` ordinarily applies to the final path component, so assess intermediate components and directory trust too.
 
 ## Deduction and controls
 
-Normal operation acts on the checked resource (positive control). A confirmed TOCTOU has the use act on the planted swapped target where a handle-based (fd) implementation would not. Predeclare the swapped-target effect. fd-based operation / `O_NOFOLLOW` / single-fetch / non-writable dir are PASS controls.
+Normal operation acts on the checked resource (positive control). A confirmed TOCTOU has the use act on the planted swapped target where a safely resolved, handle-based implementation would not. Predeclare the swapped-target effect. Verify fd-based operation, full path-resolution constraints, single-fetch and directory permissions as separate controls; `openat` alone or final-component `O_NOFOLLOW` is not a general path-traversal guarantee.
 
 ## Induction: bounded laboratory procedure
 
@@ -53,11 +53,11 @@ Record results including refutations. Keep finding and control status separate. 
 
 ## Craft notes (leads)
 
-The canonical bug is `access()` then `open()` on a path in an attacker-writable dir. The fix pattern is `open` once + operate on the fd (`fstat`, `openat`, `O_NOFOLLOW`). Double-fetch is the kernel analogue: copy-from-user twice. Predictable temp names (`/tmp/foo.PID`) enable pre-creation. Widening the window makes an otherwise-tight race reproducible in the lab.
+The canonical bug is `access()` then `open()` on a path in an attacker-writable dir. Constrain path resolution when opening, then operate on the opened fd and validate the selected object with `fstat`. `openat` is directory-relative, not by itself a symlink-traversal defense; `O_NOFOLLOW` protects the final component. Where available, stronger resolution constraints (such as Linux `openat2` flags) can reject symlinks or escapes in every component. Double-fetch is the kernel analogue: copy-from-user twice. Predictable temp names (`/tmp/foo.PID`) enable pre-creation. Widening the window makes an otherwise-tight race reproducible in the lab.
 
 ## Domain-specific failure modes
 
-Handle-based (fd) operation makes name swaps inert — the primary refutation. A non-attacker-writable directory removes the swap primitive. A tight window that never wins even widened is CANDIDATE, not CONFIRMED. Winning once in the lab proves the flaw but may be low-reliability in the wild — state it.
+Operations on a previously opened fd make subsequent renaming of that pathname inert for that already-open object, but only if the open itself selected the intended object under safe resolution rules. A safe open-once pattern is the primary refutation. A non-attacker-writable directory removes the swap primitive. A tight window that never wins even widened is CANDIDATE, not CONFIRMED. Winning once in the lab proves the flaw but may be low-reliability in the wild — state it.
 
 ## Evidence and deliverable
 

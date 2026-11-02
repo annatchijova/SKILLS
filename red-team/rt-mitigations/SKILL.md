@@ -20,10 +20,10 @@ Declare the target, architecture, and enabled mitigations, attempt budget, stop 
 - **ASLR/KASLR** — bypassed only with an info leak (or low entropy / brute on 32-bit).
 - **NX/DEP** — forces code reuse (ROP/JOP) instead of injected shellcode.
 - **Stack canary** — bypassed by a canary leak, a brute (forking servers), or a write that skips it.
-- **CFI / CET shadow stack** — breaks naive ROP/JOP; bypass needs CFI-valid gadgets or a shadow-stack gap.
+- **CFI / CET** — distinct controls. CFI constrains selected control-flow transfers according to its policy; Intel CET includes shadow stack for return integrity and Indirect Branch Tracking (IBT) for selected indirect branches. Do not treat either as a universal ROP/JOP blocker; state architecture, enabled feature and protected transfer type.
 - **SMAP/SMEP/PAN** — block kernel use of user pages; bypass needs a kernel-space primitive or ret2dir-class.
 - **KPTI** — isolates page tables (Meltdown-era); bypass is side-channel/implementation-specific.
-- **MTE / LAM** — memory tagging / address masking; bypass needs tag leak or tag confusion.
+- **MTE** — architecture-specific memory tagging that detects selected tag mismatches under the configured mode; assess tag knowledge, coverage and fault behavior. **Intel LAM** exposes selected upper pointer bits for software metadata and masks them for address translation; it is not a memory-safety mitigation equivalent to MTE. Do not score LAM as a mitigation that blocks memory corruption without a specific software policy using it.
 - **KDP / HVCI (Memory Integrity), memory sealing, RODATA, hardened usercopy** — protect specific structures; bypass needs a primitive outside the protected set.
 
 ## Mechanism and observation
@@ -72,7 +72,7 @@ Pin architecture, kernel/compiler and mitigation versions — effectiveness is v
 
 ## Remediation and detection
 
-Enable the full stack (ASLR high-entropy, NX, canaries, Full RELRO, CFI/CET, MTE/LAM where available, HVCI/KDP, hardened usercopy) and, crucially, eliminate the preconditions (info leaks) that unlock bypasses. Add a regression asserting the precondition remains unreachable. Detect leak primitives and code-reuse execution.
+Enable applicable mitigations supported by the target architecture, operating system and workload (for example ASLR, NX, canaries, RELRO, a specified CFI/CET feature, MTE where supported, HVCI/KDP or hardened usercopy where applicable), and eliminate preconditions such as reachable information leaks. Treat LAM as pointer-metadata support unless the target software uses it in a defined security policy; do not present it as a drop-in memory-safety mitigation. Add a regression asserting the precondition remains unreachable. Detect leak primitives and code-reuse execution.
 
 ## Behavioral acceptance cases
 

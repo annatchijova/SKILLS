@@ -68,14 +68,14 @@ Pin the mail-security stack and simulation platform. Delivery behavior is config
 
 ## Remediation and detection
 
-Enforce SPF/DKIM/DMARC (reject), deploy a secure email gateway + sandboxing + lookalike-domain detection, provide ongoing awareness training with easy reporting (a report button), and measure report rate as a KPI. Add a recurring simulation cadence. Detect lookalike domains and spoofed senders.
+Deploy SPF, DKIM and a DMARC policy appropriate to the organization's domain-authentication goals; DMARC alignment helps handle spoofing of the protected domain but does not identify lookalike domains. Use gateway/sandbox controls and separate lookalike-domain detection. Provide ongoing awareness training and an easy reporting path. Measure delivery, scanner-filtered opens/clicks/submissions and reports as separate outcomes; a high report rate does not refute a mail-control weakness by itself. Add a recurring, consented simulation cadence.
 
 ## Behavioral acceptance cases
 
 | Case | Expected verdict |
 |---|---|
 | Supported finding | The lure is delivered and clicked/submitted with low reporting where mail security or trained users would stop it: CONFIRMED susceptibility/control gap; FAIL (report rates). |
-| Benign refutation | DMARC/gateway blocks it or report rate is high (and clicks were scanners): REFUTED; PASS for the control. |
+| Benign refutation | The applicable domain-authentication or gateway control blocks the tested lure, or the apparent interaction is attributable to scanners: REFUTED only for that claim. Report lookalike detection and human reporting outcomes separately. |
 | Insufficient evidence | Clicks unfiltered for scanners, or an unrealistic lure: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.

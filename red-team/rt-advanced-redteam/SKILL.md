@@ -30,7 +30,7 @@ Each phase names its objective, the skills that carry the depth, and the safety 
 
 ## Method and safety
 
-Run each phase through the methodology (observe, contrast, infer; abduce, deduce, induce; refute the benign explanation before claiming an edge). Carry safety as a first-class constraint: reversible actions, deconfliction before anything risky, abort on out-of-scope impact or loss of control, and no production disruption. Record evidence with chain of custody (`finding-custody`, `tamper-evident-audit-chain`). Keep operator actions logged for blue-team replay.
+Run each phase through the methodology: Firstness records the phase observation, Secondness compares it to the objective/ROE baseline, and Thirdness infers only the path edge demonstrated. Abduce the mechanism, deduce a discriminating prediction, induce within scope, and refute the benign explanation before claiming an edge. Carry safety as a first-class constraint: reversible actions, deconfliction before anything risky, abort on out-of-scope impact or loss of control, and no production disruption. Record evidence with chain of custody (`finding-custody`, `tamper-evident-audit-chain`). Keep operator actions logged for blue-team replay.
 
 ## Deconfliction and stop conditions
 

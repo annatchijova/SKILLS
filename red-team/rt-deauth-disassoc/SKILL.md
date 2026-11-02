@@ -17,9 +17,9 @@ Declare the owned AP/client, the RF isolation, the DoS scope, attempt budget, st
 
 ## Mechanism and observation
 
-Unprotected 802.11 management frames can be spoofed to deauth a client; 802.11w (PMF) cryptographically protects them.
+Certain robust management frames can be spoofed when unprotected. Negotiated 802.11w PMF protects specified robust management frames within the applicable secured association; do not generalize that protection to every management frame or pre-association state.
 
-**Firstness:** Record whether a spoofed deauth disconnected the owned client (lab) or was ignored (PMF). **Secondness:** State the expected protection (PMF required → management frames authenticated) and the deviation. **Thirdness:** Infer "management frames unprotected" only after the owned client is controlled-disconnected where PMF would prevent it.
+**Firstness:** Record association state, negotiated PMF policy and whether the bounded spoofed robust deauth disconnected the owned client or was ignored. **Secondness:** Compare only frames covered by the negotiated PMF protection. **Thirdness:** Infer missing protection for that frame/state only after the controlled result; do not generalize to all management traffic.
 
 ## Abduction and refutation
 
@@ -29,7 +29,7 @@ Unprotected 802.11 management frames can be spoofed to deauth a client; 802.11w 
 
 ## Deduction and controls
 
-With PMF off, the spoofed deauth disconnects the owned client (demonstration); with PMF on it must be ignored. A confirmed finding disconnects the owned client via spoofed frames where a PMF-enabled config ignores them. Predeclare the disconnect signal. PMF/802.11w ignoring the frame is the PASS control.
+With PMF disabled, the lab may accept the tested spoofed deauth; with PMF negotiated and applicable to that association/frame, the protected frame should be rejected. A confirmed finding is limited to that frame type, association state and implementation. Predeclare the disconnect signal and report PMF control status separately.
 
 ## Induction: bounded procedure
 

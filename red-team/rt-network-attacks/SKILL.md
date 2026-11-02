@@ -70,7 +70,7 @@ Pin switch/OS and tool versions — mitigations and behaviors vary. Tools transm
 
 ## Remediation and detection
 
-Enable DAI, DHCP snooping on trusted ports, port security, RA Guard/DHCPv6 guard, disable DTP (set access ports), disable LLMNR/NBT-NS, enforce HSTS preload and DNSSEC, and 802.1X with sticky MAC. Detect: duplicate gateway MAC, multicast name responses, multiple DHCP offers, DTP/double-tagged frames, MAC flapping (per the upstream detection table). Add a regression that the hardened control blocks the attack.
+Enable DAI and DHCP snooping; mark only verified infrastructure/uplink interfaces as trusted and leave client-facing ports untrusted. Add port security, RA Guard/DHCPv6 guard, disable DTP (set access ports), disable LLMNR/NBT-NS where not required, use HSTS to protect applicable HTTPS origins, and validate resolved destination addresses at the application boundary to mitigate DNS rebinding/SSRF. DNSSEC can authenticate DNS data when correctly deployed, but does not by itself prevent a domain from returning multiple valid addresses or replace application-side destination checks. Use 802.1X with an appropriate identity policy; sticky MAC is not a substitute for authentication. Detect duplicate gateway MAC, multicast name responses, multiple DHCP offers, DTP/double-tagged frames and MAC flapping. Add attack-specific control regressions.
 
 ## Behavioral acceptance cases
 

@@ -46,11 +46,11 @@ Record results including refutations. Keep finding and control status separate. 
 
 ## Craft notes (leads)
 
-Classic flows: parallel coupon/gift-card redeem, parallel withdrawals each seeing full balance, 2FA code submitted N times before the lockout counter increments, parallel invite-accepts granting extra seats, last-item oversell. The single-packet attack neutralizes network jitter so the window is reproducible. Cloud/serverless adds its own concurrency (Lambda reused connections, concurrent invocations, conditional-write absence). WebSocket handshake races and rate-limiter/CAPTCHA races are variants.
+Classic flows: parallel coupon/gift-card redeem, parallel withdrawals each seeing full balance, 2FA code submitted N times before the lockout counter increments, parallel invite-accepts granting extra seats, last-item oversell. Single-packet or synchronized release can reduce arrival-time spread, but cannot eliminate server scheduling, queueing, lock contention or transaction-order nondeterminism. Record observed overlap and repeatability rather than treating packet alignment as proof of simultaneous execution. Cloud/serverless adds its own concurrency (Lambda reused connections, concurrent invocations, conditional-write absence). WebSocket handshake races and rate-limiter/CAPTCHA races are variants.
 
 ## Domain-specific failure modes
 
-Without arrival alignment, a "race" is just sequential and will not reproduce — the single-packet/synchronized release is essential. A unique constraint or conditional update makes the flow safe regardless of app logic. Apparent duplicates can be client retries; confirm by state, not request count. Non-reproducible one-offs are CANDIDATE, not CONFIRMED.
+Arrival alignment increases the chance of overlap but does not prove concurrent execution; establish overlap or use server-side transaction evidence where available. A database constraint or conditional update protects only the invariant it actually encodes, on the write path and transaction boundary where it is enforced. Check every state transition, retry/idempotency path and related resource. Apparent duplicates can be client retries; confirm by state, not request count. Non-reproducible one-offs are CANDIDATE, not CONFIRMED.
 
 ## Evidence and deliverable
 

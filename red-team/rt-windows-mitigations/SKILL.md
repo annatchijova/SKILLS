@@ -25,6 +25,8 @@ Declare the Windows build, the enabled mitigations, the primitive, attempt budge
 - **EAF/IAF** — export/import address filtering (EMET-lineage); complicates address resolution.
 - **CFG-aware heap, HVCI, Credential Guard** — structure/credential protections; bypass needs a primitive outside the protected set.
 
+These features do not form one universally available per-process policy. Availability and scope depend on Windows build, hardware, process opt-in/policy and the feature's system-versus-app configuration. CFG/xFG, CET components, ACG, CIG, EAF/IAF, HVCI and Credential Guard have different scopes and prerequisites. Inventory the actual enabled policy and supported signer/feature options on the target before describing a mitigation as active; do not infer availability from its name in this catalog.
+
 ## Mechanism and observation
 
 Pair the primitive with the mitigation and test whether the bypass precondition is reachable.

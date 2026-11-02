@@ -26,17 +26,17 @@ Declare the owned AP, the mode (WPA3-only vs transition), the RF isolation, atte
 
 Test the owned AP's mode and SAE implementation.
 
-**Firstness:** Record whether a WPA2 downgrade handshake was obtainable (transition mode), or whether a timing/cache side channel is observable in the SAE exchange. **Secondness:** State the secure baseline (WPA3-only, patched SAE, PMF) and the deviation. **Thirdness:** Infer a finding only after the downgrade/side-channel is demonstrated under control in the lab.
+**Firstness:** Record the negotiated authentication mode and whether a WPA2 handshake was obtained; separately record SAE side-channel measurements and PMF negotiation. **Secondness:** Compare downgrade behavior to the configured transition policy, side-channel behavior to the exact SAE implementation, and PMF state to its management-frame protection requirement. **Thirdness:** Infer only the property demonstrated by the corresponding test; PMF state does not establish downgrade or side-channel resistance.
 
 ## Abduction and refutation
 
 **Hypothesis:** The deployment is downgrade-able (transition mode) or runs a Dragonblood-vulnerable SAE implementation.
 
-**Competing benign explanation:** WPA3-only mode (no WPA2) prevents downgrade; the SAE implementation is patched (constant-time hash-to-curve); PMF is enforced; the observed timing is noise, not password-dependent; the group is fixed to a strong one.
+**Competing benign explanation:** WPA3-only mode offers no WPA2 transition path for this profile; the tested SAE implementation has the relevant fixes; observed timing is noise rather than password-dependent; the group policy is expected. PMF can explain resistance to applicable management-frame attacks but does not refute a downgrade or SAE side-channel hypothesis.
 
 ## Deduction and controls
 
-A WPA3-only, patched AP resists downgrade and side-channel (positive control). A confirmed finding obtains a WPA2 downgrade or a password-dependent side channel in the lab where the hardened config does not. Predeclare the downgrade handshake or the statistical side-channel threshold. WPA3-only / patched SAE / PMF are PASS controls.
+A WPA3-only configuration is a control for the transition-to-WPA2 path; a patched SAE implementation is a separate control for the tested side-channel class. PMF is measured as a management-frame control. Predeclare the downgrade handshake or statistical side-channel decision rule and report these control results separately.
 
 ## Induction: bounded procedure
 
@@ -45,18 +45,18 @@ Isolated RF lab; owned AP.
 1. **Baseline.** Associate the owned client via WPA3-SAE; note the mode (transition vs WPA3-only) and PMF.
 2. **Downgrade (transition mode).** Attempt to force a WPA2 handshake; if obtained, route to `rt-wpa2-psk` for the key-strength question.
 3. **Side channel.** For a potentially vulnerable stack, measure SAE hash-to-group timing/cache behavior with statistical rigor across many samples; look for password-dependent variation.
-4. **Group downgrade / PMF.** Test group negotiation and confirm PMF enforcement.
-5. **Control.** Switch to WPA3-only patched config; confirm downgrade and side channel are gone.
+4. **Group downgrade / PMF.** Test supported SAE group negotiation. Separately confirm PMF enforcement for its management-frame property.
+5. **Controls.** Switch to WPA3-only to retest transition downgrade; deploy the applicable patched SAE build to retest the side channel. Record PMF only against its own test.
 
 Record results including refutations. Keep finding and control status separate. Statistical rigor for any timing claim.
 
 ## Craft notes (leads)
 
-The practical WPA3 finding is usually transition-mode downgrade (the attacker never breaks SAE; it just gets a WPA2 handshake instead). Dragonblood side channels affect specific older implementations and need constant-time patches; a single timing sample is noise. WPA3-only mode + patched supplicant/AP + PMF closes the common gaps. SAE itself resists offline PSK attack — do not claim otherwise.
+The practical WPA3 finding may be transition-mode fallback to WPA2; that is not an SAE break. Dragonblood-class side channels affect specific implementations and require implementation-specific testing; a single timing sample is noise. WPA3-only mode addresses the transition path; applicable SAE fixes address the side channel; PMF addresses robust management-frame protection. SAE itself resists offline PSK attack — do not claim otherwise.
 
 ## Domain-specific failure modes
 
-WPA3-only mode defeats downgrade — the primary refutation. A patched SAE implementation removes Dragonblood. A timing difference without statistical separation is noise. Claiming SAE is "cracked" offline like WPA2 is wrong — the finding is downgrade or implementation side channel, not the protocol. Live-network testing is out of scope.
+WPA3-only mode is a refutation for the tested WPA2 transition path; a relevant SAE fix is a separate refutation for the tested implementation-specific side channel. PMF does not refute either claim. A timing difference without statistical separation is noise. Claiming SAE is "cracked" offline like WPA2 is wrong — the finding is downgrade or implementation side channel, not the protocol. Live-network testing is out of scope.
 
 ## Evidence and deliverable
 
@@ -75,7 +75,7 @@ Deploy WPA3-only (disable transition mode) where clients allow, patch SAE implem
 | Case | Expected verdict |
 |---|---|
 | Supported finding | A WPA2 downgrade is obtained in transition mode, or a password-dependent side channel is measured, where WPA3-only/patched does not: CONFIRMED; FAIL. |
-| Benign refutation | WPA3-only / patched SAE / PMF prevents it, or timing is noise: REFUTED; PASS for the control. |
+| Benign refutation | WPA3-only refuses the tested WPA2 transition; patched SAE removes the measured side channel; or controlled measurements do not separate from noise: REFUTED for that claim. Score PMF separately. |
 | Insufficient evidence | A timing hint without statistical separation: CANDIDATE; WARN. |
 
 These are authoring acceptance scenarios, not executed target tests.

@@ -71,7 +71,7 @@ Pin the firmware/bootloader and silicon revisions — protections and fuse state
 
 ## Remediation and detection
 
-Fuse/disable debug interfaces in production, encrypt firmware and enforce secure boot with rollback protection, sign updates, store keys in a secure element (never in firmware), and authenticate device-to-cloud protocols. Add a regression that an unsigned update and a debug-port access are refused. Detect anomalous update/boot behavior server-side.
+Disable or restrict debug interfaces in production, encrypt firmware where confidentiality is required, enforce secure boot with rollback protection, and authenticate updates. Keep private signing/decryption secrets out of recoverable firmware; public verification keys or certificates may legitimately be embedded when protected by the boot trust model. Protect device-to-cloud credentials according to the hardware threat model. Add regressions that unsigned updates and unauthorized debug access are refused. Detect anomalous update/boot behavior server-side.
 
 ## Behavioral acceptance cases
 
